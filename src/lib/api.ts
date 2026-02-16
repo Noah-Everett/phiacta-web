@@ -5,6 +5,8 @@ import type {
   Relation,
   ConfidenceStatus,
   Neighbor,
+  Agent,
+  AuthResponse,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -30,6 +32,134 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   return res.json() as Promise<T>;
+}
+
+// --- Auth utilities ---
+
+const TOKEN_KEY = "phiacta_token";
+
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+export function clearStoredToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
+}
+
+function getAuthHeaders(): Record<string, string> {
+  const token = getStoredToken();
+  if (!token) return {};
+  return { Authorization: `Bearer ${token}` };
+}
+
+// 401 logout coordinator — prevents multiple concurrent 401 handlers
+let isLoggingOut = false;
+
+export async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: {
+      "Content-Type": "application/json",
+      ...getAuthHeaders(),
+      ...options?.headers,
+    },
+    cache: "no-store",
+    ...options,
+  });
+
+  if (res.status === 401) {
+    if (!isLoggingOut) {
+      isLoggingOut = true;
+      clearStoredToken();
+      // Use queueMicrotask to reset the flag after the current tick
+      queueMicrotask(() => { isLoggingOut = false; });
+      if (typeof window !== "undefined") {
+        window.location.href = "/auth/login";
+      }
+    }
+    throw new Error("Session expired. Please log in again.");
+  }
+
+  if (res.status === 429) {
+    throw new Error("Too many requests. Please wait a moment and try again.");
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const detail = body?.detail;
+    throw new Error(detail || `API error: ${res.status} ${res.statusText}`);
+  }
+
+  return res.json() as Promise<T>;
+}
+
+// --- Auth API functions ---
+
+export async function loginApi(email: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_URL}/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (res.status === 429) {
+    throw new Error("Too many requests. Please wait a moment and try again.");
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const detail = body?.detail;
+    throw new Error(detail || "Invalid email or password.");
+  }
+
+  return res.json() as Promise<AuthResponse>;
+}
+
+export async function registerApi(
+  name: string,
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  const res = await fetch(`${API_URL}/v1/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, password }),
+  });
+
+  if (res.status === 429) {
+    throw new Error("Too many requests. Please wait a moment and try again.");
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    const detail = body?.detail;
+    throw new Error(detail || "Registration failed. Please try again.");
+  }
+
+  return res.json() as Promise<AuthResponse>;
+}
+
+export async function getMeApi(): Promise<Agent> {
+  const token = getStoredToken();
+  if (!token) throw new Error("No token");
+
+  const res = await fetch(`${API_URL}/v1/auth/me`, {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Token validation failed");
+  }
+
+  return res.json() as Promise<Agent>;
 }
 
 export async function listClaims(

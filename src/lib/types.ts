@@ -84,3 +84,18 @@ export interface Neighbor {
     inverse_name: string;
   };
 }
+
+export interface Agent {
+  id: string;
+  name: string;
+  email: string;
+  agent_type: string;
+  trust_score: number;
+  created_at: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  token_type: string;
+  agent: Agent;
+}

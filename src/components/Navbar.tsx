@@ -1,5 +1,6 @@
 import Link from "next/link";
 import SearchBar from "./SearchBar";
+import NavbarAuth from "./NavbarAuth";
 
 export default function Navbar() {
   return (
@@ -19,6 +20,9 @@ export default function Navbar() {
             <Link href="/contribute" className="text-gray-600 hover:text-gray-900">
               Contribute
             </Link>
+            <Link href="/architecture" className="text-gray-600 hover:text-gray-900">
+              Architecture
+            </Link>
             <Link href="/about" className="text-gray-600 hover:text-gray-900">
               About
             </Link>
@@ -28,18 +32,7 @@ export default function Navbar() {
           <div className="hidden w-64 sm:block">
             <SearchBar compact />
           </div>
-          <Link
-            href="/auth/login"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/auth/signup"
-            className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700"
-          >
-            Sign up
-          </Link>
+          <NavbarAuth />
         </div>
       </div>
     </nav>
