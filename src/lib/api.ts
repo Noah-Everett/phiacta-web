@@ -5,6 +5,7 @@ import type {
   Relation,
   ConfidenceStatus,
   Neighbor,
+  Namespace,
   Agent,
   AuthResponse,
 } from "./types";
@@ -160,6 +161,10 @@ export async function getMeApi(): Promise<Agent> {
   }
 
   return res.json() as Promise<Agent>;
+}
+
+export async function listNamespaces(): Promise<PaginatedResponse<Namespace>> {
+  return request<PaginatedResponse<Namespace>>("/v1/namespaces?limit=200");
 }
 
 export async function listClaims(

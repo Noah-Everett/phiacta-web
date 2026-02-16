@@ -88,7 +88,7 @@ export interface Neighbor {
 export interface Agent {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   agent_type: string;
   trust_score: number;
   created_at: string;

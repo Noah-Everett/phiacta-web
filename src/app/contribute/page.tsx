@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import type { ClaimType } from "@/lib/types";
+import type { ClaimType, Namespace } from "@/lib/types";
 import { useAuth } from "@/lib/auth-context";
-import { authFetch } from "@/lib/api";
+import { authFetch, listNamespaces } from "@/lib/api";
 
 const CLAIM_TYPES: ClaimType[] = [
   "assertion",
@@ -20,10 +20,17 @@ export default function ContributePage() {
   const { agent, isLoading } = useAuth();
   const [content, setContent] = useState("");
   const [claimType, setClaimType] = useState<ClaimType>("assertion");
-  const [namespace, setNamespace] = useState("");
+  const [namespaceId, setNamespaceId] = useState("");
+  const [namespaces, setNamespaces] = useState<Namespace[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    listNamespaces()
+      .then((res) => setNamespaces(res.items))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,12 +43,12 @@ export default function ContributePage() {
         body: JSON.stringify({
           content,
           claim_type: claimType,
-          namespace: namespace || undefined,
+          namespace_id: namespaceId,
         }),
       });
       setSuccess(true);
       setContent("");
-      setNamespace("");
+      setNamespaceId("");
       setClaimType("assertion");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit claim.");
@@ -119,14 +126,20 @@ export default function ContributePage() {
           <label htmlFor="namespace" className="mb-1 block text-sm font-medium text-gray-700">
             Namespace
           </label>
-          <input
+          <select
             id="namespace"
-            type="text"
-            value={namespace}
-            onChange={(e) => setNamespace(e.target.value)}
-            placeholder="e.g. mathematics.topology"
-            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
-          />
+            value={namespaceId}
+            onChange={(e) => setNamespaceId(e.target.value)}
+            required
+            className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+          >
+            <option value="">Select a namespace...</option>
+            {namespaces.map((ns) => (
+              <option key={ns.id} value={ns.id}>
+                {ns.name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
