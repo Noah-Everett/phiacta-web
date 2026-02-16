@@ -1,3 +1,5 @@
+export type ClaimType = "assertion" | "definition" | "theorem" | "proof" | "evidence" | "conjecture" | "refutation";
+
 export interface Claim {
   id: string;
   lineage_id: string;
