@@ -9,9 +9,9 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
   const { id } = await params;
 
   let claim = null;
-  let relations = [];
+  let relations: { id: string; source_id: string; target_id: string; relation_type: string; strength: number }[] = [];
   let confidence = null;
-  let neighbors = [];
+  let neighbors: { relation_id: string; neighbor_id: string; relation_type: string; direction: string; strength: number; edge_type_info: { category: string } }[] = [];
 
   try {
     claim = await getClaim(id);
