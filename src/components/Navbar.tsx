@@ -19,6 +19,9 @@ export default function Navbar() {
             <Link href="/contribute" className="text-gray-600 hover:text-gray-900">
               Contribute
             </Link>
+            <Link href="/about" className="text-gray-600 hover:text-gray-900">
+              About
+            </Link>
           </div>
         </div>
         <div className="flex items-center gap-4">

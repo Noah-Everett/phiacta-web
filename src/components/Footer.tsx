@@ -15,6 +15,9 @@ export default function Footer() {
           <Link href="/contribute" className="hover:text-gray-700">
             Contribute
           </Link>
+          <Link href="/about" className="hover:text-gray-700">
+            About
+          </Link>
         </div>
       </div>
     </footer>
