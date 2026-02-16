@@ -16,7 +16,7 @@ export default function ClaimCard({ claim }: ClaimCardProps) {
           {claim.claim_type}
         </span>
         <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-          {claim.namespace}
+          {claim.namespace_id}
         </span>
         <span
           className={`ml-auto rounded px-2 py-0.5 text-xs font-medium ${
@@ -33,11 +33,7 @@ export default function ClaimCard({ claim }: ClaimCardProps) {
       <p className="text-sm leading-relaxed text-gray-800">{claim.content}</p>
       <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
         <span>{new Date(claim.created_at).toLocaleDateString()}</span>
-        {claim.confidence !== null && (
-          <span>Confidence: {(claim.confidence * 100).toFixed(0)}%</span>
-        )}
-        <span>{claim.sources.length} sources</span>
-        <span>{claim.reviews.length} reviews</span>
+        <span>v{claim.version}</span>
       </div>
     </Link>
   );
