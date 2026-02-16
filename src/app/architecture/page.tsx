@@ -122,108 +122,64 @@ export default function ArchitecturePage() {
           <p className="mb-5 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
             Entity Relationships
           </p>
-          <div className="mx-auto max-w-xl">
-            {/* Top row: Sources and Agents */}
-            <div className="mb-2 flex justify-center gap-16">
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Sources
-              </div>
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Agents
-              </div>
-            </div>
 
-            {/* Connectors down */}
-            <div className="mb-2 flex justify-center gap-16">
-              <div className="flex w-28 flex-col items-center">
-                <div className="h-4 w-px bg-gray-300" />
-                <span className="text-[10px] text-gray-400">extracted from</span>
-                <div className="h-4 w-px bg-gray-300" />
-              </div>
-              <div className="flex w-28 flex-col items-center">
-                <div className="h-4 w-px bg-gray-300" />
-                <span className="text-[10px] text-gray-400">created by</span>
-                <div className="h-4 w-px bg-gray-300" />
-              </div>
-            </div>
+          {/* Claims hub */}
+          <div className="mx-auto mb-5 w-fit rounded-md border-2 border-gray-900 bg-gray-900 px-6 py-3 text-center">
+            <span className="text-sm font-semibold text-white">Claims</span>
+            <p className="mt-0.5 text-[11px] text-gray-400">
+              The central entity &mdash; everything connects here
+            </p>
+          </div>
 
-            {/* Provenance → Claims center */}
-            <div className="mb-2 flex items-center justify-center gap-3">
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Provenance
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="h-px w-4 bg-gray-300" />
-                <svg width="8" height="8" viewBox="0 0 8 8" className="text-gray-300">
-                  <path d="M0 0l8 4-8 4z" fill="currentColor" />
-                </svg>
-              </div>
-              <div className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-3 text-center text-sm font-semibold text-white">
-                Claims
-              </div>
-              <div className="flex items-center gap-1">
-                <svg width="8" height="8" viewBox="0 0 8 8" className="rotate-180 text-gray-300">
-                  <path d="M0 0l8 4-8 4z" fill="currentColor" />
-                </svg>
-                <div className="h-px w-4 bg-gray-300" />
-              </div>
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Reviews
-              </div>
+          {/* Surrounding entities as labeled cards */}
+          <div className="mx-auto grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Relations</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Typed edges between two claims
+              </p>
             </div>
-
-            {/* Connectors from Claims down and sides */}
-            <div className="flex justify-center">
-              <div className="flex w-28 items-center justify-end">
-                <div className="h-px w-full bg-transparent" />
-              </div>
-              <div className="flex flex-col items-center px-3">
-                <div className="flex gap-10">
-                  <div className="flex flex-col items-center">
-                    <div className="h-4 w-px bg-gray-300" />
-                    <span className="text-[10px] text-gray-400">scoped by</span>
-                    <div className="h-4 w-px bg-gray-300" />
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="h-4 w-px bg-gray-300" />
-                    <span className="text-[10px] text-gray-400">connected via</span>
-                    <div className="h-4 w-px bg-gray-300" />
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="h-4 w-px bg-gray-300" />
-                    <span className="text-[10px] text-gray-400">grouped in</span>
-                    <div className="h-4 w-px bg-gray-300" />
-                  </div>
-                </div>
-              </div>
-              <div className="flex w-28 items-center">
-                <div className="h-px w-full bg-transparent" />
-              </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Provenance</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Links each claim to its source
+              </p>
             </div>
-
-            {/* Bottom row */}
-            <div className="flex justify-center gap-4">
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Namespaces
-              </div>
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Relations
-              </div>
-              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                Bundles
-              </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Reviews</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Peer assessments of a claim
+              </p>
             </div>
-
-            {/* Artifacts at bottom */}
-            <div className="mt-4 flex justify-center">
-              <div className="flex flex-col items-center">
-                <div className="h-4 w-px bg-gray-300" />
-                <span className="text-[10px] text-gray-400">attached to claims</span>
-                <div className="h-3 w-px bg-gray-300" />
-                <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
-                  Artifacts
-                </div>
-              </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Namespaces</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Domain scope for claims
+              </p>
+            </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Sources</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Papers, recordings, datasets
+              </p>
+            </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Agents</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Humans, AI, or pipelines that author content
+              </p>
+            </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Bundles</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Atomic batches of claims &amp; relations
+              </p>
+            </div>
+            <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5">
+              <p className="text-xs font-medium text-gray-800">Artifacts</p>
+              <p className="mt-1 text-[11px] leading-snug text-gray-400">
+                Figures, tables, media attached to claims
+              </p>
             </div>
           </div>
         </div>
