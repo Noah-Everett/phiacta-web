@@ -27,6 +27,83 @@ export default function ArchitecturePage() {
           dashboard are all valid lenses on the same underlying
           store&mdash;none of them is privileged.
         </p>
+
+        {/* Layer stack diagram */}
+        <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-6">
+          <p className="mb-4 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
+            Layered Architecture
+          </p>
+          <div className="mx-auto flex max-w-lg flex-col items-stretch gap-2">
+            {/* Consumers */}
+            <div className="flex gap-2">
+              <div className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs text-gray-500">
+                Web App
+              </div>
+              <div className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs text-gray-500">
+                SDK
+              </div>
+              <div className="flex-1 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs text-gray-500">
+                External Tools
+              </div>
+            </div>
+            <div className="flex justify-center text-gray-300">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v10M4 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            {/* API */}
+            <div className="rounded-md border border-gray-400 bg-white px-4 py-2.5 text-center">
+              <span className="text-sm font-medium text-gray-700">REST API</span>
+              <span className="ml-2 text-xs text-gray-400">/v1/claims, /v1/relations, /v1/search</span>
+            </div>
+            <div className="flex justify-center text-gray-300">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v10M4 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            {/* Layers */}
+            <div className="rounded-md border-2 border-dashed border-gray-400 bg-white p-3">
+              <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
+                Layers (composable, optional)
+              </p>
+              <div className="flex gap-2">
+                <div className="flex-1 rounded bg-gray-100 px-3 py-2 text-center text-xs font-medium text-gray-600">
+                  Graph
+                </div>
+                <div className="flex-1 rounded bg-gray-100 px-3 py-2 text-center text-xs font-medium text-gray-600">
+                  Confidence
+                </div>
+                <div className="flex-1 rounded border border-dashed border-gray-300 bg-white px-3 py-2 text-center text-xs text-gray-400">
+                  Your Layer
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-center text-gray-300">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v10M4 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            {/* Core schema */}
+            <div className="rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-3 text-center">
+              <span className="text-sm font-semibold text-white">Core Schema</span>
+              <span className="ml-2 text-xs text-gray-400">Claims, Relations, Sources, Agents, ...</span>
+            </div>
+            <div className="flex justify-center text-gray-300">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 2v10M4 8l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            {/* PostgreSQL */}
+            <div className="rounded-md border border-gray-400 bg-white px-4 py-2.5 text-center">
+              <span className="text-sm font-medium text-gray-700">PostgreSQL</span>
+              <span className="ml-2 text-xs text-gray-400">+ pgvector, JSONB, TSVECTOR</span>
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="mb-10">
@@ -39,6 +116,118 @@ export default function ArchitecturePage() {
           JSONB field so domain-specific metadata can be stored without schema
           migrations.
         </p>
+
+        {/* Entity relationship diagram */}
+        <div className="mb-8 rounded-lg border border-gray-200 bg-gray-50 p-6">
+          <p className="mb-5 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
+            Entity Relationships
+          </p>
+          <div className="mx-auto max-w-xl">
+            {/* Top row: Sources and Agents */}
+            <div className="mb-2 flex justify-center gap-16">
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Sources
+              </div>
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Agents
+              </div>
+            </div>
+
+            {/* Connectors down */}
+            <div className="mb-2 flex justify-center gap-16">
+              <div className="flex w-28 flex-col items-center">
+                <div className="h-4 w-px bg-gray-300" />
+                <span className="text-[10px] text-gray-400">extracted from</span>
+                <div className="h-4 w-px bg-gray-300" />
+              </div>
+              <div className="flex w-28 flex-col items-center">
+                <div className="h-4 w-px bg-gray-300" />
+                <span className="text-[10px] text-gray-400">created by</span>
+                <div className="h-4 w-px bg-gray-300" />
+              </div>
+            </div>
+
+            {/* Provenance → Claims center */}
+            <div className="mb-2 flex items-center justify-center gap-3">
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Provenance
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="h-px w-4 bg-gray-300" />
+                <svg width="8" height="8" viewBox="0 0 8 8" className="text-gray-300">
+                  <path d="M0 0l8 4-8 4z" fill="currentColor" />
+                </svg>
+              </div>
+              <div className="rounded-md border-2 border-gray-900 bg-gray-900 px-5 py-3 text-center text-sm font-semibold text-white">
+                Claims
+              </div>
+              <div className="flex items-center gap-1">
+                <svg width="8" height="8" viewBox="0 0 8 8" className="rotate-180 text-gray-300">
+                  <path d="M0 0l8 4-8 4z" fill="currentColor" />
+                </svg>
+                <div className="h-px w-4 bg-gray-300" />
+              </div>
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Reviews
+              </div>
+            </div>
+
+            {/* Connectors from Claims down and sides */}
+            <div className="flex justify-center">
+              <div className="flex w-28 items-center justify-end">
+                <div className="h-px w-full bg-transparent" />
+              </div>
+              <div className="flex flex-col items-center px-3">
+                <div className="flex gap-10">
+                  <div className="flex flex-col items-center">
+                    <div className="h-4 w-px bg-gray-300" />
+                    <span className="text-[10px] text-gray-400">scoped by</span>
+                    <div className="h-4 w-px bg-gray-300" />
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="h-4 w-px bg-gray-300" />
+                    <span className="text-[10px] text-gray-400">connected via</span>
+                    <div className="h-4 w-px bg-gray-300" />
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <div className="h-4 w-px bg-gray-300" />
+                    <span className="text-[10px] text-gray-400">grouped in</span>
+                    <div className="h-4 w-px bg-gray-300" />
+                  </div>
+                </div>
+              </div>
+              <div className="flex w-28 items-center">
+                <div className="h-px w-full bg-transparent" />
+              </div>
+            </div>
+
+            {/* Bottom row */}
+            <div className="flex justify-center gap-4">
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Namespaces
+              </div>
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Relations
+              </div>
+              <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                Bundles
+              </div>
+            </div>
+
+            {/* Artifacts at bottom */}
+            <div className="mt-4 flex justify-center">
+              <div className="flex flex-col items-center">
+                <div className="h-4 w-px bg-gray-300" />
+                <span className="text-[10px] text-gray-400">attached to claims</span>
+                <div className="h-3 w-px bg-gray-300" />
+                <div className="w-28 rounded border border-gray-300 bg-white px-3 py-2 text-center text-xs font-medium text-gray-700">
+                  Artifacts
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <ul className="list-inside list-disc space-y-3 text-gray-600 leading-relaxed">
           <li>
             <strong>Claims</strong> &mdash; Atomic, immutable assertions.
@@ -176,7 +365,80 @@ export default function ArchitecturePage() {
             mirroring how science actually works.
           </li>
         </ul>
-        <p className="mt-4 text-gray-600 leading-relaxed">
+
+        {/* Claim versioning diagram */}
+        <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-6">
+          <p className="mb-5 text-center text-xs font-medium uppercase tracking-wide text-gray-400">
+            Immutable Claim Versioning
+          </p>
+          <div className="mx-auto flex max-w-lg items-center justify-center gap-3">
+            {/* v1 */}
+            <div className="flex flex-col items-center">
+              <div className="rounded-md border border-gray-300 bg-white px-4 py-3 text-center">
+                <p className="text-xs font-medium text-gray-500">v1</p>
+                <p className="mt-1 text-[11px] leading-snug text-gray-600">
+                  &ldquo;X correlates<br />with Y&rdquo;
+                </p>
+              </div>
+              <span className="mt-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] text-gray-500">
+                active
+              </span>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex flex-col items-center gap-0.5 pb-5">
+              <span className="text-[10px] text-gray-400">supersedes</span>
+              <div className="flex items-center">
+                <div className="h-px w-6 bg-gray-300" />
+                <svg width="8" height="8" viewBox="0 0 8 8" className="text-gray-300">
+                  <path d="M0 0l8 4-8 4z" fill="currentColor" />
+                </svg>
+              </div>
+            </div>
+
+            {/* v2 */}
+            <div className="flex flex-col items-center">
+              <div className="rounded-md border border-gray-300 bg-white px-4 py-3 text-center">
+                <p className="text-xs font-medium text-gray-500">v2</p>
+                <p className="mt-1 text-[11px] leading-snug text-gray-600">
+                  &ldquo;X causes<br />Y under Z&rdquo;
+                </p>
+              </div>
+              <span className="mt-1.5 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] text-gray-500">
+                active
+              </span>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex flex-col items-center gap-0.5 pb-5">
+              <span className="text-[10px] text-gray-400">supersedes</span>
+              <div className="flex items-center">
+                <div className="h-px w-6 bg-gray-300" />
+                <svg width="8" height="8" viewBox="0 0 8 8" className="text-gray-300">
+                  <path d="M0 0l8 4-8 4z" fill="currentColor" />
+                </svg>
+              </div>
+            </div>
+
+            {/* v3 */}
+            <div className="flex flex-col items-center">
+              <div className="rounded-md border-2 border-gray-900 bg-white px-4 py-3 text-center">
+                <p className="text-xs font-semibold text-gray-900">v3</p>
+                <p className="mt-1 text-[11px] leading-snug text-gray-600">
+                  &ldquo;X causes Y<br />via mechanism M&rdquo;
+                </p>
+              </div>
+              <span className="mt-1.5 rounded bg-gray-900 px-1.5 py-0.5 text-[10px] text-white">
+                latest
+              </span>
+            </div>
+          </div>
+          <p className="mt-4 text-center text-xs text-gray-400">
+            Same lineage_id &mdash; every version is a citable, stable snapshot
+          </p>
+        </div>
+
+        <p className="mt-6 text-gray-600 leading-relaxed">
           The result is a backend that can serve a knowledge graph explorer
           today, a formal verification engine tomorrow, and use cases we
           haven&rsquo;t imagined yet&mdash;all without changing the core schema.
