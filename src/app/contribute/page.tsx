@@ -223,6 +223,7 @@ export default function ContributePage() {
                   value={verificationCode}
                   onChange={(e) => setVerificationCode(e.target.value)}
                   rows={12}
+                  maxLength={512000}
                   placeholder="Paste your verification code here..."
                   className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
                 />

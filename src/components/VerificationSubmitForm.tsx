@@ -41,6 +41,14 @@ export default function VerificationSubmitForm({
 
   if (!agent) return null;
 
+  if (success) {
+    return (
+      <div className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-700">
+        Verification code submitted. The claim will be re-verified shortly.
+      </div>
+    );
+  }
+
   if (!expanded) {
     return (
       <button
@@ -59,9 +67,9 @@ export default function VerificationSubmitForm({
     setSubmitting(true);
     try {
       await submitVerification(claimId, code, runnerType);
-      setSuccess(true);
       setCode("");
       setExpanded(false);
+      setSuccess(true);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to submit verification."
@@ -107,6 +115,7 @@ export default function VerificationSubmitForm({
           onChange={(e) => setCode(e.target.value)}
           rows={12}
           required
+          maxLength={512000}
           placeholder="Paste your verification code here..."
           className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
         />
@@ -115,12 +124,6 @@ export default function VerificationSubmitForm({
       {error && (
         <div className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
           {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="rounded-md bg-green-50 px-3 py-2 text-xs text-green-700">
-          Verification submitted successfully.
         </div>
       )}
 
