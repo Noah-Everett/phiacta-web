@@ -5,13 +5,13 @@ interface VerificationBadgeProps {
 }
 
 const LEVEL_CONFIG: Record<string, { label: string; color: string }> = {
-  l0_unverified: { label: "Unverified", color: "gray" },
-  l1_syntax_checked: { label: "Syntax Checked", color: "yellow" },
-  l2_code_runs: { label: "Code Runs", color: "blue" },
-  l3_output_verified: { label: "Output Verified", color: "green" },
-  l4_statistically_verified: { label: "Statistically Verified", color: "green" },
-  l5_independently_replicated: { label: "Independently Replicated", color: "purple" },
-  l6_formally_proven: { label: "Formally Proven", color: "amber" },
+  L0_UNVERIFIED: { label: "Unverified", color: "gray" },
+  L1_SYNTAX_VERIFIED: { label: "Syntax Verified", color: "yellow" },
+  L2_EXECUTION_VERIFIED: { label: "Execution Verified", color: "blue" },
+  L3_OUTPUT_VERIFIED_DETERMINISTIC: { label: "Output Matched (Deterministic)", color: "green" },
+  L4_OUTPUT_VERIFIED_STATISTICAL: { label: "Output Matched (Statistical)", color: "green" },
+  L5_INDEPENDENTLY_REPLICATED: { label: "Independently Replicated", color: "purple" },
+  L6_FORMALLY_PROVEN: { label: "Formally Proven", color: "amber" },
 };
 
 const COLOR_CLASSES: Record<string, string> = {
