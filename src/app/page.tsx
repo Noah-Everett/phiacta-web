@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
 import { listClaims } from "@/lib/api";
@@ -13,6 +14,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col items-center justify-center px-6 py-24">
+      <Image src="/logo-mark.svg" alt="Phiacta logo" width={96} height={96} className="mb-6" />
       <h1 className="mb-4 text-center text-5xl font-bold tracking-tight text-gray-900">
         Phiacta
       </h1>

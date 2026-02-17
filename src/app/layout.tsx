@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Phiacta",
   description: "The Knowledge Backend — structured semantic claims for science",
+  icons: {
+    icon: "/logo-favicon.svg",
+  },
 };
 
 export default function RootLayout({

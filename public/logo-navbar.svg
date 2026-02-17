@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
+  <!--
+    Phiacta Navbar Logo — compact horizontal layout for site header
+  -->
+
+  <!-- === Compact Mark === -->
+  <g transform="translate(2, 2)">
+    <!-- Phi ellipse -->
+    <ellipse cx="18" cy="18" rx="10" ry="14" stroke="#1e3a5f" stroke-width="3" fill="none"/>
+
+    <!-- Phi vertical stroke -->
+    <line x1="18" y1="1" x2="18" y2="35" stroke="#1e3a5f" stroke-width="3" stroke-linecap="round"/>
+
+    <!-- Graph edges -->
+    <line x1="8" y1="14" x2="2" y2="7" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="28" y1="14" x2="34" y2="7" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Graph leaf nodes -->
+    <circle cx="2" cy="7" r="2.5" fill="#3b82f6"/>
+    <circle cx="34" cy="7" r="2.5" fill="#3b82f6"/>
+
+    <!-- Key phi nodes -->
+    <circle cx="18" cy="1" r="3" fill="#1e3a5f"/>
+    <circle cx="18" cy="35" r="3" fill="#1e3a5f"/>
+  </g>
+
+  <!-- === Text === -->
+  <text x="48" y="28" font-family="'Geist', 'Inter', system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" letter-spacing="-0.5" fill="#1e3a5f">
+    Phiacta
+  </text>
+</svg>
