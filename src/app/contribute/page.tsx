@@ -25,6 +25,9 @@ export default function ContributePage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationCode, setVerificationCode] = useState("");
+  const [verificationRunnerType, setVerificationRunnerType] = useState("python_script");
 
   useEffect(() => {
     listNamespaces()
@@ -38,18 +41,25 @@ export default function ContributePage() {
     setSuccess(false);
     setSubmitting(true);
     try {
+      const payload: Record<string, unknown> = {
+        content,
+        claim_type: claimType,
+        namespace_id: namespaceId,
+      };
+      if (showVerification && verificationCode.trim()) {
+        payload.verification_code = verificationCode;
+        payload.verification_runner_type = verificationRunnerType;
+      }
       await authFetch("/v1/claims", {
         method: "POST",
-        body: JSON.stringify({
-          content,
-          claim_type: claimType,
-          namespace_id: namespaceId,
-        }),
+        body: JSON.stringify(payload),
       });
       setSuccess(true);
       setContent("");
       setNamespaceId("");
       setClaimType("assertion");
+      setVerificationCode("");
+      setShowVerification(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit claim.");
     } finally {
@@ -155,6 +165,70 @@ export default function ContributePage() {
             placeholder="State the claim clearly and precisely..."
             className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
           />
+        </div>
+
+        <div className="rounded-md border border-gray-200 bg-gray-50 p-4">
+          <button
+            type="button"
+            onClick={() => setShowVerification(!showVerification)}
+            className="flex w-full items-center justify-between text-sm font-medium text-gray-700"
+          >
+            Attach Verification Code
+            <svg
+              className={`h-4 w-4 transition-transform ${showVerification ? "rotate-180" : ""}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          {showVerification && (
+            <div className="mt-4 space-y-4">
+              <p className="text-xs text-gray-500">
+                For computational claims, attach the code that produces your results.
+              </p>
+              <div>
+                <label
+                  htmlFor="runner-type"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Runner Type
+                </label>
+                <select
+                  id="runner-type"
+                  value={verificationRunnerType}
+                  onChange={(e) => setVerificationRunnerType(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                >
+                  <option value="python_script">Python Script</option>
+                  <option value="python_notebook">Python Notebook</option>
+                  <option value="r_script">R Script</option>
+                  <option value="r_markdown">R Markdown</option>
+                  <option value="julia">Julia</option>
+                  <option value="lean4">Lean 4</option>
+                  <option value="sympy">SymPy</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="verification-code"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Code
+                </label>
+                <textarea
+                  id="verification-code"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  rows={12}
+                  placeholder="Paste your verification code here..."
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 font-mono text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <button

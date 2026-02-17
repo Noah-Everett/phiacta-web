@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Claim } from "@/lib/types";
+import VerificationBadge from "./VerificationBadge";
 
 interface ClaimCardProps {
   claim: Claim;
@@ -18,6 +19,10 @@ export default function ClaimCard({ claim }: ClaimCardProps) {
         <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
           {claim.namespace_id}
         </span>
+        <VerificationBadge
+          level={claim.verification_level}
+          status={claim.verification_status}
+        />
         <span
           className={`ml-auto rounded px-2 py-0.5 text-xs font-medium ${
             claim.status === "accepted"

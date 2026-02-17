@@ -1,5 +1,8 @@
-import { getClaim, getClaimRelations, getConfidence, getNeighbors } from "@/lib/api";
+import { getClaim, getClaimRelations, getConfidence, getNeighbors, getVerificationStatus } from "@/lib/api";
 import Link from "next/link";
+import VerificationBadge from "@/components/VerificationBadge";
+import VerificationSubmitForm from "@/components/VerificationSubmitForm";
+import type { VerificationStatus } from "@/lib/types";
 
 interface ClaimPageProps {
   params: Promise<{ id: string }>;
@@ -12,6 +15,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
   let relations: { id: string; source_id: string; target_id: string; relation_type: string; strength: number }[] = [];
   let confidence = null;
   let neighbors: { relation_id: string; neighbor_id: string; relation_type: string; direction: string; strength: number; edge_type_info: { category: string } }[] = [];
+  let verification: VerificationStatus | null = null;
 
   try {
     claim = await getClaim(id);
@@ -36,6 +40,10 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
     neighbors = neighborData.neighbors || [];
   } catch {}
 
+  try {
+    verification = await getVerificationStatus(id);
+  } catch {}
+
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
       <div className="mb-6">
@@ -55,6 +63,10 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
           >
             {claim.status}
           </span>
+          <VerificationBadge
+            level={claim.verification_level}
+            status={claim.verification_status}
+          />
           <span className="text-xs text-gray-400">v{claim.version}</span>
         </div>
       </div>
@@ -181,6 +193,85 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
               </dl>
             </section>
           )}
+
+          <section className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900">
+              Verification
+            </h3>
+            {verification?.verification_status === "pending" ? (
+              <div className="flex items-center gap-2 text-sm text-yellow-700">
+                <svg
+                  className="h-4 w-4 animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Verification in progress
+              </div>
+            ) : verification?.verification_level ? (
+              <dl className="space-y-2 text-sm">
+                <div>
+                  <dt className="text-gray-400">Level</dt>
+                  <dd>
+                    <VerificationBadge
+                      level={verification.verification_level}
+                      status={verification.verification_status}
+                      size="lg"
+                    />
+                  </dd>
+                </div>
+                {verification.verification_status === "failed" &&
+                  verification.verification_result?.error_message && (
+                    <div>
+                      <dt className="text-gray-400">Error</dt>
+                      <dd className="text-sm text-red-600">
+                        {String(verification.verification_result.error_message)}
+                      </dd>
+                    </div>
+                  )}
+                {verification.verification_result?.execution_time_seconds != null && (
+                  <div>
+                    <dt className="text-gray-400">Execution Time</dt>
+                    <dd className="text-gray-700">
+                      {Number(verification.verification_result.execution_time_seconds).toFixed(2)}s
+                    </dd>
+                  </div>
+                )}
+                {verification.verification_result?.verified_at && (
+                  <div>
+                    <dt className="text-gray-400">Verified At</dt>
+                    <dd className="text-gray-700">
+                      {new Date(
+                        String(verification.verification_result.verified_at)
+                      ).toLocaleString()}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            ) : (
+              <p className="mb-3 text-sm text-gray-400">Not yet verified.</p>
+            )}
+            {(!verification?.verification_status ||
+              verification.verification_status === "failed") && (
+              <div className="mt-3">
+                <VerificationSubmitForm claimId={id} />
+              </div>
+            )}
+          </section>
         </div>
       </div>
     </div>

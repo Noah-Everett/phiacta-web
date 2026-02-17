@@ -14,6 +14,8 @@ export interface Claim {
   attrs: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+  verification_level?: string | null;
+  verification_status?: string | null;
 }
 
 export interface Relation {
@@ -98,4 +100,11 @@ export interface AuthResponse {
   access_token: string;
   token_type: string;
   agent: Agent;
+}
+
+export interface VerificationStatus {
+  claim_id: string;
+  verification_level: string | null;
+  verification_status: string | null;
+  verification_result: Record<string, unknown> | null;
 }
