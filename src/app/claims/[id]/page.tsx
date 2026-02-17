@@ -235,23 +235,23 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                   </dd>
                 </div>
                 {verification.verification_status === "failed" &&
-                  verification.verification_result?.error_message && (
+                  verification.verification_result?.error_message ? (
                     <div>
                       <dt className="text-gray-400">Error</dt>
                       <dd className="text-sm text-red-600">
                         {String(verification.verification_result.error_message)}
                       </dd>
                     </div>
-                  )}
-                {verification.verification_result?.execution_time_seconds != null && (
+                  ) : null}
+                {verification.verification_result?.execution_time_seconds != null ? (
                   <div>
                     <dt className="text-gray-400">Execution Time</dt>
                     <dd className="text-gray-700">
                       {Number(verification.verification_result.execution_time_seconds).toFixed(2)}s
                     </dd>
                   </div>
-                )}
-                {verification.verification_result?.verified_at && (
+                ) : null}
+                {verification.verification_result?.verified_at ? (
                   <div>
                     <dt className="text-gray-400">Verified At</dt>
                     <dd className="text-gray-700">
@@ -260,7 +260,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                       ).toLocaleString()}
                     </dd>
                   </div>
-                )}
+                ) : null}
               </dl>
             ) : (
               <p className="mb-3 text-sm text-gray-400">Not yet verified.</p>
