@@ -4,9 +4,10 @@ import VerificationBadge from "./VerificationBadge";
 
 interface ClaimCardProps {
   claim: Claim;
+  namespaceName?: string;
 }
 
-export default function ClaimCard({ claim }: ClaimCardProps) {
+export default function ClaimCard({ claim, namespaceName }: ClaimCardProps) {
   return (
     <Link
       href={`/claims/${claim.id}`}
@@ -17,7 +18,7 @@ export default function ClaimCard({ claim }: ClaimCardProps) {
           {claim.claim_type}
         </span>
         <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
-          {claim.namespace_id}
+          {namespaceName || claim.namespace_id.slice(0, 8)}
         </span>
         <VerificationBadge
           level={claim.verification_level}

@@ -108,3 +108,14 @@ export interface VerificationStatus {
   verification_status: string | null;
   verification_result: Record<string, unknown> | null;
 }
+
+export interface Source {
+  id: string;
+  source_type: string;
+  title: string | null;
+  external_ref: string | null;
+  content_hash: string | null;
+  submitted_by: string;
+  submitted_at: string;
+  attrs: Record<string, unknown>;
+}

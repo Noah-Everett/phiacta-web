@@ -8,6 +8,7 @@ import type {
   Namespace,
   Agent,
   AuthResponse,
+  Source,
   VerificationStatus,
 } from "./types";
 
@@ -170,10 +171,23 @@ export async function listNamespaces(): Promise<PaginatedResponse<Namespace>> {
 
 export async function listClaims(
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  filters?: { namespace_id?: string; claim_type?: string }
 ): Promise<PaginatedResponse<Claim>> {
-  return request<PaginatedResponse<Claim>>(
-    `/v1/claims?limit=${limit}&offset=${offset}`
+  const params = new URLSearchParams();
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  if (filters?.namespace_id) params.set("namespace_id", filters.namespace_id);
+  if (filters?.claim_type) params.set("claim_type", filters.claim_type);
+  return request<PaginatedResponse<Claim>>(`/v1/claims?${params.toString()}`);
+}
+
+export async function listSources(
+  limit: number = 50,
+  offset: number = 0
+): Promise<PaginatedResponse<Source>> {
+  return request<PaginatedResponse<Source>>(
+    `/v1/sources?limit=${limit}&offset=${offset}`
   );
 }
 
