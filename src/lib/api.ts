@@ -7,9 +7,11 @@ import type {
   Neighbor,
   Namespace,
   Agent,
+  PublicAgent,
   AuthResponse,
   Source,
   VerificationStatus,
+  Review,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -233,4 +235,28 @@ export async function submitVerification(
     method: "POST",
     body: JSON.stringify({ code_content: codeContent, runner_type: runnerType }),
   });
+}
+
+export async function getAgent(id: string): Promise<PublicAgent> {
+  return request<PublicAgent>(`/v1/agents/${id}`);
+}
+
+export async function getClaimReviews(claimId: string): Promise<Review[]> {
+  return request<Review[]>(`/v1/claims/${claimId}/reviews`);
+}
+
+export async function submitReview(
+  claimId: string,
+  verdict: string,
+  confidence: number,
+  comment: string | null
+): Promise<Review> {
+  return authFetch<Review>(`/v1/claims/${claimId}/reviews`, {
+    method: "POST",
+    body: JSON.stringify({ verdict, confidence, comment }),
+  });
+}
+
+export async function getClaimVersions(claimId: string): Promise<Claim[]> {
+  return request<Claim[]>(`/v1/claims/${claimId}/versions`);
 }

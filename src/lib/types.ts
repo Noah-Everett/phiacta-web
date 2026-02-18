@@ -96,6 +96,32 @@ export interface Agent {
   created_at: string;
 }
 
+export interface PublicAgent {
+  id: string;
+  name: string;
+  agent_type: string;
+  trust_score: number;
+  created_at: string;
+}
+
+export interface ReviewerSummary {
+  id: string;
+  name: string;
+  agent_type: string;
+  trust_score: number;
+}
+
+export interface Review {
+  id: string;
+  claim_id: string;
+  verdict: string;
+  confidence: number;
+  comment: string | null;
+  created_at: string;
+  updated_at: string;
+  reviewer: ReviewerSummary;
+}
+
 export interface AuthResponse {
   access_token: string;
   token_type: string;
