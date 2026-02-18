@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
+import MarkdownContent from "@/components/MarkdownContent";
 import { listClaims } from "@/lib/api";
 
 export default async function Home() {
@@ -54,7 +55,7 @@ export default async function Home() {
                     {claim.status}
                   </span>
                 </div>
-                <p className="text-sm leading-relaxed text-gray-800">{claim.content}</p>
+                <MarkdownContent content={claim.content} compact className="text-sm leading-relaxed text-gray-800" />
                 <p className="mt-2 text-xs text-gray-400">
                   {new Date(claim.created_at).toLocaleDateString()}
                 </p>

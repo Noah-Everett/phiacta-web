@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Claim } from "@/lib/types";
 import VerificationBadge from "./VerificationBadge";
+import MarkdownContent from "./MarkdownContent";
 
 interface ClaimCardProps {
   claim: Claim;
@@ -36,7 +37,7 @@ export default function ClaimCard({ claim, namespaceName }: ClaimCardProps) {
           {claim.status}
         </span>
       </div>
-      <p className="text-sm leading-relaxed text-gray-800">{claim.content}</p>
+      <MarkdownContent content={claim.content} compact className="text-sm leading-relaxed text-gray-800" />
       <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
         <span>{new Date(claim.created_at).toLocaleDateString()}</span>
         <span>v{claim.version}</span>

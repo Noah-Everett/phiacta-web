@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
+import MarkdownContent from "@/components/MarkdownContent";
 import type { SearchResultItem } from "@/lib/types";
 
 function SearchContent() {
@@ -82,9 +83,7 @@ function SearchContent() {
                       {r.claim.status}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed text-gray-800">
-                    {r.claim.content}
-                  </p>
+                  <MarkdownContent content={r.claim.content} compact className="text-sm leading-relaxed text-gray-800" />
                   <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
                     <span>
                       {new Date(r.claim.created_at).toLocaleDateString()}

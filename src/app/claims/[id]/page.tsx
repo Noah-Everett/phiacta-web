@@ -12,6 +12,7 @@ import VerificationBadge from "@/components/VerificationBadge";
 import VerificationSubmitForm from "@/components/VerificationSubmitForm";
 import ReviewSection from "@/components/ReviewSection";
 import VersionHistory from "@/components/VersionHistory";
+import MarkdownContent from "@/components/MarkdownContent";
 import type { VerificationStatus, PublicAgent, Claim, Relation, Neighbor, ConfidenceStatus } from "@/lib/types";
 
 interface ClaimPageProps {
@@ -112,7 +113,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
           {/* Content */}
           <section className="rounded-lg border border-gray-200 bg-white p-6">
             <h2 className="mb-3 text-lg font-semibold text-gray-900">Content</h2>
-            <p className="text-base leading-relaxed text-gray-800">{claim.content}</p>
+            <MarkdownContent content={claim.content} className="text-base leading-relaxed text-gray-800" />
             {claim.formal_content && (
               <pre className="mt-4 rounded bg-gray-50 p-3 text-sm text-gray-600">
                 {claim.formal_content}
