@@ -274,6 +274,22 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
               </div>
             )}
           </section>
+
+          {verification?.verification_code && (
+            <section className="mb-6 rounded-lg border border-gray-200 bg-white p-5">
+              <h3 className="mb-3 text-sm font-semibold text-gray-900">
+                Proof Code
+                {verification.verification_runner_type && (
+                  <span className="ml-2 rounded bg-gray-100 px-2 py-0.5 text-xs font-normal text-gray-500">
+                    {verification.verification_runner_type}
+                  </span>
+                )}
+              </h3>
+              <pre className="overflow-x-auto rounded bg-gray-50 p-3 text-xs leading-relaxed text-gray-700">
+                <code>{verification.verification_code}</code>
+              </pre>
+            </section>
+          )}
         </div>
       </div>
     </div>

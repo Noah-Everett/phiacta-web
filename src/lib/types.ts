@@ -107,6 +107,8 @@ export interface VerificationStatus {
   verification_level: string | null;
   verification_status: string | null;
   verification_result: Record<string, unknown> | null;
+  verification_code: string | null;
+  verification_runner_type: string | null;
 }
 
 export interface Source {
