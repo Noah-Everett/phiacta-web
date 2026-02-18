@@ -128,9 +128,11 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                     >
                       {n.neighbor_id}
                     </Link>
-                    <span className="text-xs text-gray-300">
-                      ({n.edge_type_info.category})
-                    </span>
+                    {n.edge_type_info?.category && (
+                      <span className="text-xs text-gray-300">
+                        ({n.edge_type_info.category})
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
