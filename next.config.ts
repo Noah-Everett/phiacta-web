@@ -11,10 +11,9 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+              "script-src 'self' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}`,
-              "font-src 'self' https://cdn.jsdelivr.net",
               "frame-ancestors 'none'",
             ].join("; "),
           },

@@ -1,8 +1,9 @@
 "use client";
 
-import ReactMarkdown, { type Components } from "react-markdown";
+import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
-import { MathJax } from "better-react-mathjax";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface MarkdownContentProps {
   content: string;
@@ -26,56 +27,21 @@ function truncatePreservingMath(text: string, max: number): string {
   return truncated.trimEnd() + "...";
 }
 
-function isMathInline(className?: string) {
-  return className?.includes("math-inline");
-}
-
-function isMathDisplay(className?: string) {
-  return className?.includes("math-display");
-}
-
-const fullComponents: Components = {
-  code({ className, children }) {
-    if (isMathInline(className)) {
-      return <MathJax inline>{`$${String(children)}$`}</MathJax>;
-    }
-    if (isMathDisplay(className)) {
-      return <MathJax>{`$$${String(children)}$$`}</MathJax>;
-    }
-    return <code className={className}>{children}</code>;
-  },
-  pre({ children }) {
-    return <>{children}</>;
-  },
-};
-
-const compactComponents: Components = {
-  code({ className, children }) {
-    if (isMathInline(className)) {
-      return <MathJax inline>{`$${String(children)}$`}</MathJax>;
-    }
-    if (isMathDisplay(className)) {
-      return <MathJax inline>{`$${String(children)}$`}</MathJax>;
-    }
-    return <code className={className}>{children}</code>;
-  },
-  pre({ children }) {
-    return <>{children}</>;
-  },
+const compactComponents = {
   // Prevent block elements in compact mode
-  h1: ({ children }) => <span>{children} </span>,
-  h2: ({ children }) => <span>{children} </span>,
-  h3: ({ children }) => <span>{children} </span>,
-  h4: ({ children }) => <span>{children} </span>,
-  h5: ({ children }) => <span>{children} </span>,
-  h6: ({ children }) => <span>{children} </span>,
-  p: ({ children }) => <span>{children} </span>,
-  blockquote: ({ children }) => <span>{children} </span>,
-  ul: ({ children }) => <span>{children} </span>,
-  ol: ({ children }) => <span>{children} </span>,
-  li: ({ children }) => <span>{children} </span>,
+  h1: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  h2: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  h3: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  h4: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  h5: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  h6: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  p: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  blockquote: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  ul: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  ol: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
+  li: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
   // Convert links to spans to avoid nested <a> inside <Link>
-  a: ({ children }) => (
+  a: ({ children }: { children?: React.ReactNode }) => (
     <span className="text-blue-600 underline">{children}</span>
   ),
 };
@@ -91,6 +57,7 @@ export default function MarkdownContent({
       <div className={className}>
         <ReactMarkdown
           remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
           components={compactComponents}
         >
           {truncated}
@@ -103,7 +70,7 @@ export default function MarkdownContent({
     <div className={`prose prose-sm prose-gray max-w-none ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
-        components={fullComponents}
+        rehypePlugins={[rehypeKatex]}
       >
         {content}
       </ReactMarkdown>
