@@ -26,12 +26,20 @@ function truncatePreservingMath(text: string, max: number): string {
   return truncated.trimEnd() + "...";
 }
 
+function isMathInline(className?: string) {
+  return className?.includes("math-inline");
+}
+
+function isMathDisplay(className?: string) {
+  return className?.includes("math-display");
+}
+
 const fullComponents: Components = {
   code({ className, children }) {
-    if (className === "language-math" || className === "math-inline") {
+    if (isMathInline(className)) {
       return <MathJax inline>{`$${String(children)}$`}</MathJax>;
     }
-    if (className === "math-display") {
+    if (isMathDisplay(className)) {
       return <MathJax>{`$$${String(children)}$$`}</MathJax>;
     }
     return <code className={className}>{children}</code>;
@@ -43,10 +51,10 @@ const fullComponents: Components = {
 
 const compactComponents: Components = {
   code({ className, children }) {
-    if (className === "language-math" || className === "math-inline") {
+    if (isMathInline(className)) {
       return <MathJax inline>{`$${String(children)}$`}</MathJax>;
     }
-    if (className === "math-display") {
+    if (isMathDisplay(className)) {
       return <MathJax inline>{`$${String(children)}$`}</MathJax>;
     }
     return <code className={className}>{children}</code>;
