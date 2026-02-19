@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    Concept D: "Organic Phi"
+    The bowl is an irregular, asymmetric shape (wider on left, bottom shifted right).
+    Feels hand-crafted, not machine-perfect. Graph branches at natural points.
+  -->
+
+  <!-- Asymmetric bowl (wider on left, bottom curves right) -->
+  <path d="M 60,20
+    C 32,18 20,48 22,68
+    C 24,92 48,106 64,104
+    C 82,102 98,84 96,60
+    C 94,36 80,20 60,20 Z"
+    stroke="#1e293b" stroke-width="5" fill="none" stroke-linejoin="round"/>
+
+  <!-- Vertical bar (straight, providing contrast to the organic bowl) -->
+  <line x1="60" y1="6" x2="60" y2="114" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Graph edges -->
+  <line x1="22" y1="68" x2="6" y2="78" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="96" y1="60" x2="114" y2="52" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="64" y1="104" x2="78" y2="116" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Nodes on phi -->
+  <circle cx="60" cy="6" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="114" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="20" r="4" fill="#1e293b"/>
+  <circle cx="22" cy="68" r="4.5" fill="#1e293b"/>
+  <circle cx="96" cy="60" r="4.5" fill="#1e293b"/>
+  <circle cx="64" cy="104" r="4" fill="#1e293b"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="6" cy="78" r="4" fill="#3b82f6"/>
+  <circle cx="114" cy="52" r="4" fill="#3b82f6"/>
+  <circle cx="78" cy="116" r="4" fill="#3b82f6"/>
+</svg>

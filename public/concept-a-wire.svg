@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    Concept A: "Tilted Phi Network"
+    The whole phi is rotated ~15° to break the eye symmetry.
+    3 asymmetric graph branches (not 4) for visual interest.
+  -->
+
+  <!-- Tilted phi -->
+  <g transform="rotate(-15, 60, 60)">
+    <ellipse cx="60" cy="60" rx="26" ry="37" stroke="#1e293b" stroke-width="5" fill="none"/>
+    <line x1="60" y1="9" x2="60" y2="111" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Graph edges (asymmetric — 3 branches, different lengths) -->
+  <line x1="35" y1="67" x2="12" y2="84" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="85" y1="53" x2="108" y2="38" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="73" y1="109" x2="94" y2="106" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Nodes on phi (at rotated intersection points) -->
+  <circle cx="47" cy="11" r="5" fill="#1e293b"/>
+  <circle cx="73" cy="109" r="5" fill="#1e293b"/>
+  <circle cx="35" cy="67" r="4.5" fill="#1e293b"/>
+  <circle cx="85" cy="53" r="4.5" fill="#1e293b"/>
+
+  <!-- Graph leaf nodes -->
+  <circle cx="12" cy="84" r="4.5" fill="#3b82f6"/>
+  <circle cx="108" cy="38" r="4.5" fill="#3b82f6"/>
+  <circle cx="94" cy="106" r="4.5" fill="#3b82f6"/>
+</svg>

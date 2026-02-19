@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    H1: "Right Chain"
+    Circular φ with 120° gap on the right. 4 graph nodes trace the missing
+    arc in a clean chain, completing the circle. Outward branches from chain.
+  -->
+
+  <!-- 240° arc: from upper-right counterclockwise through top, left, bottom to lower-right -->
+  <path d="M 72,39 A 24,24 0 1 0 72,81" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Chain nodes completing the right side of the circle -->
+  <line x1="72" y1="39" x2="79" y2="46" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="79" y1="46" x2="84" y2="55" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="55" x2="84" y2="65" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="65" x2="79" y2="74" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="79" y1="74" x2="72" y2="81" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-links within the chain -->
+  <line x1="79" y1="46" x2="84" y2="65" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+  <line x1="84" y1="55" x2="79" y2="74" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Outward branch from chain apex -->
+  <line x1="84" y1="55" x2="104" y2="48" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="84" y1="65" x2="106" y2="72" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Phi nodes (arc endpoints + bar) -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="72" cy="39" r="4.5" fill="#1e293b"/>
+  <circle cx="72" cy="81" r="4.5" fill="#1e293b"/>
+
+  <!-- Chain nodes -->
+  <circle cx="79" cy="46" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="55" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="65" r="4" fill="#3b82f6"/>
+  <circle cx="79" cy="74" r="4" fill="#3b82f6"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="104" cy="48" r="3.5" fill="#3b82f6"/>
+  <circle cx="106" cy="72" r="3.5" fill="#3b82f6"/>
+</svg>

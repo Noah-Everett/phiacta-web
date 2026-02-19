@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    F5: "Bridge Break"
+    The φ curve has a break at its apex (leftmost point). The upper and
+    lower halves of the curve are connected by graph nodes bridging the gap.
+    The curve "dissolves" where it's furthest from the bar.
+  -->
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Upper half of φ curve (bar down to left, stops at apex) -->
+  <path d="M 60,26 C 16,26 14,50 20,58" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Lower half of φ curve (resumes from below apex, curves back to bar) -->
+  <path d="M 24,70 C 14,80 16,96 60,96" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Graph nodes bridging the gap at the apex -->
+  <line x1="20" y1="58" x2="10" y2="62" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="10" y1="62" x2="24" y2="70" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Branch extending outward from bridge -->
+  <line x1="10" y1="62" x2="4" y2="48" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="10" y1="62" x2="2" y2="74" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Branches from bar junctions -->
+  <line x1="60" y1="26" x2="80" y2="14" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="60" y1="96" x2="82" y2="106" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="26" r="4.5" fill="#1e293b"/>
+  <circle cx="60" cy="96" r="4.5" fill="#1e293b"/>
+  <circle cx="20" cy="58" r="4.5" fill="#1e293b"/>
+  <circle cx="24" cy="70" r="4.5" fill="#1e293b"/>
+
+  <!-- Bridge node -->
+  <circle cx="10" cy="62" r="4.5" fill="#3b82f6"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="4" cy="48" r="3.5" fill="#3b82f6"/>
+  <circle cx="2" cy="74" r="3.5" fill="#3b82f6"/>
+  <circle cx="80" cy="14" r="4" fill="#3b82f6"/>
+  <circle cx="82" cy="106" r="4" fill="#3b82f6"/>
+</svg>

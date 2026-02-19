@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    I4: "Constellation"
+    Oversized, prominent nodes with thin connecting lines. The nodes ARE
+    the design — the arc and graph portions have equal visual weight.
+    Starfield/constellation aesthetic.
+  -->
+
+  <!-- Thin vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Thin 240° arc (gap on the right, ~120°) -->
+  <path d="M 72,39 A 24,24 0 1 0 72,81" stroke="#1e293b" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+  <!-- Graph edges completing the right gap (thin) -->
+  <line x1="72" y1="39" x2="82" y2="46" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="82" y1="46" x2="86" y2="60" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="86" y1="60" x2="82" y2="74" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="82" y1="74" x2="72" y2="81" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Cross-links -->
+  <line x1="72" y1="39" x2="86" y2="60" stroke="#3b82f6" stroke-width="1.2" opacity="0.25"/>
+  <line x1="82" y1="46" x2="82" y2="74" stroke="#3b82f6" stroke-width="1.2" opacity="0.25"/>
+  <line x1="86" y1="60" x2="72" y2="81" stroke="#3b82f6" stroke-width="1.2" opacity="0.25"/>
+
+  <!-- Outward branches (thin) -->
+  <line x1="82" y1="46" x2="102" y2="34" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="86" y1="60" x2="110" y2="58" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+  <line x1="36" y1="60" x2="14" y2="54" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- BIG nodes — the stars of the show -->
+  <!-- Bar endpoints -->
+  <circle cx="60" cy="8" r="7" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="7" fill="#1e293b"/>
+
+  <!-- Arc cardinal points -->
+  <circle cx="60" cy="36" r="6.5" fill="#1e293b"/>
+  <circle cx="36" cy="60" r="6.5" fill="#1e293b"/>
+  <circle cx="60" cy="84" r="6.5" fill="#1e293b"/>
+
+  <!-- Arc-to-graph transition points -->
+  <circle cx="72" cy="39" r="6" fill="#1e293b"/>
+  <circle cx="72" cy="81" r="6" fill="#1e293b"/>
+
+  <!-- Graph nodes (big, blue) -->
+  <circle cx="82" cy="46" r="5.5" fill="#3b82f6"/>
+  <circle cx="86" cy="60" r="5.5" fill="#3b82f6"/>
+  <circle cx="82" cy="74" r="5.5" fill="#3b82f6"/>
+
+  <!-- Outer nodes -->
+  <circle cx="102" cy="34" r="4.5" fill="#3b82f6"/>
+  <circle cx="110" cy="58" r="4.5" fill="#3b82f6"/>
+  <circle cx="14" cy="54" r="4.5" fill="#3b82f6"/>
+</svg>

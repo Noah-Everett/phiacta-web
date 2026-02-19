@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    H5: "Half Graph"
+    Only ~210° of the circle is drawn. The remaining ~150° (right side)
+    is entirely graph — a dense web of nodes and edges completing the shape.
+    The most graph-heavy version: half curve, half network.
+  -->
+
+  <!-- 210° arc: left + top + partial bottom -->
+  <path d="M 66,37 A 24,24 0 1 0 66,83" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Dense network completing the right ~150° -->
+  <!-- Chain tracing the arc -->
+  <line x1="66" y1="37" x2="74" y2="40" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="74" y1="40" x2="82" y2="48" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="82" y1="48" x2="84" y2="60" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="60" x2="82" y2="72" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="82" y1="72" x2="74" y2="80" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="74" y1="80" x2="66" y2="83" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-links (dense web) -->
+  <line x1="74" y1="40" x2="84" y2="60" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+  <line x1="82" y1="48" x2="82" y2="72" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+  <line x1="84" y1="60" x2="74" y2="80" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+  <line x1="74" y1="40" x2="82" y2="72" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+  <line x1="82" y1="48" x2="74" y2="80" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+
+  <!-- Outward branches -->
+  <line x1="82" y1="48" x2="100" y2="38" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="84" y1="60" x2="108" y2="60" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="82" y1="72" x2="100" y2="82" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Outer cross-link -->
+  <line x1="100" y1="38" x2="108" y2="60" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+  <line x1="108" y1="60" x2="100" y2="82" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="66" cy="37" r="4.5" fill="#1e293b"/>
+  <circle cx="66" cy="83" r="4.5" fill="#1e293b"/>
+
+  <!-- Network nodes -->
+  <circle cx="74" cy="40" r="4" fill="#3b82f6"/>
+  <circle cx="82" cy="48" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="60" r="4" fill="#3b82f6"/>
+  <circle cx="82" cy="72" r="4" fill="#3b82f6"/>
+  <circle cx="74" cy="80" r="4" fill="#3b82f6"/>
+
+  <!-- Outer leaf nodes -->
+  <circle cx="100" cy="38" r="3.5" fill="#3b82f6"/>
+  <circle cx="108" cy="60" r="3.5" fill="#3b82f6"/>
+  <circle cx="100" cy="82" r="3.5" fill="#3b82f6"/>
+</svg>

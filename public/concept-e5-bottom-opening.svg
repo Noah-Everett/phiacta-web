@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    E5: "Bottom Opening"
+    Gap at the bottom (~90°). The vertical bar passes through the open gap,
+    visible between the arc endpoints. Branches extend downward.
+  -->
+
+  <!-- ~270° arc: from lower-right, counterclockwise through right, top, left, to lower-left -->
+  <path d="M 78,86 A 26,36 0 1 0 42,86" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Graph branches from gap endpoints (extending downward/outward) -->
+  <line x1="78" y1="86" x2="98" y2="102" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="42" y1="86" x2="22" y2="102" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Branch from top -->
+  <line x1="60" y1="24" x2="44" y2="10" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Bridging edge under the gap -->
+  <line x1="98" y1="102" x2="22" y2="102" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="78" cy="86" r="4.5" fill="#1e293b"/>
+  <circle cx="42" cy="86" r="4.5" fill="#1e293b"/>
+  <circle cx="60" cy="24" r="4" fill="#1e293b"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="98" cy="102" r="4" fill="#3b82f6"/>
+  <circle cx="22" cy="102" r="4" fill="#3b82f6"/>
+  <circle cx="44" cy="10" r="4" fill="#3b82f6"/>
+</svg>

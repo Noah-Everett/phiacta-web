@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    E4: "Whisper"
+    Very small, subtle gap (~40°) in the upper-left. Almost a full ellipse.
+    Minimal, refined. Just two elegant branches from the break points.
+  -->
+
+  <!-- ~320° arc: small gap between upper-left points -->
+  <!-- Gap from ~(47,29) to ~(38,42) — about 40° missing -->
+  <path d="M 47,29 A 26,36 0 1 1 38,42" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Single elegant branch from each gap endpoint -->
+  <line x1="47" y1="29" x2="34" y2="14" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="38" y1="42" x2="18" y2="36" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="47" cy="29" r="4.5" fill="#1e293b"/>
+  <circle cx="38" cy="42" r="4.5" fill="#1e293b"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="34" cy="14" r="4" fill="#3b82f6"/>
+  <circle cx="18" cy="36" r="4" fill="#3b82f6"/>
+</svg>

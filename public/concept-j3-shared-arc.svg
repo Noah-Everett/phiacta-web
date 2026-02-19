@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    J3: "Shared Arc"
+    The left side of the bowl is a smooth arc at the SMALL ϕ radius.
+    Graph nodes transition outward from the small arc endpoints,
+    tracing the right side at the LARGE φ radius. The arc literally
+    grows from ϕ to φ through the graph.
+  -->
+
+  <!-- Small-radius smooth arc (left side, ϕ scale, r≈14) -->
+  <!-- This is the left half of a small circle centered at ~(52, 58) -->
+  <path d="M 52,44 A 14,14 0 0 0 52,72" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="58" y1="8" x2="58" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Graph: transitioning from small ϕ arc to large φ arc on the right -->
+  <!-- Top: from small arc top (52,44) outward to large circle top (60,36) -->
+  <line x1="52" y1="44" x2="60" y2="36" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Tracing the right side at large φ radius (r≈24 from center ~60,60) -->
+  <line x1="60" y1="36" x2="76" y2="40" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="76" y1="40" x2="86" y2="52" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="86" y1="52" x2="86" y2="68" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="86" y1="68" x2="76" y2="80" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="76" y1="80" x2="60" y2="84" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Bottom: from large circle bottom (60,84) back to small arc bottom (52,72) -->
+  <line x1="60" y1="84" x2="52" y2="72" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-links -->
+  <line x1="76" y1="40" x2="86" y2="68" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+  <line x1="86" y1="52" x2="76" y2="80" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+
+  <!-- Bar endpoint nodes -->
+  <circle cx="58" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="58" cy="112" r="5" fill="#1e293b"/>
+
+  <!-- Small arc endpoint nodes -->
+  <circle cx="52" cy="44" r="4.5" fill="#1e293b"/>
+  <circle cx="52" cy="72" r="4.5" fill="#1e293b"/>
+
+  <!-- Large arc graph nodes -->
+  <circle cx="60" cy="36" r="4" fill="#3b82f6"/>
+  <circle cx="76" cy="40" r="4" fill="#3b82f6"/>
+  <circle cx="86" cy="52" r="4" fill="#3b82f6"/>
+  <circle cx="86" cy="68" r="4" fill="#3b82f6"/>
+  <circle cx="76" cy="80" r="4" fill="#3b82f6"/>
+  <circle cx="60" cy="84" r="4" fill="#3b82f6"/>
+</svg>

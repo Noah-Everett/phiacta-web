@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    I7: "Gradient Web"
+    The arc uses a gradient (blue→violet). The graph portion uses matching
+    gradient colors. The whole thing feels modern and energetic.
+    Large gap (~150°) with a rich, web-like network.
+  -->
+
+  <defs>
+    <linearGradient id="arc-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Gradient vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="url(#arc-grad)" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Gradient 210° arc -->
+  <path d="M 66,37 A 24,24 0 1 0 66,83" stroke="url(#arc-grad)" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Rich network completing the right 150° -->
+  <line x1="66" y1="37" x2="76" y2="40" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="76" y1="40" x2="84" y2="50" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="50" x2="86" y2="62" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="86" y1="62" x2="82" y2="74" stroke="#818cf8" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="82" y1="74" x2="74" y2="80" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="74" y1="80" x2="66" y2="83" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Internal cross-links -->
+  <line x1="76" y1="40" x2="86" y2="62" stroke="#818cf8" stroke-width="1.5" opacity="0.3"/>
+  <line x1="84" y1="50" x2="82" y2="74" stroke="#818cf8" stroke-width="1.5" opacity="0.3"/>
+  <line x1="86" y1="62" x2="74" y2="80" stroke="#a78bfa" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Outward branches -->
+  <line x1="84" y1="50" x2="104" y2="42" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
+  <line x1="86" y1="62" x2="110" y2="62" stroke="#818cf8" stroke-width="2" stroke-linecap="round"/>
+  <line x1="82" y1="74" x2="102" y2="84" stroke="#a78bfa" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Outer cross-links -->
+  <line x1="104" y1="42" x2="110" y2="62" stroke="#818cf8" stroke-width="1.2" opacity="0.25"/>
+  <line x1="110" y1="62" x2="102" y2="84" stroke="#a78bfa" stroke-width="1.2" opacity="0.25"/>
+
+  <!-- Network nodes -->
+  <circle cx="76" cy="40" r="4" fill="#6366f1"/>
+  <circle cx="84" cy="50" r="4" fill="#6366f1"/>
+  <circle cx="86" cy="62" r="4" fill="#818cf8"/>
+  <circle cx="82" cy="74" r="4" fill="#a78bfa"/>
+  <circle cx="74" cy="80" r="4" fill="#a78bfa"/>
+  <circle cx="104" cy="42" r="3.5" fill="#6366f1"/>
+  <circle cx="110" cy="62" r="3.5" fill="#818cf8"/>
+  <circle cx="102" cy="84" r="3.5" fill="#a78bfa"/>
+
+  <!-- Arc endpoint nodes -->
+  <circle cx="66" cy="37" r="4.5" fill="#3b82f6"/>
+  <circle cx="66" cy="83" r="4.5" fill="#8b5cf6"/>
+</svg>

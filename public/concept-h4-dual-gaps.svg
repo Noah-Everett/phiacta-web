@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    H4: "Dual Gaps"
+    Circular φ with two 50° gaps on diagonal corners (upper-left + lower-right).
+    Each gap bridged by 2 graph nodes. The two networks mirror each other.
+  -->
+
+  <!-- Arc 1: from upper-left gap end, clockwise through top, right to lower-right gap start -->
+  <!-- θ=245° to θ=35°, going CW through 270°, 0° = ~150° -->
+  <path d="M 50,38 A 24,24 0 0 1 80,74" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Arc 2: from lower-right gap end, clockwise through bottom, left to upper-left gap start -->
+  <!-- θ=65° to θ=215°, going CW through 90°, 180° = ~150° -->
+  <path d="M 70,82 A 24,24 0 0 1 40,46" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Upper-left gap network (completing arc from (40,46) to (50,38)) -->
+  <line x1="40" y1="46" x2="38" y2="38" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="38" y1="38" x2="50" y2="38" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Lower-right gap network (completing arc from (80,74) to (70,82)) -->
+  <line x1="80" y1="74" x2="82" y2="82" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="82" y1="82" x2="70" y2="82" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-links within each gap -->
+  <line x1="40" y1="46" x2="50" y2="38" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+  <line x1="80" y1="74" x2="70" y2="82" stroke="#3b82f6" stroke-width="1.5" opacity="0.3"/>
+
+  <!-- Outward branches -->
+  <line x1="38" y1="38" x2="22" y2="24" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="82" y1="82" x2="98" y2="96" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="50" cy="38" r="4.5" fill="#1e293b"/>
+  <circle cx="40" cy="46" r="4.5" fill="#1e293b"/>
+  <circle cx="80" cy="74" r="4.5" fill="#1e293b"/>
+  <circle cx="70" cy="82" r="4.5" fill="#1e293b"/>
+
+  <!-- Gap network nodes -->
+  <circle cx="38" cy="38" r="4" fill="#3b82f6"/>
+  <circle cx="82" cy="82" r="4" fill="#3b82f6"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="22" cy="24" r="3.5" fill="#3b82f6"/>
+  <circle cx="98" cy="96" r="3.5" fill="#3b82f6"/>
+</svg>

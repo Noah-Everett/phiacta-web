@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    J1: "Loop to Bowl"
+    A small tilted ϕ loop (smooth) sits inside the φ space.
+    Graph nodes expand outward from it, tracing the larger φ circle
+    on the right side. The graph literally scales ϕ up into φ.
+  -->
+
+  <!-- Small ϕ loop (tilted, smooth, complete) -->
+  <g transform="rotate(-10, 50, 58)">
+    <circle cx="50" cy="58" r="12" stroke="#1e293b" stroke-width="4.5" fill="none"/>
+  </g>
+
+  <!-- Slightly curved stem (ϕ-like, not perfectly vertical) -->
+  <path d="M 55,8 Q 50,58 57,112" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- "Spoke" edges from small loop outward to large φ circle positions -->
+  <line x1="52" y1="46" x2="60" y2="36" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="62" y1="56" x2="84" y2="56" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="54" y1="70" x2="60" y2="84" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Graph nodes tracing the right half of the large φ circle (r=24) -->
+  <line x1="60" y1="36" x2="76" y2="42" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="76" y1="42" x2="84" y2="56" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="56" x2="84" y2="66" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="66" x2="76" y2="78" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="76" y1="78" x2="60" y2="84" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-links in the outer arc -->
+  <line x1="76" y1="42" x2="84" y2="66" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+  <line x1="84" y1="56" x2="76" y2="78" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+
+  <!-- Stem endpoint nodes -->
+  <circle cx="55" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="57" cy="112" r="5" fill="#1e293b"/>
+
+  <!-- Small loop "anchor" nodes (where spokes connect) -->
+  <circle cx="52" cy="46" r="4" fill="#1e293b"/>
+  <circle cx="62" cy="56" r="4" fill="#1e293b"/>
+  <circle cx="54" cy="70" r="4" fill="#1e293b"/>
+
+  <!-- Outer φ circle nodes -->
+  <circle cx="60" cy="36" r="4" fill="#3b82f6"/>
+  <circle cx="76" cy="42" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="56" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="66" r="4" fill="#3b82f6"/>
+  <circle cx="76" cy="78" r="4" fill="#3b82f6"/>
+  <circle cx="60" cy="84" r="4" fill="#3b82f6"/>
+</svg>

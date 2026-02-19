@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    J4: "Morph"
+    The ϕ stem is an S-curve (not straight). A small tilted loop sits
+    at the curve's center. Graph nodes on the right expand the loop
+    into the φ circle AND suggest the straightening of the stem.
+  -->
+
+  <!-- S-curved stem (ϕ-like) -->
+  <path d="M 52,8 C 48,40 64,80 60,112" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Small tilted ϕ loop (open ~90° on the right) -->
+  <g transform="rotate(-15, 50, 58)">
+    <path d="M 50,46 A 12,12 0 1 0 62,58" stroke="#1e293b" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!--
+    After rotation, approximate endpoints:
+    Arc start: ~(48, 46)
+    Arc end: ~(62, 54)
+  -->
+
+  <!-- Graph expanding from the open loop rightward to φ circle (r=24, cx=58, cy=60) -->
+  <line x1="62" y1="54" x2="76" y2="44" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="76" y1="44" x2="84" y2="56" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="56" x2="82" y2="70" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="82" y1="70" x2="72" y2="80" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="72" y1="80" x2="56" y2="82" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Connect back to small loop bottom area -->
+  <line x1="56" y1="82" x2="48" y2="70" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-links -->
+  <line x1="76" y1="44" x2="82" y2="70" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+  <line x1="84" y1="56" x2="72" y2="80" stroke="#3b82f6" stroke-width="1.5" opacity="0.25"/>
+
+  <!-- Graph nodes suggesting straightened bar position (alongside curved stem) -->
+  <line x1="52" y1="8" x2="60" y2="8" stroke="#3b82f6" stroke-width="1.5" opacity="0.4" stroke-dasharray="3,3"/>
+  <line x1="60" y1="112" x2="60" y2="8" stroke="none"/>
+
+  <!-- Stem endpoint nodes -->
+  <circle cx="52" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+
+  <!-- Loop anchor nodes -->
+  <circle cx="62" cy="54" r="4.5" fill="#1e293b"/>
+  <circle cx="48" cy="70" r="4.5" fill="#1e293b"/>
+
+  <!-- Graph nodes (outer φ arc) -->
+  <circle cx="76" cy="44" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="56" r="4" fill="#3b82f6"/>
+  <circle cx="82" cy="70" r="4" fill="#3b82f6"/>
+  <circle cx="72" cy="80" r="4" fill="#3b82f6"/>
+  <circle cx="56" cy="82" r="4" fill="#3b82f6"/>
+</svg>

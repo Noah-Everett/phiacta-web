@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    G1: "True φ" — Clean
+    Circular bowl (not tall ellipse) with bar extending well above/below.
+    Proportions match the actual Greek letter φ. Graph branches at key points.
+  -->
+
+  <!-- Circular bowl -->
+  <circle cx="60" cy="60" r="24" stroke="#1e293b" stroke-width="5" fill="none"/>
+
+  <!-- Vertical bar (extends well beyond bowl) -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Graph branches -->
+  <line x1="36" y1="60" x2="14" y2="48" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="60" x2="106" y2="50" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="60" y1="36" x2="80" y2="20" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="36" cy="60" r="4.5" fill="#1e293b"/>
+  <circle cx="84" cy="60" r="4.5" fill="#1e293b"/>
+  <circle cx="60" cy="36" r="4.5" fill="#1e293b"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="14" cy="48" r="4" fill="#3b82f6"/>
+  <circle cx="106" cy="50" r="4" fill="#3b82f6"/>
+  <circle cx="80" cy="20" r="4" fill="#3b82f6"/>
+</svg>

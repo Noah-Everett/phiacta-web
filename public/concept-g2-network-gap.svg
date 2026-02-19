@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    G2: "True φ + Network Gap" (E2 style)
+    Circular φ bowl with ~90° missing in the upper-left.
+    Graph nodes fill the gap. The smooth curve dissolves into graph.
+  -->
+
+  <!-- ~270° circular arc: from top, clockwise through right, bottom, to left -->
+  <path d="M 60,36 A 24,24 0 1 1 36,60" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Network nodes filling the gap (upper-left quadrant) -->
+  <line x1="60" y1="36" x2="46" y2="30" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="46" y1="30" x2="32" y2="38" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="32" y1="38" x2="36" y2="60" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Cross-link in the gap -->
+  <line x1="46" y1="30" x2="36" y2="60" stroke="#3b82f6" stroke-width="1.5" opacity="0.35"/>
+
+  <!-- Branches extending outward from gap -->
+  <line x1="46" y1="30" x2="38" y2="12" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="32" y1="38" x2="14" y2="30" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Branch from right side -->
+  <line x1="84" y1="60" x2="104" y2="54" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="36" r="4.5" fill="#1e293b"/>
+  <circle cx="36" cy="60" r="4.5" fill="#1e293b"/>
+  <circle cx="84" cy="60" r="4" fill="#1e293b"/>
+
+  <!-- Gap network nodes -->
+  <circle cx="46" cy="30" r="4" fill="#3b82f6"/>
+  <circle cx="32" cy="38" r="4" fill="#3b82f6"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="38" cy="12" r="3.5" fill="#3b82f6"/>
+  <circle cx="14" cy="30" r="3.5" fill="#3b82f6"/>
+  <circle cx="104" cy="54" r="4" fill="#3b82f6"/>
+</svg>

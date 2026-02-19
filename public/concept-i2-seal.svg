@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    I2: "Dark Seal"
+    Dark circle badge. White arc inside (270°). Blue graph nodes complete
+    the gap on the dark background. Bold, app-icon-ready.
+  -->
+
+  <!-- Dark background circle -->
+  <circle cx="60" cy="60" r="56" fill="#0f172a"/>
+
+  <!-- White 270° arc (gap in upper-left) -->
+  <path d="M 60,38 A 22,22 0 1 1 38,60" stroke="#f1f5f9" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+
+  <!-- White vertical bar -->
+  <line x1="60" y1="14" x2="60" y2="106" stroke="#f1f5f9" stroke-width="4.5" stroke-linecap="round"/>
+
+  <!-- Graph network completing the gap (blue on dark) -->
+  <line x1="60" y1="38" x2="48" y2="34" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="48" y1="34" x2="36" y2="40" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="36" y1="40" x2="38" y2="60" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="48" y1="34" x2="38" y2="60" stroke="#60a5fa" stroke-width="1.5" opacity="0.4"/>
+
+  <!-- Outward branch -->
+  <line x1="48" y1="34" x2="40" y2="20" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/>
+  <line x1="36" y1="40" x2="22" y2="34" stroke="#60a5fa" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Branch from right -->
+  <line x1="82" y1="60" x2="96" y2="54" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Arc endpoint nodes (white) -->
+  <circle cx="60" cy="38" r="4" fill="#f1f5f9"/>
+  <circle cx="38" cy="60" r="4" fill="#f1f5f9"/>
+
+  <!-- Bar endpoint nodes (white) -->
+  <circle cx="60" cy="14" r="4.5" fill="#f1f5f9"/>
+  <circle cx="60" cy="106" r="4.5" fill="#f1f5f9"/>
+  <circle cx="82" cy="60" r="3.5" fill="#f1f5f9"/>
+
+  <!-- Graph nodes (blue) -->
+  <circle cx="48" cy="34" r="3.5" fill="#60a5fa"/>
+  <circle cx="36" cy="40" r="3.5" fill="#60a5fa"/>
+  <circle cx="40" cy="20" r="3" fill="#60a5fa"/>
+  <circle cx="22" cy="34" r="3" fill="#60a5fa"/>
+  <circle cx="96" cy="54" r="3.5" fill="#60a5fa"/>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    F4: "Compact Script φ"
+    Tighter curve that doesn't extend as far left. The bar dominates.
+    Graph branches extend outward to fill the space, making it feel expansive
+    despite the compact core shape. Good at small sizes.
+  -->
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Compact φ curve -->
+  <path d="M 60,30 C 28,30 28,90 60,90" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Graph branches (longer, to compensate for compact core) -->
+  <line x1="36" y1="60" x2="10" y2="50" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="10" y1="50" x2="4" y2="32" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="60" y1="30" x2="84" y2="16" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="84" y1="16" x2="104" y2="12" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="60" y1="90" x2="84" y2="104" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Phi nodes -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="30" r="4.5" fill="#1e293b"/>
+  <circle cx="60" cy="90" r="4.5" fill="#1e293b"/>
+  <circle cx="36" cy="60" r="4.5" fill="#1e293b"/>
+
+  <!-- Mid-branch nodes -->
+  <circle cx="10" cy="50" r="4" fill="#3b82f6"/>
+  <circle cx="84" cy="16" r="4" fill="#3b82f6"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="4" cy="32" r="3.5" fill="#3b82f6"/>
+  <circle cx="104" cy="12" r="3.5" fill="#3b82f6"/>
+  <circle cx="84" cy="104" r="4" fill="#3b82f6"/>
+</svg>

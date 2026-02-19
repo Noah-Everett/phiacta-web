@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!--
+    F1: "Clean Script φ"
+    The φ as an open C-curve flowing from the bar, not a closed ellipse.
+    Graph branches at the apex and endpoints. Simple and legible.
+  -->
+
+  <!-- Vertical bar -->
+  <line x1="60" y1="8" x2="60" y2="112" stroke="#1e293b" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Open φ curve (left-side C from bar to bar) -->
+  <path d="M 60,26 C 10,26 10,94 60,94" stroke="#1e293b" stroke-width="5" fill="none" stroke-linecap="round"/>
+
+  <!-- Graph branches -->
+  <line x1="23" y1="60" x2="6" y2="48" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="60" y1="26" x2="80" y2="14" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="60" y1="94" x2="82" y2="104" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Phi nodes (bar endpoints + curve junctions + apex) -->
+  <circle cx="60" cy="8" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="112" r="5" fill="#1e293b"/>
+  <circle cx="60" cy="26" r="4.5" fill="#1e293b"/>
+  <circle cx="60" cy="94" r="4.5" fill="#1e293b"/>
+  <circle cx="23" cy="60" r="4.5" fill="#1e293b"/>
+
+  <!-- Leaf nodes -->
+  <circle cx="6" cy="48" r="4" fill="#3b82f6"/>
+  <circle cx="80" cy="14" r="4" fill="#3b82f6"/>
+  <circle cx="82" cy="104" r="4" fill="#3b82f6"/>
+</svg>
