@@ -3,9 +3,10 @@ import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
 import MarkdownContent from "@/components/MarkdownContent";
 import { listClaims } from "@/lib/api";
+import type { Claim } from "@/lib/types";
 
 export default async function Home() {
-  let claims: { id: string; content: string; claim_type: string; status: string; created_at: string }[] = [];
+  let claims: Claim[] = [];
   try {
     const data = await listClaims(5);
     claims = data.items;
@@ -53,7 +54,10 @@ export default async function Home() {
                     {claim.status}
                   </span>
                 </div>
-                <MarkdownContent content={claim.content} compact className="text-sm leading-relaxed text-gray-800" />
+                <p className="mb-1 text-sm font-medium text-gray-900">{claim.title}</p>
+                {claim.content_cache && (
+                  <MarkdownContent content={claim.content_cache} compact className="text-sm leading-relaxed text-gray-800" />
+                )}
                 <p className="mt-2 text-xs text-gray-400">
                   {new Date(claim.created_at).toLocaleDateString()}
                 </p>

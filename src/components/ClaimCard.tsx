@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { Claim } from "@/lib/types";
-import VerificationBadge from "./VerificationBadge";
 import MarkdownContent from "./MarkdownContent";
 
 interface ClaimCardProps {
@@ -21,15 +20,11 @@ export default function ClaimCard({ claim, namespaceName }: ClaimCardProps) {
         <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
           {namespaceName || claim.namespace_id.slice(0, 8)}
         </span>
-        <VerificationBadge
-          level={claim.verification_level}
-          status={claim.verification_status}
-        />
         <span
           className={`ml-auto rounded px-2 py-0.5 text-xs font-medium ${
-            claim.status === "accepted"
+            claim.status === "active"
               ? "bg-green-50 text-green-700"
-              : claim.status === "disputed"
+              : claim.status === "retracted"
                 ? "bg-red-50 text-red-700"
                 : "bg-yellow-50 text-yellow-700"
           }`}
@@ -37,10 +32,13 @@ export default function ClaimCard({ claim, namespaceName }: ClaimCardProps) {
           {claim.status}
         </span>
       </div>
-      <MarkdownContent content={claim.content} compact className="text-sm leading-relaxed text-gray-800" />
+      <p className="mb-1 text-sm font-medium text-gray-900">{claim.title}</p>
+      {claim.content_cache && (
+        <MarkdownContent content={claim.content_cache} compact className="text-sm leading-relaxed text-gray-800" />
+      )}
       <div className="mt-3 flex items-center gap-4 text-xs text-gray-400">
         <span>{new Date(claim.created_at).toLocaleDateString()}</span>
-        <span>v{claim.version}</span>
+        <span>{claim.format}</span>
       </div>
     </Link>
   );

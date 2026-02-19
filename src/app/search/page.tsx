@@ -83,7 +83,10 @@ function SearchContent() {
                       {r.claim.status}
                     </span>
                   </div>
-                  <MarkdownContent content={r.claim.content} compact className="text-sm leading-relaxed text-gray-800" />
+                  <p className="mb-1 text-sm font-medium text-gray-900">{r.claim.title}</p>
+                  {r.claim.content_cache && (
+                    <MarkdownContent content={r.claim.content_cache} compact className="text-sm leading-relaxed text-gray-800" />
+                  )}
                   <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
                     <span>
                       {new Date(r.claim.created_at).toLocaleDateString()}

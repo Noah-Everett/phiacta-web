@@ -2,7 +2,7 @@ import type {
   Claim,
   PaginatedResponse,
   SearchResponse,
-  Relation,
+  Reference,
   ConfidenceStatus,
   Neighbor,
   Namespace,
@@ -10,8 +10,7 @@ import type {
   PublicAgent,
   AuthResponse,
   Source,
-  VerificationStatus,
-  Review,
+  Interaction,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -197,8 +196,8 @@ export async function getClaim(id: string): Promise<Claim> {
   return request<Claim>(`/v1/claims/${id}`);
 }
 
-export async function getClaimRelations(id: string): Promise<Relation[]> {
-  return request<Relation[]>(`/v1/claims/${id}/relations`);
+export async function getClaimReferences(id: string): Promise<Reference[]> {
+  return request<Reference[]>(`/v1/claims/${id}/references`);
 }
 
 export async function searchClaims(query: string): Promise<SearchResponse> {
@@ -220,43 +219,27 @@ export async function getNeighbors(
   return request(`/layers/graph/claims/${id}/neighbors`);
 }
 
-export async function getVerificationStatus(
-  claimId: string
-): Promise<VerificationStatus> {
-  return request<VerificationStatus>(`/v1/claims/${claimId}/verification`);
-}
-
-export async function submitVerification(
-  claimId: string,
-  codeContent: string,
-  runnerType: string
-): Promise<Claim> {
-  return authFetch<Claim>(`/v1/claims/${claimId}/verify`, {
-    method: "POST",
-    body: JSON.stringify({ code_content: codeContent, runner_type: runnerType }),
-  });
-}
-
 export async function getAgent(id: string): Promise<PublicAgent> {
   return request<PublicAgent>(`/v1/agents/${id}`);
 }
 
-export async function getClaimReviews(claimId: string): Promise<Review[]> {
-  return request<Review[]>(`/v1/claims/${claimId}/reviews`);
+export async function getClaimInteractions(
+  claimId: string
+): Promise<PaginatedResponse<Interaction>> {
+  return request<PaginatedResponse<Interaction>>(
+    `/v1/claims/${claimId}/interactions?limit=100`
+  );
 }
 
-export async function submitReview(
+export async function submitInteraction(
   claimId: string,
-  verdict: string,
+  kind: "vote" | "review",
+  signal: string,
   confidence: number,
-  comment: string | null
-): Promise<Review> {
-  return authFetch<Review>(`/v1/claims/${claimId}/reviews`, {
+  body: string | null
+): Promise<Interaction> {
+  return authFetch<Interaction>(`/v1/claims/${claimId}/interactions`, {
     method: "POST",
-    body: JSON.stringify({ verdict, confidence, comment }),
+    body: JSON.stringify({ kind, signal, confidence, body }),
   });
-}
-
-export async function getClaimVersions(claimId: string): Promise<Claim[]> {
-  return request<Claim[]>(`/v1/claims/${claimId}/versions`);
 }
