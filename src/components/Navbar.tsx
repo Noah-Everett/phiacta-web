@@ -8,9 +8,8 @@ export default function Navbar() {
     <nav className="border-b border-gray-200 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo-mark.svg" alt="Phiacta" width={32} height={32} />
-            <span className="text-xl font-bold tracking-tight text-gray-900">Phiacta</span>
+          <Link href="/" className="flex items-center">
+            <Image src="/logo-navbar.svg" alt="Phiacta" width={142} height={60} className="h-8 w-auto" />
           </Link>
           <div className="hidden items-center gap-6 text-sm md:flex">
             <Link href="/search" className="text-gray-600 hover:text-gray-900">
