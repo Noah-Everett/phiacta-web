@@ -38,17 +38,17 @@ function SearchContent() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Search Claims</h1>
+      <h1 className="mb-6 text-2xl font-bold text-gray-900 dark:text-gray-100">Search Claims</h1>
       <SearchBar defaultValue={query} />
 
       {query ? (
         <div className="mt-8">
-          <p className="mb-4 text-sm text-gray-500">
+          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
             Results for &ldquo;{query}&rdquo;
           </p>
 
           {loading && (
-            <p className="py-12 text-center text-gray-400">Searching...</p>
+            <p className="py-12 text-center text-gray-400 dark:text-gray-500">Searching...</p>
           )}
 
           {error && (
@@ -56,7 +56,7 @@ function SearchContent() {
           )}
 
           {!loading && !error && results.length === 0 && (
-            <p className="py-12 text-center text-gray-400">
+            <p className="py-12 text-center text-gray-400 dark:text-gray-500">
               No results found.
             </p>
           )}
@@ -67,27 +67,27 @@ function SearchContent() {
                 <Link
                   key={r.claim.id}
                   href={`/claims/${r.claim.id}`}
-                  className="block rounded-lg border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm"
+                  className="block rounded-lg border border-gray-200 bg-white p-4 transition hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
                 >
                   <div className="mb-2 flex items-center gap-2">
-                    <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                    <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                       {r.claim.claim_type}
                     </span>
                     <span
                       className={`ml-auto rounded px-2 py-0.5 text-xs font-medium ${
                         r.claim.status === "active"
-                          ? "bg-green-50 text-green-700"
-                          : "bg-yellow-50 text-yellow-700"
+                          ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                          : "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
                       }`}
                     >
                       {r.claim.status}
                     </span>
                   </div>
-                  <p className="mb-1 text-sm font-medium text-gray-900">{r.claim.title}</p>
+                  <p className="mb-1 text-sm font-medium text-gray-900 dark:text-gray-100">{r.claim.title}</p>
                   {r.claim.content_cache && (
-                    <MarkdownContent content={r.claim.content_cache} compact className="text-sm leading-relaxed text-gray-800" />
+                    <MarkdownContent content={r.claim.content_cache} compact className="text-sm leading-relaxed text-gray-800 dark:text-gray-200" />
                   )}
-                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
                     <span>
                       {new Date(r.claim.created_at).toLocaleDateString()}
                     </span>
@@ -99,7 +99,7 @@ function SearchContent() {
           )}
         </div>
       ) : (
-        <p className="mt-12 text-center text-gray-400">
+        <p className="mt-12 text-center text-gray-400 dark:text-gray-500">
           Enter a query to search claims.
         </p>
       )}

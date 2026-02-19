@@ -124,7 +124,7 @@ function ClaimsTab({
         <select
           value={namespaceId}
           onChange={(e) => setParam("namespace_id", e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:border-gray-400 dark:focus:ring-gray-400"
         >
           <option value="">All Namespaces</option>
           {namespaces.map((ns) => (
@@ -137,7 +137,7 @@ function ClaimsTab({
         <select
           value={claimType}
           onChange={(e) => setParam("claim_type", e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:border-gray-400 dark:focus:ring-gray-400"
         >
           <option value="">All Types</option>
           {CLAIM_TYPES.map((t) => (
@@ -149,13 +149,13 @@ function ClaimsTab({
       </div>
 
       {loading && (
-        <p className="py-12 text-center text-gray-400">Loading claims...</p>
+        <p className="py-12 text-center text-gray-400 dark:text-gray-500">Loading claims...</p>
       )}
       {error && (
         <p className="py-12 text-center text-red-400">Error: {error}</p>
       )}
       {!loading && !error && claims.length === 0 && (
-        <p className="py-12 text-center text-gray-400">No claims found.</p>
+        <p className="py-12 text-center text-gray-400 dark:text-gray-500">No claims found.</p>
       )}
 
       {!loading && !error && claims.length > 0 && (
@@ -198,22 +198,22 @@ function NamespacesTab({ namespaces }: { namespaces: Namespace[] }) {
         <button
           key={ns.id}
           onClick={() => handleClick(ns.id)}
-          className="flex w-full items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 text-left transition hover:border-gray-300 hover:shadow-sm"
+          className="flex w-full items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 text-left transition hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
           style={{ marginLeft: depth * 24 }}
         >
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-gray-900">{ns.name}</p>
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{ns.name}</p>
             {ns.description && (
-              <p className="mt-0.5 text-xs text-gray-500">{ns.description}</p>
+              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{ns.description}</p>
             )}
           </div>
-          <span className="shrink-0 text-xs text-gray-400">
+          <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
             {new Date(ns.created_at).toLocaleDateString()}
           </span>
         </button>
       ))}
       {namespaces.length === 0 && (
-        <p className="py-12 text-center text-gray-400">No namespaces found.</p>
+        <p className="py-12 text-center text-gray-400 dark:text-gray-500">No namespaces found.</p>
       )}
     </div>
   );
@@ -261,13 +261,13 @@ function SourcesTab() {
 
   if (loading)
     return (
-      <p className="py-12 text-center text-gray-400">Loading sources...</p>
+      <p className="py-12 text-center text-gray-400 dark:text-gray-500">Loading sources...</p>
     );
   if (error)
     return <p className="py-12 text-center text-red-400">Error: {error}</p>;
   if (sources.length === 0)
     return (
-      <p className="py-12 text-center text-gray-400">No sources found.</p>
+      <p className="py-12 text-center text-gray-400 dark:text-gray-500">No sources found.</p>
     );
 
   return (
@@ -276,21 +276,21 @@ function SourcesTab() {
         {sources.map((src) => (
           <div
             key={src.id}
-            className="rounded-lg border border-gray-200 bg-white p-4"
+            className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
           >
             <div className="mb-2 flex items-center gap-2">
-              <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+              <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
                 {src.source_type}
               </span>
-              <span className="ml-auto text-xs text-gray-400">
+              <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
                 {new Date(src.submitted_at).toLocaleDateString()}
               </span>
             </div>
-            <p className="text-sm font-medium text-gray-900">
+            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
               {src.title || "Untitled"}
             </p>
             {src.external_ref && (
-              <p className="mt-1 text-xs text-gray-500">{src.external_ref}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{src.external_ref}</p>
             )}
           </div>
         ))}
@@ -337,21 +337,21 @@ function ExploreContent() {
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-2 text-2xl font-bold text-gray-900">Explore</h1>
-      <p className="mb-6 text-sm text-gray-500">
+      <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">Explore</h1>
+      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
         Browse claims, namespaces, and sources in the knowledge graph.
       </p>
 
       {/* Tab bar */}
-      <div className="mb-6 flex border-b border-gray-200">
+      <div className="mb-6 flex border-b border-gray-200 dark:border-gray-700">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => switchTab(t.key)}
             className={`px-4 py-2 text-sm font-medium transition ${
               activeTab === t.key
-                ? "border-b-2 border-gray-900 text-gray-900"
-                : "text-gray-500 hover:text-gray-700"
+                ? "border-b-2 border-gray-900 text-gray-900 dark:border-gray-100 dark:text-gray-100"
+                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             }`}
           >
             {t.label}

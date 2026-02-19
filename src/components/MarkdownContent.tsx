@@ -42,7 +42,7 @@ const compactComponents = {
   li: ({ children }: { children?: React.ReactNode }) => <span>{children} </span>,
   // Convert links to spans to avoid nested <a> inside <Link>
   a: ({ children }: { children?: React.ReactNode }) => (
-    <span className="text-blue-600 underline">{children}</span>
+    <span className="text-blue-600 underline dark:text-blue-400">{children}</span>
   ),
 };
 
@@ -67,7 +67,7 @@ export default function MarkdownContent({
   }
 
   return (
-    <div className={`prose prose-sm prose-gray max-w-none ${className || ""}`}>
+    <div className={`prose prose-sm prose-gray dark:prose-invert max-w-none ${className || ""}`}>
       <ReactMarkdown
         remarkPlugins={[remarkMath]}
         rehypePlugins={[rehypeKatex]}

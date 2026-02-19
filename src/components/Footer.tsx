@@ -2,23 +2,23 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-white">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-gray-500 sm:flex-row">
+    <footer className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-gray-500 dark:text-gray-400 sm:flex-row">
         <p>Phiacta &mdash; The Knowledge Backend</p>
         <div className="flex gap-6">
-          <Link href="/search" className="hover:text-gray-700">
+          <Link href="/search" className="hover:text-gray-700 dark:hover:text-gray-300">
             Search
           </Link>
-          <Link href="/explore" className="hover:text-gray-700">
+          <Link href="/explore" className="hover:text-gray-700 dark:hover:text-gray-300">
             Explore
           </Link>
-          <Link href="/contribute" className="hover:text-gray-700">
+          <Link href="/contribute" className="hover:text-gray-700 dark:hover:text-gray-300">
             Contribute
           </Link>
-          <Link href="/architecture" className="hover:text-gray-700">
+          <Link href="/architecture" className="hover:text-gray-700 dark:hover:text-gray-300">
             Architecture
           </Link>
-          <Link href="/about" className="hover:text-gray-700">
+          <Link href="/about" className="hover:text-gray-700 dark:hover:text-gray-300">
             About
           </Link>
         </div>
