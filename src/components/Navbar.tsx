@@ -9,7 +9,7 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3">
         <div className="flex items-center gap-8">
           <Link href="/" className="flex items-center">
-            <Image src="/logo-navbar.svg" alt="Phiacta" width={142} height={60} className="h-8 w-auto" />
+            <Image src="/logo-navbar.svg" alt="Phiacta" width={145} height={64} className="h-9 w-auto" />
           </Link>
           <div className="hidden items-center gap-6 text-sm md:flex">
             <Link href="/search" className="text-gray-600 hover:text-gray-900">
