@@ -1,31 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 40" fill="none">
   <!--
-    Phiacta Navbar Logo — compact horizontal layout for site header
+    Phiacta Navbar Logo — compact G9 mark + wordmark
   -->
 
   <!-- === Compact Mark === -->
   <g transform="translate(2, 2)">
-    <!-- Phi ellipse -->
-    <ellipse cx="18" cy="18" rx="10" ry="14" stroke="#1e3a5f" stroke-width="3" fill="none"/>
+    <!-- Tilted partial circle + bar -->
+    <g transform="rotate(15, 18, 18)">
+      <path d="M 18,11 A 7.5,7.5 0 1 1 10.5,18" stroke="#1e293b" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <line x1="18" y1="1" x2="18" y2="35" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
 
-    <!-- Phi vertical stroke -->
-    <line x1="18" y1="1" x2="18" y2="35" stroke="#1e3a5f" stroke-width="3" stroke-linecap="round"/>
+    <!-- Gap network -->
+    <line x1="20" y1="11" x2="17" y2="10" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="17" y1="10" x2="12" y2="12" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="12" y1="12" x2="11" y2="17" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
 
-    <!-- Graph edges -->
-    <line x1="8" y1="14" x2="2" y2="7" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="28" y1="14" x2="34" y2="7" stroke="#3b82f6" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Phi nodes -->
+    <circle cx="22" cy="3" r="2.5" fill="#1e293b"/>
+    <circle cx="14" cy="33" r="2.5" fill="#1e293b"/>
 
-    <!-- Graph leaf nodes -->
-    <circle cx="2" cy="7" r="2.5" fill="#3b82f6"/>
-    <circle cx="34" cy="7" r="2.5" fill="#3b82f6"/>
-
-    <!-- Key phi nodes -->
-    <circle cx="18" cy="1" r="3" fill="#1e3a5f"/>
-    <circle cx="18" cy="35" r="3" fill="#1e3a5f"/>
+    <!-- Gap nodes -->
+    <circle cx="17" cy="10" r="2" fill="#3b82f6"/>
+    <circle cx="12" cy="12" r="2" fill="#3b82f6"/>
   </g>
 
   <!-- === Text === -->
-  <text x="48" y="28" font-family="'Geist', 'Inter', system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" letter-spacing="-0.5" fill="#1e3a5f">
+  <text x="48" y="28" font-family="'Geist', 'Inter', system-ui, -apple-system, sans-serif" font-size="24" font-weight="700" letter-spacing="-0.5" fill="#1e293b">
     Phiacta
   </text>
 </svg>

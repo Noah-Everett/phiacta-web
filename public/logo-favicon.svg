@@ -1,23 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
   <!--
-    Phiacta Favicon — simplified for small sizes (16-32px)
+    Phiacta Favicon — simplified G9 for small sizes (16-32px)
   -->
 
-  <!-- Phi ellipse -->
-  <ellipse cx="32" cy="32" rx="15" ry="20" stroke="#1e3a5f" stroke-width="4" fill="none"/>
+  <!-- Tilted partial circle + bar -->
+  <g transform="rotate(15, 32, 32)">
+    <path d="M 32,19 A 13,13 0 1 1 19,32" stroke="#1e293b" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <line x1="32" y1="4" x2="32" y2="60" stroke="#1e293b" stroke-width="4" stroke-linecap="round"/>
+  </g>
 
-  <!-- Phi vertical stroke -->
-  <line x1="32" y1="5" x2="32" y2="59" stroke="#1e3a5f" stroke-width="4" stroke-linecap="round"/>
+  <!-- Gap network (simplified: 2 edges, 2 nodes) -->
+  <line x1="35" y1="20" x2="30" y2="18" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="30" y1="18" x2="23" y2="22" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="23" y1="22" x2="20" y2="29" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
 
-  <!-- Two accent nodes (simplified for favicon) -->
-  <circle cx="8" cy="20" r="4" fill="#3b82f6"/>
-  <circle cx="56" cy="20" r="4" fill="#3b82f6"/>
-  <circle cx="10" cy="50" r="4" fill="#3b82f6"/>
-  <circle cx="54" cy="50" r="4" fill="#3b82f6"/>
+  <!-- Phi nodes -->
+  <circle cx="39" cy="5" r="3.5" fill="#1e293b"/>
+  <circle cx="25" cy="59" r="3.5" fill="#1e293b"/>
 
-  <!-- Edges -->
-  <line x1="17" y1="27" x2="8" y2="20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
-  <line x1="47" y1="27" x2="56" y2="20" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
-  <line x1="19" y1="43" x2="10" y2="50" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
-  <line x1="45" y1="43" x2="54" y2="50" stroke="#3b82f6" stroke-width="2" stroke-linecap="round"/>
+  <!-- Gap nodes -->
+  <circle cx="30" cy="18" r="3" fill="#3b82f6"/>
+  <circle cx="23" cy="22" r="3" fill="#3b82f6"/>
 </svg>
