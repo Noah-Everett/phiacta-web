@@ -32,10 +32,11 @@ export default function ClaimCard({ claim, namespaceName }: ClaimCardProps) {
           {claim.status}
         </span>
       </div>
-      <p className="mb-1 text-sm font-medium text-gray-900 dark:text-gray-100">{claim.title}</p>
-      {claim.content_cache && (
-        <MarkdownContent content={claim.content_cache} compact className="text-sm leading-relaxed text-gray-800 dark:text-gray-200" />
-      )}
+      <MarkdownContent
+        content={claim.content_cache || claim.title}
+        compact
+        className="text-sm leading-relaxed text-gray-800 dark:text-gray-200"
+      />
       <div className="mt-3 flex items-center gap-4 text-xs text-gray-400 dark:text-gray-500">
         <span>{new Date(claim.created_at).toLocaleDateString()}</span>
         <span>{claim.format}</span>

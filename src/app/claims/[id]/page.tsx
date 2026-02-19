@@ -56,7 +56,9 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
     <div className="mx-auto max-w-5xl px-6 py-10">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">{claim.title}</h1>
+        <h1 className="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">
+          <MarkdownContent content={claim.title} compact />
+        </h1>
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
             {claim.claim_type}
@@ -80,6 +82,11 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
           {claim.repo_status === "provisioning" && (
             <span className="rounded bg-yellow-50 px-2 py-0.5 text-xs text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
               syncing...
+            </span>
+          )}
+          {claim.repo_status === "error" && (
+            <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              sync failed
             </span>
           )}
         </div>

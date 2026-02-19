@@ -16,12 +16,44 @@ function truncatePreservingMath(text: string, max: number): string {
 
   let truncated = text.slice(0, max);
 
-  // Count unclosed $ delimiters
-  const dollars = (truncated.match(/\$/g) || []).length;
-  if (dollars % 2 !== 0) {
-    // Find the last $ and cut before it
-    const lastDollar = truncated.lastIndexOf("$");
-    truncated = truncated.slice(0, lastDollar);
+  // Track math delimiters to find unclosed blocks
+  let i = 0;
+  let lastUnclosedStart = -1;
+  let inDisplay = false;
+  let inInline = false;
+
+  while (i < truncated.length) {
+    if (truncated[i] === "$" && i + 1 < truncated.length && truncated[i + 1] === "$") {
+      if (inDisplay) {
+        inDisplay = false;
+        lastUnclosedStart = -1;
+        i += 2;
+      } else if (!inInline) {
+        inDisplay = true;
+        lastUnclosedStart = i;
+        i += 2;
+      } else {
+        i += 1;
+      }
+    } else if (truncated[i] === "$") {
+      if (inInline) {
+        inInline = false;
+        lastUnclosedStart = -1;
+        i += 1;
+      } else if (!inDisplay) {
+        inInline = true;
+        lastUnclosedStart = i;
+        i += 1;
+      } else {
+        i += 1;
+      }
+    } else {
+      i += 1;
+    }
+  }
+
+  if ((inDisplay || inInline) && lastUnclosedStart >= 0) {
+    truncated = truncated.slice(0, lastUnclosedStart);
   }
 
   return truncated.trimEnd() + "...";
