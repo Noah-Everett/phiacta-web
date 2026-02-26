@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -321,10 +321,9 @@ function FileRow({ file, claimId }: { file: { path: string; type: "file" | "dir"
 export default function ClaimPage({ params }: ClaimPageProps) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
 
-  // Since this is now client-side, we need to resolve params
-  if (!resolvedId) {
+  useEffect(() => {
     params.then((p) => setResolvedId(p.id));
-  }
+  }, [params]);
 
   const id = resolvedId ?? "11111111-1111-1111-1111-111111111111";
   const claim = MOCK_CLAIMS.find((c) => c.id === id) ?? MOCK_CLAIMS[0];
