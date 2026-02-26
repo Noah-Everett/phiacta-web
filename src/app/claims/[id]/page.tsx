@@ -748,13 +748,12 @@ export default function ClaimPage({ params }: ClaimPageProps) {
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                     Files
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Phiacta metadata lives in{" "}
-                    <code className="font-mono rounded bg-secondary px-1 py-0.5">.phiacta/</code>
-                  </p>
+                  <code className="font-mono text-xs text-muted-foreground">
+                    {claim.id.slice(0, 8)}
+                  </code>
                 </div>
                 <div className="divide-y-0">
-                  {claimFiles.map((file) => (
+                  {claimFiles.filter((f) => !f.path.startsWith(".phiacta")).map((file) => (
                     <FileRow key={file.path} file={file} claimId={claim.id} />
                   ))}
                 </div>
