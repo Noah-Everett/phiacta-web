@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, X } from "lucide-react";
+import { CheckCircle2, X, LogIn } from "lucide-react";
 
 const CLAIM_TYPES: { value: ClaimType; label: string; description: string }[] = [
   { value: "empirical", label: "Empirical", description: "Based on observation or experiment" },
@@ -78,27 +78,6 @@ export default function ContributePage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-sm text-muted-foreground">Loading…</p>
-      </div>
-    );
-  }
-
-  if (!agent) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center px-6">
-        <div className="text-center">
-          <h1 className="mb-2 text-2xl font-bold text-foreground">Sign in required</h1>
-          <p className="mb-5 text-sm text-muted-foreground">
-            You need an account to publish claims.
-          </p>
-          <div className="flex items-center justify-center gap-3">
-            <Button asChild>
-              <Link href="/auth/login">Log in</Link>
-            </Button>
-            <Button variant="outline" asChild>
-              <Link href="/auth/signup">Sign up</Link>
-            </Button>
-          </div>
-        </div>
       </div>
     );
   }
@@ -243,14 +222,36 @@ export default function ContributePage() {
 
         <Separator />
 
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            Claims are public by default. You can add verification materials after publishing.
-          </p>
-          <Button type="submit" disabled={submitting}>
-            {submitting ? "Publishing…" : "Publish claim"}
-          </Button>
-        </div>
+        {!agent && (
+          <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/40 px-4 py-3">
+            <p className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Sign in to publish.</span>{" "}
+              You need an account to submit claims.
+            </p>
+            <div className="flex shrink-0 gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/auth/login">
+                  <LogIn className="mr-1.5 h-3.5 w-3.5" />
+                  Log in
+                </Link>
+              </Button>
+              <Button asChild size="sm">
+                <Link href="/auth/signup">Sign up</Link>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {agent && (
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              Claims are public by default. You can add verification materials after publishing.
+            </p>
+            <Button type="submit" disabled={submitting}>
+              {submitting ? "Publishing…" : "Publish claim"}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );

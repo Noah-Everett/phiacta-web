@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -23,14 +26,23 @@ import {
   GitMerge,
   CircleDot,
   ChevronRight,
+  ChevronDown,
+  FileCode2,
+  Folder,
+  File,
+  Eye,
+  Star,
 } from "lucide-react";
 import {
   MOCK_CLAIMS,
   MOCK_AGENTS,
-  MOCK_PROPOSALS,
+  MOCK_EDITS,
   MOCK_ISSUES,
   MOCK_HISTORY,
   MOCK_REFERENCES,
+  MOCK_REVIEWS,
+  MOCK_CLAIM_FILES,
+  MOCK_FILE_CONTENTS,
 } from "@/lib/mock-data";
 
 interface ClaimPageProps {
@@ -46,13 +58,279 @@ function getInitials(name: string) {
     .slice(0, 2);
 }
 
-export default async function ClaimPage({ params }: ClaimPageProps) {
-  const { id } = await params;
+function formatBytes(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
 
-  // Use mock data — backend will be wired up later
+// Inline expandable issue
+function IssueRow({ issue }: { issue: (typeof MOCK_ISSUES)[0] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
+      >
+        <CircleDot
+          className={`mt-0.5 h-4 w-4 shrink-0 ${
+            issue.state === "open" ? "text-green-500" : "text-muted-foreground"
+          }`}
+        />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">{issue.title}</p>
+          <p className="text-xs text-muted-foreground">
+            #{issue.number} · {issue.author_name} ·{" "}
+            {new Date(issue.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-xs text-muted-foreground">{issue.comment_count} replies</span>
+          <Badge
+            variant="outline"
+            className={
+              issue.state === "open"
+                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                : "text-muted-foreground"
+            }
+          >
+            {issue.state}
+          </Badge>
+          {open ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-border bg-background p-4 space-y-4">
+          <p className="text-sm leading-relaxed text-foreground">{issue.body}</p>
+          {issue.comments.length > 0 && (
+            <div className="space-y-3 pt-2">
+              {issue.comments.map((comment) => (
+                <div key={comment.id} className="flex gap-3">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarFallback className="text-[10px]">
+                      {getInitials(comment.author_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1 rounded-lg border border-border bg-card p-3">
+                    <div className="mb-1.5 flex items-center gap-2 text-xs">
+                      <span className="font-semibold text-foreground">{comment.author_name}</span>
+                      <span className="text-muted-foreground">
+                        {new Date(comment.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground">{comment.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex gap-2 pt-1">
+            <Button variant="outline" size="sm">Reply</Button>
+            {issue.state === "open" && (
+              <Button variant="ghost" size="sm" className="text-muted-foreground">
+                Close issue
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Inline expandable edit
+function EditRow({ edit }: { edit: (typeof MOCK_EDITS)[0] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
+      >
+        {edit.state === "open" ? (
+          <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+        ) : (
+          <GitMerge className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">{edit.title}</p>
+          <p className="text-xs text-muted-foreground">
+            #{edit.number} · {edit.author_name} ·{" "}
+            {new Date(edit.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge
+            variant="outline"
+            className={
+              edit.state === "open"
+                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                : "text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:bg-violet-950/50"
+            }
+          >
+            {edit.state}
+          </Badge>
+          {open ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-border bg-background p-4 space-y-4">
+          <p className="text-sm leading-relaxed text-foreground">{edit.body}</p>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Proposed diff
+            </p>
+            <pre className="rounded-lg bg-muted p-3 font-mono text-xs leading-relaxed overflow-x-auto whitespace-pre-wrap text-foreground">
+              {edit.diff}
+            </pre>
+          </div>
+          {edit.state === "open" && (
+            <div className="flex gap-2">
+              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                Accept edit
+              </Button>
+              <Button variant="outline" size="sm">
+                Reject
+              </Button>
+              <Button variant="ghost" size="sm">
+                Request changes
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Inline expandable commit
+function CommitRow({ commit, index }: { commit: (typeof MOCK_HISTORY)[0]; index: number }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
+      >
+        <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-mono text-muted-foreground">
+          {index + 1}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">{commit.message}</p>
+          <p className="text-xs text-muted-foreground">
+            {commit.author_name} ·{" "}
+            {new Date(commit.timestamp).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+            })}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <code className="font-mono text-[10px] text-muted-foreground">
+            {commit.sha.slice(0, 7)}
+          </code>
+          {open ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-border bg-background p-4 space-y-3">
+          <p className="text-sm leading-relaxed text-foreground">{commit.body}</p>
+          <div>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Files changed
+            </p>
+            <div className="space-y-1">
+              {commit.files_changed.map((f) => (
+                <div key={f} className="flex items-center gap-2 text-xs">
+                  <FileCode2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <code className="font-mono text-foreground">{f}</code>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-3 text-xs">
+            <span className="text-green-600">+{commit.additions}</span>
+            <span className="text-red-500">-{commit.deletions}</span>
+          </div>
+          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+            <Eye className="h-3.5 w-3.5" /> View at this version
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Expandable file preview
+function FileRow({ file, claimId }: { file: { path: string; type: "file" | "dir"; size?: number }; claimId: string }) {
+  const [open, setOpen] = useState(false);
+  const content = MOCK_FILE_CONTENTS[file.path];
+  const isPreviewable = file.type === "file" && !!content;
+
+  return (
+    <div className="border-b border-border last:border-0">
+      <button
+        onClick={() => isPreviewable && setOpen((v) => !v)}
+        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors ${
+          isPreviewable ? "hover:bg-accent/40 cursor-pointer" : "cursor-default"
+        }`}
+      >
+        {file.type === "dir" ? (
+          <Folder className="h-4 w-4 shrink-0 text-amber-500" />
+        ) : (
+          <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+        )}
+        <code className="flex-1 font-mono text-sm text-foreground">{file.path}</code>
+        {file.size && (
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">
+            {formatBytes(file.size)}
+          </span>
+        )}
+        {isPreviewable && (
+          open ? <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        )}
+      </button>
+      {open && content && (
+        <div className="border-t border-border bg-muted/50 px-4 py-3">
+          <pre className="font-mono text-xs leading-relaxed overflow-x-auto text-foreground whitespace-pre-wrap">
+            {content}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function ClaimPage({ params }: ClaimPageProps) {
+  const [resolvedId, setResolvedId] = useState<string | null>(null);
+
+  // Since this is now client-side, we need to resolve params
+  if (!resolvedId) {
+    params.then((p) => setResolvedId(p.id));
+  }
+
+  const id = resolvedId ?? "11111111-1111-1111-1111-111111111111";
   const claim = MOCK_CLAIMS.find((c) => c.id === id) ?? MOCK_CLAIMS[0];
   const author = MOCK_AGENTS.find((a) => a.id === claim.created_by) ?? MOCK_AGENTS[0];
-
+  const claimReviews = MOCK_REVIEWS.filter((r) => r.claim_id === claim.id);
+  const claimFiles = MOCK_CLAIM_FILES[claim.id] ?? MOCK_CLAIM_FILES.default;
   const totalSignals = claim.agree_count + claim.disagree_count + claim.neutral_count;
 
   return (
@@ -101,7 +379,6 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
           </span>
         </div>
 
-        {/* Topics */}
         {claim.topics.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             {claim.topics.map((topic) => (
@@ -121,27 +398,36 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
         {/* Main panel */}
         <div className="min-w-0">
           <Tabs defaultValue="content">
-            <TabsList className="mb-4 w-full justify-start">
-              <TabsTrigger value="content" className="gap-1.5">
-                Content
-              </TabsTrigger>
-              <TabsTrigger value="proposals" className="gap-1.5">
+            <TabsList className="mb-4 w-full justify-start flex-wrap h-auto gap-1">
+              <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="edits" className="gap-1.5">
                 <GitBranch className="h-3.5 w-3.5" />
-                Proposals
-                <Badge variant="secondary" className="ml-1 text-xs py-0 px-1.5">
-                  {MOCK_PROPOSALS.filter((p) => p.state === "open").length}
+                Edits
+                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
+                  {MOCK_EDITS.filter((e) => e.state === "open").length}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="issues" className="gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" />
                 Issues
-                <Badge variant="secondary" className="ml-1 text-xs py-0 px-1.5">
+                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
                   {MOCK_ISSUES.filter((i) => i.state === "open").length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="reviews" className="gap-1.5">
+                <Star className="h-3.5 w-3.5" />
+                Reviews
+                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
+                  {claimReviews.length}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-1.5">
                 <History className="h-3.5 w-3.5" />
                 History
+              </TabsTrigger>
+              <TabsTrigger value="files" className="gap-1.5">
+                <FileCode2 className="h-3.5 w-3.5" />
+                Files
               </TabsTrigger>
               <TabsTrigger value="references" className="gap-1.5">
                 <Network className="h-3.5 w-3.5" />
@@ -149,7 +435,7 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
               </TabsTrigger>
             </TabsList>
 
-            {/* Content tab */}
+            {/* Content */}
             <TabsContent value="content">
               <div className="rounded-xl border border-border bg-card p-6">
                 {claim.content_cache ? (
@@ -158,17 +444,13 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                     className="text-sm leading-relaxed text-card-foreground"
                   />
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Content is stored in the git repository.
-                  </p>
+                  <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
                 )}
               </div>
 
               {/* Voting */}
               <div className="mt-4 rounded-xl border border-border bg-card p-5">
-                <h3 className="mb-4 text-sm font-semibold text-foreground">
-                  Cast your signal
-                </h3>
+                <h3 className="mb-4 text-sm font-semibold text-foreground">Cast your signal</h3>
                 <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" className="gap-2">
                     <ThumbsUp className="h-4 w-4 text-green-600" />
@@ -192,51 +474,22 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
               </div>
             </TabsContent>
 
-            {/* Proposals tab */}
-            <TabsContent value="proposals">
+            {/* Edits */}
+            <TabsContent value="edits">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Proposals are proposed content changes — like pull requests.
+                  Edits are proposed content changes — like pull requests on the claim&apos;s content.
                 </p>
-                <Button size="sm">Open proposal</Button>
+                <Button size="sm">Propose edit</Button>
               </div>
-              <div className="space-y-3">
-                {MOCK_PROPOSALS.map((proposal) => (
-                  <div
-                    key={proposal.number}
-                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
-                  >
-                    {proposal.state === "open" ? (
-                      <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-                    ) : (
-                      <GitMerge className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">{proposal.title}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        #{proposal.number} · {proposal.author_name} ·{" "}
-                        {new Date(proposal.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                        {proposal.body}
-                      </p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        proposal.state === "open"
-                          ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                          : "text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:bg-violet-950/50"
-                      }
-                    >
-                      {proposal.state}
-                    </Badge>
-                  </div>
+              <div className="space-y-2">
+                {MOCK_EDITS.map((edit) => (
+                  <EditRow key={edit.number} edit={edit} />
                 ))}
               </div>
             </TabsContent>
 
-            {/* Issues tab */}
+            {/* Issues */}
             <TabsContent value="issues">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
@@ -244,84 +497,115 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                 </p>
                 <Button size="sm">Open issue</Button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {MOCK_ISSUES.map((issue) => (
-                  <div
-                    key={issue.number}
-                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
-                  >
-                    <CircleDot
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${
-                        issue.state === "open" ? "text-green-500" : "text-muted-foreground"
-                      }`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">{issue.title}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        #{issue.number} · {issue.author_name} ·{" "}
-                        {new Date(issue.created_at).toLocaleDateString()}
-                      </p>
-                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                        {issue.body}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">
-                        {issue.comment_count} comments
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={
-                          issue.state === "open"
-                            ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                            : "text-muted-foreground"
-                        }
-                      >
-                        {issue.state}
-                      </Badge>
-                    </div>
-                  </div>
+                  <IssueRow key={issue.number} issue={issue} />
                 ))}
               </div>
             </TabsContent>
 
-            {/* History tab */}
-            <TabsContent value="history">
-              <div className="space-y-1">
-                {MOCK_HISTORY.map((commit, i) => (
-                  <div
-                    key={commit.sha}
-                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
-                  >
-                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-mono text-muted-foreground">
-                      {i + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-foreground">{commit.message}</p>
-                      <p className="mt-0.5 text-xs text-muted-foreground">
-                        {commit.author_name} ·{" "}
-                        {new Date(commit.timestamp).toLocaleDateString("en-US", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                        })}
-                      </p>
-                    </div>
-                    <code className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                      {commit.sha.slice(0, 7)}
-                    </code>
-                  </div>
-                ))}
+            {/* Reviews */}
+            <TabsContent value="reviews">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Structured peer assessments with confidence ratings.
+                </p>
+                <Button size="sm">Write review</Button>
               </div>
-            </TabsContent>
-
-            {/* References tab */}
-            <TabsContent value="references">
               <div className="space-y-3">
-                {MOCK_REFERENCES.map((ref) => (
+                {claimReviews.map((review) => (
                   <div
+                    key={review.id}
+                    className="rounded-xl border border-border bg-card p-5 space-y-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar className="h-8 w-8 shrink-0">
+                        <AvatarFallback className="text-xs">{getInitials(review.author_name)}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <Link
+                            href={`/agents/${review.author_id}`}
+                            className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                          >
+                            {review.author_name}
+                          </Link>
+                          <Badge
+                            variant="outline"
+                            className={
+                              review.signal === "agree"
+                                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                                : review.signal === "disagree"
+                                ? "text-red-700 border-red-200 bg-red-50 dark:text-red-300 dark:border-red-800 dark:bg-red-950/50"
+                                : "text-muted-foreground"
+                            }
+                          >
+                            {review.signal}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            {Math.round(review.confidence * 100)}% confidence
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-auto">
+                            {new Date(review.created_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed text-foreground">{review.body}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {claimReviews.length === 0 && (
+                  <div className="rounded-xl border border-dashed border-border py-10 text-center">
+                    <p className="text-sm text-muted-foreground">No reviews yet.</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* History */}
+            <TabsContent value="history">
+              <div className="space-y-2">
+                {MOCK_HISTORY.map((commit, i) => (
+                  <CommitRow key={commit.sha} commit={commit} index={i} />
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* Files */}
+            <TabsContent value="files">
+              <div className="rounded-xl border border-border overflow-hidden bg-card">
+                <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Repository contents
+                  </p>
+                  <code className="font-mono text-xs text-muted-foreground">
+                    {claim.id.slice(0, 8)}
+                  </code>
+                </div>
+                <div className="divide-y-0">
+                  {claimFiles.map((file) => (
+                    <FileRow key={file.path} file={file} claimId={claim.id} />
+                  ))}
+                </div>
+              </div>
+              <div className="mt-3 rounded-xl border border-border bg-card p-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Clone this claim
+                </p>
+                <code className="block w-full rounded-md bg-muted px-3 py-2 font-mono text-xs text-muted-foreground break-all">
+                  git clone https://phiacta.com/git/{claim.id.slice(0, 8)}.git
+                </code>
+              </div>
+            </TabsContent>
+
+            {/* References */}
+            <TabsContent value="references">
+              <div className="space-y-2">
+                {MOCK_REFERENCES.map((ref) => (
+                  <Link
                     key={ref.id}
-                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
+                    href={`/claims/${ref.target_claim_id}`}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
                   >
                     <Badge
                       variant="outline"
@@ -329,19 +613,14 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                     >
                       {ref.role}
                     </Badge>
-                    <Link
-                      href={`/claims/${ref.target_claim_id}`}
-                      className="min-w-0 flex-1 text-sm text-foreground hover:text-primary truncate transition-colors"
-                    >
+                    <span className="min-w-0 flex-1 text-sm text-foreground hover:text-primary truncate transition-colors">
                       {ref.target_title}
-                    </Link>
+                    </span>
                     <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                  </div>
+                  </Link>
                 ))}
                 {MOCK_REFERENCES.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">
-                    No references yet.
-                  </p>
+                  <p className="py-8 text-center text-sm text-muted-foreground">No references yet.</p>
                 )}
               </div>
             </TabsContent>
@@ -350,7 +629,6 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
 
         {/* Sidebar */}
         <div className="space-y-4">
-          {/* Confidence */}
           {claim.cached_confidence != null && (
             <div className="rounded-xl border border-border bg-card p-5">
               <ConfidenceBar value={claim.cached_confidence} count={totalSignals} />
@@ -370,15 +648,9 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
             </div>
           )}
 
-          {/* Author */}
           <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Author
-            </h3>
-            <Link
-              href={`/agents/${author.id}`}
-              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            >
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Author</h3>
+            <Link href={`/agents/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Avatar className="h-9 w-9">
                 <AvatarFallback>{getInitials(author.name)}</AvatarFallback>
               </Avatar>
@@ -390,45 +662,24 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
             <Separator className="my-3" />
             <div className="grid grid-cols-2 gap-2 text-center">
               <div>
-                <p className="text-sm font-semibold tabular-nums text-foreground">
-                  {author.claim_count}
-                </p>
+                <p className="text-sm font-semibold tabular-nums text-foreground">{author.claim_count}</p>
                 <p className="text-xs text-muted-foreground">claims</p>
               </div>
               <div>
-                <p className="text-sm font-semibold tabular-nums text-foreground">
-                  {(author.trust_score * 100).toFixed(0)}%
-                </p>
-                <p className="text-xs text-muted-foreground">trust</p>
+                <p className="text-sm font-semibold tabular-nums text-foreground">{author.reach}</p>
+                <p className="text-xs text-muted-foreground">reach</p>
               </div>
             </div>
           </div>
 
-          {/* Metadata */}
           <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Metadata
-            </h3>
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metadata</h3>
             <dl className="space-y-2.5 text-sm">
               {[
                 { label: "Type", value: claim.claim_type },
                 { label: "Format", value: claim.format },
-                {
-                  label: "Published",
-                  value: new Date(claim.created_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  }),
-                },
-                {
-                  label: "Last updated",
-                  value: new Date(claim.updated_at).toLocaleDateString("en-US", {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                  }),
-                },
+                { label: "Published", value: new Date(claim.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
+                { label: "Last updated", value: new Date(claim.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between">
                   <dt className="text-muted-foreground">{label}</dt>
@@ -436,22 +687,6 @@ export default async function ClaimPage({ params }: ClaimPageProps) {
                 </div>
               ))}
             </dl>
-          </div>
-
-          {/* Git */}
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Repository
-            </h3>
-            <div className="space-y-2">
-              <Button variant="outline" size="sm" className="w-full gap-2 justify-start text-xs">
-                <GitBranch className="h-3.5 w-3.5" />
-                Clone claim
-              </Button>
-              <code className="block w-full rounded-md bg-muted px-3 py-2 font-mono text-[10px] text-muted-foreground break-all">
-                git clone https://phiacta.com/git/{claim.id.slice(0, 8)}.git
-              </code>
-            </div>
           </div>
         </div>
       </div>
