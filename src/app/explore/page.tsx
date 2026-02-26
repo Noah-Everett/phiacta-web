@@ -1,387 +1,297 @@
 "use client";
 
-import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
-import ClaimCard from "@/components/ClaimCard";
-import Pagination from "@/components/Pagination";
-import { listClaims, listNamespaces, listSources } from "@/lib/api";
-import type { Claim, Namespace, Source } from "@/lib/types";
-
-const ITEMS_PER_PAGE = 20;
+import { useState, Suspense } from "react";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  ClaimTypeBadge,
+  EpistemicBadge,
+  VerificationBadge,
+} from "@/components/ClaimBadges";
+import { MOCK_CLAIMS } from "@/lib/mock-data";
+import { Search, SlidersHorizontal, X, ThumbsUp, ThumbsDown, Minus } from "lucide-react";
 
 const CLAIM_TYPES = [
-  "assertion",
-  "definition",
+  "empirical",
   "theorem",
-  "proof",
-  "evidence",
-  "law",
   "conjecture",
-  "refutation",
+  "definition",
+  "evidence",
   "hypothesis",
+  "refutation",
+  "assertion",
 ];
 
-type Tab = "claims" | "namespaces" | "sources";
+const EPISTEMIC_STATUSES = ["endorsed", "disputed", "under_review", "unverified"];
+const VERIFICATION_STATUSES = ["verified", "empirical", "submitted", "unverified", "failed"];
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function buildNamespaceTree(namespaces: Namespace[]) {
-  const byId = new Map(namespaces.map((ns) => [ns.id, ns]));
-  const childrenOf = new Map<string | null, Namespace[]>();
-
-  for (const ns of namespaces) {
-    const parentKey = ns.parent_id;
-    if (!childrenOf.has(parentKey)) childrenOf.set(parentKey, []);
-    childrenOf.get(parentKey)!.push(ns);
-  }
-
-  const ordered: { ns: Namespace; depth: number }[] = [];
-  function walk(node: Namespace, depth: number) {
-    ordered.push({ ns: node, depth });
-    for (const child of childrenOf.get(node.id) || []) walk(child, depth + 1);
-  }
-
-  // Roots: namespaces whose parent_id is null or references a non-existent parent
-  for (const ns of namespaces) {
-    if (!ns.parent_id || !byId.has(ns.parent_id)) {
-      walk(ns, 0);
-    }
-  }
-
-  return ordered;
-}
-
-// ---------------------------------------------------------------------------
-// Claims Tab
-// ---------------------------------------------------------------------------
-
-function ClaimsTab({
-  namespaces,
-  nsMap,
-}: {
-  namespaces: Namespace[];
-  nsMap: Map<string, string>;
-}) {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  const page = Number(searchParams.get("page")) || 1;
-  const namespaceId = searchParams.get("namespace_id") || "";
-  const claimType = searchParams.get("claim_type") || "";
-
-  const [claims, setClaims] = useState<Claim[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    const filters: { namespace_id?: string; claim_type?: string } = {};
-    if (namespaceId) filters.namespace_id = namespaceId;
-    if (claimType) filters.claim_type = claimType;
-
-    listClaims(ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE, filters)
-      .then((data) => {
-        setClaims(data.items);
-        setHasMore(data.items.length === ITEMS_PER_PAGE);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [page, namespaceId, claimType]);
-
-  const setParam = useCallback(
-    (key: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) params.set(key, value);
-      else params.delete(key);
-      params.set("tab", "claims");
-      params.delete("page");
-      router.push(`/explore?${params.toString()}`);
-    },
-    [searchParams, router]
-  );
-
-  const setPage = useCallback(
-    (p: number) => {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("page", String(p));
-      router.push(`/explore?${params.toString()}`);
-    },
-    [searchParams, router]
-  );
-
-  return (
-    <>
-      {/* Filters */}
-      <div className="mb-6 flex flex-wrap items-center gap-3">
-        <select
-          value={namespaceId}
-          onChange={(e) => setParam("namespace_id", e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:border-gray-400 dark:focus:ring-gray-400"
-        >
-          <option value="">All Namespaces</option>
-          {namespaces.map((ns) => (
-            <option key={ns.id} value={ns.id}>
-              {ns.name}
-            </option>
-          ))}
-        </select>
-
-        <select
-          value={claimType}
-          onChange={(e) => setParam("claim_type", e.target.value)}
-          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-700 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-300 dark:focus:border-gray-400 dark:focus:ring-gray-400"
-        >
-          <option value="">All Types</option>
-          {CLAIM_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {loading && (
-        <p className="py-12 text-center text-gray-400 dark:text-gray-500">Loading claims...</p>
-      )}
-      {error && (
-        <p className="py-12 text-center text-red-400">Error: {error}</p>
-      )}
-      {!loading && !error && claims.length === 0 && (
-        <p className="py-12 text-center text-gray-400 dark:text-gray-500">No claims found.</p>
-      )}
-
-      {!loading && !error && claims.length > 0 && (
-        <>
-          <div className="space-y-3">
-            {claims.map((claim) => (
-              <ClaimCard
-                key={claim.id}
-                claim={claim}
-                namespaceName={nsMap.get(claim.namespace_id)}
-              />
-            ))}
-          </div>
-          <Pagination
-            currentPage={page}
-            hasMore={hasMore}
-            onPageChange={setPage}
-          />
-        </>
-      )}
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Namespaces Tab
-// ---------------------------------------------------------------------------
-
-function NamespacesTab({ namespaces }: { namespaces: Namespace[] }) {
-  const router = useRouter();
-  const tree = buildNamespaceTree(namespaces);
-
-  function handleClick(nsId: string) {
-    router.push(`/explore?tab=claims&namespace_id=${nsId}`);
-  }
-
-  return (
-    <div className="space-y-1">
-      {tree.map(({ ns, depth }) => (
-        <button
-          key={ns.id}
-          onClick={() => handleClick(ns.id)}
-          className="flex w-full items-start gap-3 rounded-lg border border-gray-200 bg-white p-4 text-left transition hover:border-gray-300 hover:shadow-sm dark:border-gray-700 dark:bg-gray-900 dark:hover:border-gray-600"
-          style={{ marginLeft: depth * 24 }}
-        >
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{ns.name}</p>
-            {ns.description && (
-              <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">{ns.description}</p>
-            )}
-          </div>
-          <span className="shrink-0 text-xs text-gray-400 dark:text-gray-500">
-            {new Date(ns.created_at).toLocaleDateString()}
-          </span>
-        </button>
-      ))}
-      {namespaces.length === 0 && (
-        <p className="py-12 text-center text-gray-400 dark:text-gray-500">No namespaces found.</p>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Sources Tab
-// ---------------------------------------------------------------------------
-
-function SourcesTab() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const page = Number(searchParams.get("page")) || 1;
-
-  const [sources, setSources] = useState<Source[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [hasMore, setHasMore] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    setError(null);
-
-    listSources(ITEMS_PER_PAGE, (page - 1) * ITEMS_PER_PAGE)
-      .then((data) => {
-        setSources(data.items);
-        setHasMore(data.items.length === ITEMS_PER_PAGE);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [page]);
-
-  const setPage = useCallback(
-    (p: number) => {
-      const params = new URLSearchParams();
-      params.set("tab", "sources");
-      params.set("page", String(p));
-      router.push(`/explore?${params.toString()}`);
-    },
-    [router]
-  );
-
-  if (loading)
-    return (
-      <p className="py-12 text-center text-gray-400 dark:text-gray-500">Loading sources...</p>
-    );
-  if (error)
-    return <p className="py-12 text-center text-red-400">Error: {error}</p>;
-  if (sources.length === 0)
-    return (
-      <p className="py-12 text-center text-gray-400 dark:text-gray-500">No sources found.</p>
-    );
-
-  return (
-    <>
-      <div className="space-y-3">
-        {sources.map((src) => (
-          <div
-            key={src.id}
-            className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
-          >
-            <div className="mb-2 flex items-center gap-2">
-              <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-                {src.source_type}
-              </span>
-              <span className="ml-auto text-xs text-gray-400 dark:text-gray-500">
-                {new Date(src.submitted_at).toLocaleDateString()}
-              </span>
-            </div>
-            <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {src.title || "Untitled"}
-            </p>
-            {src.external_ref && (
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{src.external_ref}</p>
-            )}
-          </div>
-        ))}
-      </div>
-      <Pagination currentPage={page} hasMore={hasMore} onPageChange={setPage} />
-    </>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Main Explore Content
-// ---------------------------------------------------------------------------
+const ALL_TOPICS = Array.from(
+  new Set(MOCK_CLAIMS.flatMap((c) => c.topics))
+).sort();
 
 function ExploreContent() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const activeTab = (searchParams.get("tab") as Tab) || "claims";
+  const [search, setSearch] = useState("");
+  const [selectedType, setSelectedType] = useState<string | null>(null);
+  const [selectedEpistemic, setSelectedEpistemic] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
-  const [namespaces, setNamespaces] = useState<Namespace[]>([]);
-  const [nsMap, setNsMap] = useState<Map<string, string>>(new Map());
+  const filtered = MOCK_CLAIMS.filter((claim) => {
+    if (search) {
+      const q = search.toLowerCase();
+      if (
+        !claim.title.toLowerCase().includes(q) &&
+        !claim.topics.some((t) => t.toLowerCase().includes(q))
+      )
+        return false;
+    }
+    if (selectedType && claim.claim_type !== selectedType) return false;
+    if (selectedEpistemic && claim.epistemic_status !== selectedEpistemic) return false;
+    if (selectedTopic && !claim.topics.includes(selectedTopic)) return false;
+    return true;
+  });
 
-  useEffect(() => {
-    listNamespaces()
-      .then((data) => {
-        setNamespaces(data.items);
-        setNsMap(new Map(data.items.map((ns) => [ns.id, ns.name])));
-      })
-      .catch(() => {
-        // Namespace fetch failure is non-fatal
-      });
-  }, []);
-
-  function switchTab(tab: Tab) {
-    const params = new URLSearchParams();
-    params.set("tab", tab);
-    router.push(`/explore?${params.toString()}`);
-  }
-
-  const tabs: { key: Tab; label: string }[] = [
-    { key: "claims", label: "Claims" },
-    { key: "namespaces", label: "Namespaces" },
-    { key: "sources", label: "Sources" },
-  ];
+  const activeFilters = [selectedType, selectedEpistemic, selectedTopic].filter(Boolean).length;
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">Explore</h1>
-      <p className="mb-6 text-sm text-gray-500 dark:text-gray-400">
-        Browse claims, namespaces, and sources in the knowledge graph.
-      </p>
-
-      {/* Tab bar */}
-      <div className="mb-6 flex border-b border-gray-200 dark:border-gray-700">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => switchTab(t.key)}
-            className={`px-4 py-2 text-sm font-medium transition ${
-              activeTab === t.key
-                ? "border-b-2 border-gray-900 text-gray-900 dark:border-gray-100 dark:text-gray-100"
-                : "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mb-6">
+        <h1 className="mb-1 text-2xl font-bold text-foreground">Explore</h1>
+        <p className="text-sm text-muted-foreground">
+          Browse and filter claims across all disciplines.
+        </p>
       </div>
 
-      {/* Tab content */}
-      {activeTab === "claims" && (
-        <ClaimsTab namespaces={namespaces} nsMap={nsMap} />
+      {/* Search + filter toggle */}
+      <div className="mb-4 flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search by title or topic…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <Button
+          variant={showFilters ? "secondary" : "outline"}
+          size="icon"
+          onClick={() => setShowFilters((v) => !v)}
+          className="relative"
+        >
+          <SlidersHorizontal className="h-4 w-4" />
+          {activeFilters > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+              {activeFilters}
+            </span>
+          )}
+        </Button>
+      </div>
+
+      {/* Filters panel */}
+      {showFilters && (
+        <div className="mb-4 rounded-xl border border-border bg-card p-4">
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Claim type
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {CLAIM_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedType(selectedType === t ? null : t)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                      selectedType === t
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Epistemic status
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {EPISTEMIC_STATUSES.map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => setSelectedEpistemic(selectedEpistemic === s ? null : s)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                      selectedEpistemic === s
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {s.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Topics
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {ALL_TOPICS.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setSelectedTopic(selectedTopic === t ? null : t)}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs transition-colors ${
+                      selectedTopic === t
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-muted-foreground hover:border-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          {activeFilters > 0 && (
+            <>
+              <Separator className="my-3" />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedType(null);
+                  setSelectedEpistemic(null);
+                  setSelectedTopic(null);
+                }}
+                className="gap-1.5 text-xs"
+              >
+                <X className="h-3 w-3" /> Clear all filters
+              </Button>
+            </>
+          )}
+        </div>
       )}
-      {activeTab === "namespaces" && (
-        <NamespacesTab namespaces={namespaces} />
+
+      {/* Active filter chips */}
+      {activeFilters > 0 && !showFilters && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {selectedType && (
+            <Badge variant="secondary" className="gap-1.5 text-xs">
+              {selectedType}
+              <button onClick={() => setSelectedType(null)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {selectedEpistemic && (
+            <Badge variant="secondary" className="gap-1.5 text-xs">
+              {selectedEpistemic.replace("_", " ")}
+              <button onClick={() => setSelectedEpistemic(null)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+          {selectedTopic && (
+            <Badge variant="secondary" className="gap-1.5 text-xs">
+              {selectedTopic}
+              <button onClick={() => setSelectedTopic(null)}>
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          )}
+        </div>
       )}
-      {activeTab === "sources" && <SourcesTab />}
+
+      {/* Results count */}
+      <p className="mb-3 text-sm text-muted-foreground">
+        {filtered.length} claim{filtered.length !== 1 ? "s" : ""}
+      </p>
+
+      {/* Claim list */}
+      <div className="space-y-2">
+        {filtered.map((claim) => (
+          <Link
+            key={claim.id}
+            href={`/claims/${claim.id}`}
+            className="group flex flex-col gap-2.5 rounded-xl border border-border bg-card p-5 transition hover:border-primary/30 hover:shadow-sm sm:flex-row sm:items-start sm:gap-4"
+          >
+            {/* Left: type + title */}
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <ClaimTypeBadge type={claim.claim_type} />
+                <EpistemicBadge status={claim.epistemic_status} />
+                <VerificationBadge status={claim.verification_status} />
+              </div>
+              <p className="text-sm font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
+                {claim.title}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                {claim.topics.slice(0, 4).map((topic) => (
+                  <span
+                    key={topic}
+                    className="rounded-full bg-secondary px-2 py-0 text-xs text-secondary-foreground"
+                  >
+                    {topic}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: signals */}
+            <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1">
+              {claim.cached_confidence != null && (
+                <span className="font-semibold tabular-nums text-foreground">
+                  {Math.round(claim.cached_confidence * 100)}%
+                </span>
+              )}
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-0.5 text-green-600 dark:text-green-400">
+                  <ThumbsUp className="h-3 w-3" /> {claim.agree_count}
+                </span>
+                <span className="flex items-center gap-0.5 text-red-500">
+                  <ThumbsDown className="h-3 w-3" /> {claim.disagree_count}
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {new Date(claim.created_at).toLocaleDateString("en-US", {
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+          </Link>
+        ))}
+
+        {filtered.length === 0 && (
+          <div className="rounded-xl border border-dashed border-border py-16 text-center">
+            <p className="text-sm text-muted-foreground">No claims match your filters.</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-2"
+              onClick={() => {
+                setSearch("");
+                setSelectedType(null);
+                setSelectedEpistemic(null);
+                setSelectedTopic(null);
+              }}
+            >
+              Clear filters
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
-
-// ---------------------------------------------------------------------------
-// Page (with Suspense boundary for useSearchParams)
-// ---------------------------------------------------------------------------
 
 export default function ExplorePage() {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-4xl px-6 py-10">Loading...</div>
-      }
-    >
+    <Suspense fallback={<div className="mx-auto max-w-6xl px-6 py-8">Loading…</div>}>
       <ExploreContent />
     </Suspense>
   );

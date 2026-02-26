@@ -1,85 +1,160 @@
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import {
+  GitBranch,
+  ShieldCheck,
+  Globe,
+  MessageSquare,
+  BookOpen,
+  Puzzle,
+} from "lucide-react";
+
+const PRINCIPLES = [
+  {
+    icon: GitBranch,
+    title: "Permanent by design",
+    body: "Claims are backed by git. History is immutable. Nothing is deleted. Every citation always resolves — even years later.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Proof over assertion",
+    body: "Claims carry their supporting materials: data and code for empirical work, machine-checkable proofs for mathematics. Verification status is always visible.",
+  },
+  {
+    icon: Globe,
+    title: "Public by default",
+    body: "Claims are publicly readable. Authors control who can edit. There are no private claims — the knowledge is open, commit access is not.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Record, don't resolve",
+    body: "Contradictory claims coexist. The system records what has been asserted and by whom. Resolving disagreement is the community's job, not the platform's.",
+  },
+  {
+    icon: BookOpen,
+    title: "Claims, not papers",
+    body: "An atomic claim stands on its own — citable, reviewable, and updatable without touching anything else. No more citing a paper when you only mean one sentence.",
+  },
+  {
+    icon: Puzzle,
+    title: "Open platform",
+    body: "Every feature on the website is accessible through the API. Third-party extensions can build any output on top of the same data.",
+  },
+];
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-4xl px-6 py-10">
-      <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">About Phiacta</h1>
-      <p className="mb-10 text-sm text-gray-500 dark:text-gray-400">
-        Structured, well-formed facts for science.
-      </p>
+    <div className="mx-auto max-w-4xl px-6 py-12">
+      {/* Hero */}
+      <div className="mb-10">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">About Phiacta</h1>
+        <p className="text-lg text-muted-foreground">
+          A permanent, structured home for human knowledge.
+        </p>
+      </div>
 
+      <Separator className="mb-10" />
+
+      {/* Name */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-gray-900 dark:text-gray-100">The Name</h2>
-        <p className="text-gray-600 leading-relaxed dark:text-gray-400">
-          <strong className="dark:text-gray-200">Phiacta</strong> is a blend of two roots:{" "}
-          <strong className="dark:text-gray-200">phi</strong> ({"\u03C6"}), the Greek letter representing the golden
-          ratio and used throughout mathematics and science, and{" "}
-          <strong className="dark:text-gray-200">facta</strong>, the Latin word for &ldquo;things done&rdquo; or
-          &ldquo;things made&rdquo;&mdash;the origin of the English word
-          &ldquo;fact.&rdquo; Together the name captures the idea of structured,
-          well-formed facts: knowledge shaped with the same elegance and
-          precision that {"\u03C6"} embodies.
+        <h2 className="mb-3 text-xl font-semibold text-foreground">The Name</h2>
+        <p className="leading-relaxed text-muted-foreground">
+          <strong className="text-foreground">Phiacta</strong> blends two roots:{" "}
+          <strong className="text-foreground">phi</strong> (φ), the Greek letter representing
+          the golden ratio and used throughout mathematics and science, and{" "}
+          <strong className="text-foreground">facta</strong>, the Latin word for "things done" —
+          the origin of the English word "fact." Together the name captures the idea of
+          structured, well-formed facts: knowledge shaped with the same elegance and precision
+          that φ embodies.
         </p>
       </section>
 
+      {/* Vision */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Vision &amp; Mission
-        </h2>
-        <p className="text-gray-600 leading-relaxed dark:text-gray-400">
-          Science produces an enormous volume of claims, results, and
-          relationships&mdash;yet most of this knowledge remains locked inside
-          unstructured PDFs and prose. Phiacta exists to change that. Our goal
-          is to build the most general and future-proof knowledge backend
-          possible: a database designed from the ground up to store, version, and
-          serve structured information through interfaces that are as general as
-          the data they expose.
-        </p>
-        <p className="mt-4 text-gray-600 leading-relaxed dark:text-gray-400">
-          At its core, Phiacta is a general-purpose database&mdash;not a
-          knowledge graph, not a document store, but a carefully designed system
-          that can support any of those paradigms through composable{" "}
-          <strong className="dark:text-gray-200">layers</strong> and <strong className="dark:text-gray-200">extensions</strong>. A graph layer
-          can interpret relationships between claims. A confidence layer can
-          aggregate peer reviews into epistemic status. New layers can be added
-          without touching the core schema, and existing ones can be swapped or
-          removed to suit different communities and use cases.
-        </p>
-        <p className="mt-4 text-gray-600 leading-relaxed dark:text-gray-400">
-          By making the web of scientific knowledge explicit and explorable, we
-          aim to accelerate discovery, improve reproducibility, and give
-          researchers, educators, and the public a clearer picture of what
-          science actually knows. To learn more about how the system is
-          designed, see the{" "}
-          <Link href="/architecture" className="text-gray-900 underline hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-400">
-            Architecture
-          </Link>{" "}
-          page.
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Vision</h2>
+        <div className="space-y-4 leading-relaxed text-muted-foreground">
+          <p>
+            Knowledge today is scattered, unstructured, and hard to verify. Papers lock
+            findings inside static PDFs. Social platforms bury truth in noise. Encyclopedias
+            reflect a single editorial perspective. None of them were designed with provability
+            in mind.
+          </p>
+          <p>
+            Phiacta is built around a different idea: every piece of knowledge should be a{" "}
+            <strong className="text-foreground">claim</strong> — an atomic, versioned assertion
+            that stands on its own, can be backed by evidence, and can be reviewed, challenged,
+            and cited independently.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-xl border border-border bg-card p-5">
+              <Badge variant="secondary" className="mb-2">Near-term</Badge>
+              <p className="text-sm">
+                Phiacta replaces academic papers. Researchers publish individual claims backed
+                by data, code, and proofs — no more monolithic PDFs.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-5">
+              <Badge variant="secondary" className="mb-2">Long-term</Badge>
+              <p className="text-sm">
+                A general knowledge layer for the internet — a more trustworthy, more structured
+                alternative to X, Reddit, Wikipedia, and Stack Exchange.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Principles */}
+      <section className="mb-10">
+        <h2 className="mb-5 text-xl font-semibold text-foreground">Core Principles</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {PRINCIPLES.map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex gap-4">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                <Icon className="h-4 w-4 text-secondary-foreground" />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Separator className="mb-10" />
+
+      {/* Protocol */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Phiacta and phiacta.com</h2>
+        <p className="leading-relaxed text-muted-foreground">
+          Phiacta is designed like git and GitHub. The{" "}
+          <strong className="text-foreground">Phiacta protocol</strong> — the API and data model
+          — is the open foundation. Anyone can build on it.{" "}
+          <strong className="text-foreground">phiacta.com</strong> is the primary hosting
+          platform: the website most people use, plus the extensions marketplace where
+          third-party tools are listed.
         </p>
       </section>
 
-      <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Contact &amp; Community
-        </h2>
-        <p className="text-gray-600 leading-relaxed dark:text-gray-400">
-          Phiacta is open source. You can find the code, report issues, and
-          contribute on{" "}
+      {/* Contact */}
+      <section>
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Contact &amp; Community</h2>
+        <p className="leading-relaxed text-muted-foreground">
+          Phiacta is open source. You can find the code, report issues, and contribute on{" "}
           <a
             href="https://github.com/phiacta"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-gray-900 underline hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-400"
+            className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
           >
             GitHub
           </a>
-          .
-        </p>
-        <p className="mt-4 text-gray-600 leading-relaxed dark:text-gray-400">
-          For questions, feedback, or collaboration inquiries, reach out at{" "}
+          . For questions or feedback, reach out at{" "}
           <a
             href="mailto:contact@phiacta.com"
-            className="text-gray-900 underline hover:text-gray-600 dark:text-gray-100 dark:hover:text-gray-400"
+            className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
           >
             contact@phiacta.com
           </a>

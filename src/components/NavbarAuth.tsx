@@ -2,42 +2,50 @@
 
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { LogOut, User } from "lucide-react";
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
 
 export default function NavbarAuth() {
   const { agent, isLoading, logout } = useAuth();
 
   if (isLoading) {
-    return <div className="h-8 w-24" />;
+    return <div className="h-8 w-20" />;
   }
 
   if (agent) {
     return (
-      <>
-        <span className="text-sm text-gray-600 dark:text-gray-400">{agent.name}</span>
-        <button
-          onClick={logout}
-          className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-        >
-          Log out
-        </button>
-      </>
+      <div className="flex items-center gap-2">
+        <Link href={`/agents/${agent.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Avatar className="h-7 w-7">
+            <AvatarFallback className="text-[10px]">{getInitials(agent.name)}</AvatarFallback>
+          </Avatar>
+          <span className="hidden text-sm font-medium text-foreground sm:block">{agent.name}</span>
+        </Link>
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={logout} title="Log out">
+          <LogOut className="h-3.5 w-3.5" />
+        </Button>
+      </div>
     );
   }
 
   return (
-    <>
-      <Link
-        href="/auth/login"
-        className="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-      >
-        Log in
-      </Link>
-      <Link
-        href="/auth/signup"
-        className="rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white hover:bg-gray-700 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
-      >
-        Sign up
-      </Link>
-    </>
+    <div className="flex items-center gap-2">
+      <Button variant="ghost" size="sm" asChild>
+        <Link href="/auth/login">Log in</Link>
+      </Button>
+      <Button size="sm" asChild>
+        <Link href="/auth/signup">Sign up</Link>
+      </Button>
+    </div>
   );
 }

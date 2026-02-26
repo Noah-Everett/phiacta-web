@@ -1,294 +1,458 @@
-import {
-  getClaim,
-  getClaimReferences,
-  getConfidence,
-  getNeighbors,
-  getAgent,
-} from "@/lib/api";
 import Link from "next/link";
-import InteractionSection from "@/components/InteractionSection";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  ClaimTypeBadge,
+  EpistemicBadge,
+  VerificationBadge,
+  ConfidenceBar,
+} from "@/components/ClaimBadges";
 import MarkdownContent from "@/components/MarkdownContent";
-import type { PublicAgent, Claim, Reference, Neighbor, ConfidenceStatus } from "@/lib/types";
+import {
+  GitBranch,
+  MessageSquare,
+  History,
+  Network,
+  ThumbsUp,
+  ThumbsDown,
+  Minus,
+  ExternalLink,
+  GitMerge,
+  CircleDot,
+  ChevronRight,
+} from "lucide-react";
+import {
+  MOCK_CLAIMS,
+  MOCK_AGENTS,
+  MOCK_PROPOSALS,
+  MOCK_ISSUES,
+  MOCK_HISTORY,
+  MOCK_REFERENCES,
+} from "@/lib/mock-data";
 
 interface ClaimPageProps {
   params: Promise<{ id: string }>;
 }
 
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+}
+
 export default async function ClaimPage({ params }: ClaimPageProps) {
   const { id } = await params;
 
-  let claim: Claim | null = null;
-  try {
-    claim = await getClaim(id);
-  } catch {
-    return (
-      <div className="mx-auto max-w-5xl px-6 py-10">
-        <p className="text-red-500">Claim not found or backend unavailable.</p>
-      </div>
-    );
-  }
+  // Use mock data — backend will be wired up later
+  const claim = MOCK_CLAIMS.find((c) => c.id === id) ?? MOCK_CLAIMS[0];
+  const author = MOCK_AGENTS.find((a) => a.id === claim.created_by) ?? MOCK_AGENTS[0];
 
-  // Secondary fetches — failures don't break the page
-  const [
-    referencesResult,
-    confidenceResult,
-    neighborsResult,
-    authorResult,
-  ] = await Promise.allSettled([
-    getClaimReferences(id),
-    getConfidence(id),
-    getNeighbors(id),
-    getAgent(claim.created_by),
-  ]);
-
-  const references: Reference[] =
-    referencesResult.status === "fulfilled" ? referencesResult.value : [];
-  const confidence: ConfidenceStatus | null =
-    confidenceResult.status === "fulfilled" ? confidenceResult.value : null;
-  const neighbors: Neighbor[] =
-    neighborsResult.status === "fulfilled"
-      ? neighborsResult.value.neighbors || []
-      : [];
-  const author: PublicAgent | null =
-    authorResult.status === "fulfilled" ? authorResult.value : null;
+  const totalSignals = claim.agree_count + claim.disagree_count + claim.neutral_count;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      {/* Breadcrumb */}
+      <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Link href="/explore" className="hover:text-foreground transition-colors">
+          Explore
+        </Link>
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-foreground truncate max-w-[300px]">{claim.title}</span>
+      </nav>
+
       {/* Header */}
       <div className="mb-6">
-        <h1 className="mb-2 text-xl font-bold text-gray-900 dark:text-gray-100">
-          <MarkdownContent content={claim.title} compact />
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <ClaimTypeBadge type={claim.claim_type} />
+          <EpistemicBadge status={claim.epistemic_status} />
+          <VerificationBadge status={claim.verification_status} />
+        </div>
+
+        <h1 className="mb-4 text-2xl font-bold leading-tight text-foreground sm:text-3xl">
+          {claim.title}
         </h1>
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
-            {claim.claim_type}
-          </span>
-          <span
-            className={`rounded px-2 py-0.5 text-xs font-medium ${
-              claim.status === "active"
-                ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                : claim.status === "draft"
-                  ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
-                  : claim.status === "retracted"
-                    ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-            }`}
+
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <Link
+            href={`/agents/${author.id}`}
+            className="flex items-center gap-2 hover:text-foreground transition-colors"
           >
-            {claim.status}
+            <Avatar className="h-6 w-6">
+              <AvatarFallback className="text-[10px]">{getInitials(author.name)}</AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-foreground">{author.name}</span>
+            <Badge variant="outline" className="text-xs py-0">
+              {author.agent_type}
+            </Badge>
+          </Link>
+          <Separator orientation="vertical" className="h-4" />
+          <span>
+            {new Date(claim.created_at).toLocaleDateString("en-US", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
           </span>
-          <span className="rounded bg-gray-50 px-2 py-0.5 text-xs text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-            {claim.format}
-          </span>
-          {claim.repo_status === "provisioning" && (
-            <span className="rounded bg-yellow-50 px-2 py-0.5 text-xs text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
-              syncing...
-            </span>
-          )}
-          {claim.repo_status === "error" && (
-            <span className="rounded bg-red-50 px-2 py-0.5 text-xs text-red-700 dark:bg-red-900/30 dark:text-red-400">
-              sync failed
-            </span>
-          )}
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-          {author ? (
-            <span>
-              By: <span className="font-medium text-gray-700 dark:text-gray-300">{author.name}</span>
-              <span className="text-gray-400 dark:text-gray-500"> &middot; {author.agent_type}</span>
-            </span>
-          ) : (
-            <span className="font-mono text-xs text-gray-400 dark:text-gray-500">
-              {claim.created_by.slice(0, 8)}
-            </span>
-          )}
-          <span className="text-gray-300 dark:text-gray-600">|</span>
-          <span>{new Date(claim.created_at).toLocaleDateString()}</span>
-        </div>
+
+        {/* Topics */}
+        {claim.topics.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {claim.topics.map((topic) => (
+              <Link
+                key={topic}
+                href={`/explore?topic=${topic}`}
+                className="rounded-full bg-secondary px-3 py-0.5 text-xs text-secondary-foreground hover:bg-secondary/80 transition-colors"
+              >
+                {topic}
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-        {/* Main content (2/3) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Content */}
-          <section className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-900">
-            <h2 className="mb-3 text-lg font-semibold text-gray-900 dark:text-gray-100">Content</h2>
-            {claim.content_cache ? (
-              <MarkdownContent content={claim.content_cache} className="text-base leading-relaxed text-gray-800 dark:text-gray-200" />
-            ) : (
-              <p className="text-sm text-gray-400 dark:text-gray-500">
-                Content is stored in the git repository.
-                {claim.repo_status === "provisioning" && " Repository is still being provisioned."}
-              </p>
-            )}
-          </section>
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
+        {/* Main panel */}
+        <div className="min-w-0">
+          <Tabs defaultValue="content">
+            <TabsList className="mb-4 w-full justify-start">
+              <TabsTrigger value="content" className="gap-1.5">
+                Content
+              </TabsTrigger>
+              <TabsTrigger value="proposals" className="gap-1.5">
+                <GitBranch className="h-3.5 w-3.5" />
+                Proposals
+                <Badge variant="secondary" className="ml-1 text-xs py-0 px-1.5">
+                  {MOCK_PROPOSALS.filter((p) => p.state === "open").length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="issues" className="gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" />
+                Issues
+                <Badge variant="secondary" className="ml-1 text-xs py-0 px-1.5">
+                  {MOCK_ISSUES.filter((i) => i.state === "open").length}
+                </Badge>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="gap-1.5">
+                <History className="h-3.5 w-3.5" />
+                History
+              </TabsTrigger>
+              <TabsTrigger value="references" className="gap-1.5">
+                <Network className="h-3.5 w-3.5" />
+                References
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Interactions */}
-          <InteractionSection claimId={id} />
-        </div>
-
-        {/* Sidebar (1/3) */}
-        <div className="space-y-6">
-          {/* Metadata */}
-          <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Metadata</h3>
-            <dl className="space-y-2 text-sm">
-              <div>
-                <dt className="text-gray-400 dark:text-gray-500">Type</dt>
-                <dd className="text-gray-700 dark:text-gray-300">{claim.claim_type}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400 dark:text-gray-500">Status</dt>
-                <dd className="text-gray-700 dark:text-gray-300">{claim.status}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400 dark:text-gray-500">Format</dt>
-                <dd className="text-gray-700 dark:text-gray-300">{claim.format}</dd>
-              </div>
-              <div>
-                <dt className="text-gray-400 dark:text-gray-500">Namespace</dt>
-                <dd className="font-mono text-xs text-gray-700 dark:text-gray-300">
-                  {claim.namespace_id.slice(0, 8)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-gray-400 dark:text-gray-500">Created</dt>
-                <dd className="text-gray-700 dark:text-gray-300">
-                  {new Date(claim.created_at).toLocaleString()}
-                </dd>
-              </div>
-              {claim.cached_confidence != null && (
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Confidence</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">
-                    {(claim.cached_confidence * 100).toFixed(0)}%
-                  </dd>
-                </div>
-              )}
-            </dl>
-          </section>
-
-          {/* Author */}
-          {author && (
-            <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">Author</h3>
-              <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Name</dt>
-                  <dd className="font-medium text-gray-700 dark:text-gray-300">{author.name}</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Type</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">{author.agent_type}</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Trust Score</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">
-                    {(author.trust_score * 100).toFixed(0)}%
-                  </dd>
-                </div>
-              </dl>
-            </section>
-          )}
-
-          {/* Epistemic Status */}
-          {confidence && (
-            <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Epistemic Status
-              </h3>
-              <dl className="space-y-2 text-sm">
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Status</dt>
-                  <dd className="font-medium text-gray-700 dark:text-gray-300">
-                    {confidence.epistemic_status}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Agree</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">{confidence.agree_count}</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Disagree</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">{confidence.disagree_count}</dd>
-                </div>
-                <div>
-                  <dt className="text-gray-400 dark:text-gray-500">Neutral</dt>
-                  <dd className="text-gray-700 dark:text-gray-300">{confidence.neutral_count}</dd>
-                </div>
-                {confidence.weighted_agree_confidence != null && (
-                  <div>
-                    <dt className="text-gray-400 dark:text-gray-500">Weighted Agree Confidence</dt>
-                    <dd className="text-gray-700 dark:text-gray-300">
-                      {(confidence.weighted_agree_confidence * 100).toFixed(0)}%
-                    </dd>
-                  </div>
+            {/* Content tab */}
+            <TabsContent value="content">
+              <div className="rounded-xl border border-border bg-card p-6">
+                {claim.content_cache ? (
+                  <MarkdownContent
+                    content={claim.content_cache}
+                    className="text-sm leading-relaxed text-card-foreground"
+                  />
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Content is stored in the git repository.
+                  </p>
                 )}
-              </dl>
-            </section>
-          )}
-
-          {/* References */}
-          {references.length > 0 && (
-            <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                References ({references.length})
-              </h3>
-              <div className="space-y-1">
-                {references.map((ref) => {
-                  const linkedClaimId =
-                    ref.source_claim_id === id
-                      ? ref.target_claim_id
-                      : ref.source_claim_id;
-                  return (
-                    <div key={ref.id} className="flex items-center gap-2 text-sm">
-                      <span className="rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                        {ref.role}
-                      </span>
-                      {linkedClaimId ? (
-                        <Link
-                          href={`/claims/${linkedClaimId}`}
-                          className="truncate font-mono text-xs text-blue-600 hover:underline dark:text-blue-400"
-                        >
-                          {linkedClaimId.slice(0, 8)}
-                        </Link>
-                      ) : (
-                        <span className="truncate font-mono text-xs text-gray-500 dark:text-gray-400">
-                          {ref.source_claim_id === id
-                            ? ref.target_uri
-                            : ref.source_uri}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
-            </section>
-          )}
 
-          {/* Neighbors */}
-          {neighbors.length > 0 && (
-            <section className="rounded-lg border border-gray-200 bg-white p-5 dark:border-gray-700 dark:bg-gray-900">
-              <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Neighbors ({neighbors.length})
-              </h3>
-              <div className="space-y-1">
-                {neighbors.map((n) => (
-                  <div key={n.reference_id} className="flex items-center gap-2 text-sm">
-                    <span className="text-xs text-gray-400 dark:text-gray-500">{n.direction}</span>
-                    <span className="rounded bg-purple-50 px-2 py-0.5 text-xs text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
-                      {n.role}
-                    </span>
-                    <Link
-                      href={`/claims/${n.neighbor_id}`}
-                      className="truncate font-mono text-xs text-blue-600 hover:underline dark:text-blue-400"
+              {/* Voting */}
+              <div className="mt-4 rounded-xl border border-border bg-card p-5">
+                <h3 className="mb-4 text-sm font-semibold text-foreground">
+                  Cast your signal
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ThumbsUp className="h-4 w-4 text-green-600" />
+                    Agree
+                    <span className="text-muted-foreground tabular-nums">{claim.agree_count}</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <ThumbsDown className="h-4 w-4 text-red-500" />
+                    Disagree
+                    <span className="text-muted-foreground tabular-nums">{claim.disagree_count}</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Minus className="h-4 w-4 text-muted-foreground" />
+                    Neutral
+                    <span className="text-muted-foreground tabular-nums">{claim.neutral_count}</span>
+                  </Button>
+                  <Button variant="outline" size="sm" className="ml-auto">
+                    Write a review
+                  </Button>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Proposals tab */}
+            <TabsContent value="proposals">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Proposals are proposed content changes — like pull requests.
+                </p>
+                <Button size="sm">Open proposal</Button>
+              </div>
+              <div className="space-y-3">
+                {MOCK_PROPOSALS.map((proposal) => (
+                  <div
+                    key={proposal.number}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
+                  >
+                    {proposal.state === "open" ? (
+                      <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
+                    ) : (
+                      <GitMerge className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">{proposal.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        #{proposal.number} · {proposal.author_name} ·{" "}
+                        {new Date(proposal.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                        {proposal.body}
+                      </p>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={
+                        proposal.state === "open"
+                          ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                          : "text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:bg-violet-950/50"
+                      }
                     >
-                      {n.neighbor_id.slice(0, 8)}
-                    </Link>
+                      {proposal.state}
+                    </Badge>
                   </div>
                 ))}
               </div>
-            </section>
+            </TabsContent>
+
+            {/* Issues tab */}
+            <TabsContent value="issues">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Issues track questions, problems, and discussions about this claim.
+                </p>
+                <Button size="sm">Open issue</Button>
+              </div>
+              <div className="space-y-3">
+                {MOCK_ISSUES.map((issue) => (
+                  <div
+                    key={issue.number}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
+                  >
+                    <CircleDot
+                      className={`mt-0.5 h-4 w-4 shrink-0 ${
+                        issue.state === "open" ? "text-green-500" : "text-muted-foreground"
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">{issue.title}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        #{issue.number} · {issue.author_name} ·{" "}
+                        {new Date(issue.created_at).toLocaleDateString()}
+                      </p>
+                      <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                        {issue.body}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">
+                        {issue.comment_count} comments
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={
+                          issue.state === "open"
+                            ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                            : "text-muted-foreground"
+                        }
+                      >
+                        {issue.state}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* History tab */}
+            <TabsContent value="history">
+              <div className="space-y-1">
+                {MOCK_HISTORY.map((commit, i) => (
+                  <div
+                    key={commit.sha}
+                    className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
+                  >
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-mono text-muted-foreground">
+                      {i + 1}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-foreground">{commit.message}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {commit.author_name} ·{" "}
+                        {new Date(commit.timestamp).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                    </div>
+                    <code className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                      {commit.sha.slice(0, 7)}
+                    </code>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            {/* References tab */}
+            <TabsContent value="references">
+              <div className="space-y-3">
+                {MOCK_REFERENCES.map((ref) => (
+                  <div
+                    key={ref.id}
+                    className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
+                  >
+                    <Badge
+                      variant="outline"
+                      className="shrink-0 bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800"
+                    >
+                      {ref.role}
+                    </Badge>
+                    <Link
+                      href={`/claims/${ref.target_claim_id}`}
+                      className="min-w-0 flex-1 text-sm text-foreground hover:text-primary truncate transition-colors"
+                    >
+                      {ref.target_title}
+                    </Link>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                  </div>
+                ))}
+                {MOCK_REFERENCES.length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No references yet.
+                  </p>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Confidence */}
+          {claim.cached_confidence != null && (
+            <div className="rounded-xl border border-border bg-card p-5">
+              <ConfidenceBar value={claim.cached_confidence} count={totalSignals} />
+              <Separator className="my-3" />
+              <div className="grid grid-cols-3 gap-2 text-center">
+                {[
+                  { label: "agree", count: claim.agree_count, color: "text-green-600 dark:text-green-400" },
+                  { label: "disagree", count: claim.disagree_count, color: "text-red-500 dark:text-red-400" },
+                  { label: "neutral", count: claim.neutral_count, color: "text-muted-foreground" },
+                ].map(({ label, count, color }) => (
+                  <div key={label}>
+                    <p className={`text-base font-semibold tabular-nums ${color}`}>{count}</p>
+                    <p className="text-xs text-muted-foreground">{label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
+
+          {/* Author */}
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Author
+            </h3>
+            <Link
+              href={`/agents/${author.id}`}
+              className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            >
+              <Avatar className="h-9 w-9">
+                <AvatarFallback>{getInitials(author.name)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">{author.name}</p>
+                <p className="text-xs text-muted-foreground capitalize">{author.agent_type}</p>
+              </div>
+            </Link>
+            <Separator className="my-3" />
+            <div className="grid grid-cols-2 gap-2 text-center">
+              <div>
+                <p className="text-sm font-semibold tabular-nums text-foreground">
+                  {author.claim_count}
+                </p>
+                <p className="text-xs text-muted-foreground">claims</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold tabular-nums text-foreground">
+                  {(author.trust_score * 100).toFixed(0)}%
+                </p>
+                <p className="text-xs text-muted-foreground">trust</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Metadata */}
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Metadata
+            </h3>
+            <dl className="space-y-2.5 text-sm">
+              {[
+                { label: "Type", value: claim.claim_type },
+                { label: "Format", value: claim.format },
+                {
+                  label: "Published",
+                  value: new Date(claim.created_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  }),
+                },
+                {
+                  label: "Last updated",
+                  value: new Date(claim.updated_at).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  }),
+                },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex items-center justify-between">
+                  <dt className="text-muted-foreground">{label}</dt>
+                  <dd className="font-medium text-foreground capitalize">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+
+          {/* Git */}
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Repository
+            </h3>
+            <div className="space-y-2">
+              <Button variant="outline" size="sm" className="w-full gap-2 justify-start text-xs">
+                <GitBranch className="h-3.5 w-3.5" />
+                Clone claim
+              </Button>
+              <code className="block w-full rounded-md bg-muted px-3 py-2 font-mono text-[10px] text-muted-foreground break-all">
+                git clone https://phiacta.com/git/{claim.id.slice(0, 8)}.git
+              </code>
+            </div>
+          </div>
         </div>
       </div>
     </div>
