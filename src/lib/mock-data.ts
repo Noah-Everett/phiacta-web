@@ -246,7 +246,8 @@ export const MOCK_EDITS = [
     created_by: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
     author_name: "Prof. Michael Torres",
     created_at: "2025-02-10T09:00:00Z",
-    body: "The current effect size description uses mixed units. Proposal: standardize to Cohen's d and add a reference to the meta-analysis forest plot. The 38% CRP reduction figure should also cite the specific meta-analysis it comes from.",
+    body: "The current effect size description uses mixed units. Proposal: standardize to Cohen's d and add a reference to the meta-analysis forest plot. The 38% CRP reduction figure should also cite the specific meta-analysis it comes from. This was flagged in #review/rev-1.",
+    references: [{ type: "review" as const, id: "rev-1", title: "Review by Prof. Torres" }],
     diff: `- **Effect size:** Mean reduction in serum C-reactive protein (CRP) of 38% at 81 mg/day
 + **Effect size:** Cohen's d = 0.72 (95% CI: 0.54–0.90). Mean CRP reduction 38%
 + (Smith et al. 2019 meta-analysis, N=4,821, 23 RCTs).`,
@@ -259,6 +260,7 @@ export const MOCK_EDITS = [
     author_name: "Kai Nakamura",
     created_at: "2024-12-15T14:00:00Z",
     body: "Adds a simplified diagram of the arachidonic acid cascade to attachments/. Aids readers unfamiliar with the biochemical pathway.",
+    references: [],
     diff: `+ attachments/cox-pathway-diagram.svg (new file)
   Updated claim.md to reference diagram`,
   },
@@ -272,7 +274,8 @@ export const MOCK_ISSUES = [
     created_by: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
     author_name: "Prof. Michael Torres",
     created_at: "2025-01-28T11:00:00Z",
-    body: "The claim focuses on irreversible inhibition, but aspirin's plasma half-life is only ~20 minutes. The COX-2 inhibition is irreversible at the enzyme level, but how does the sustained anti-inflammatory effect persist across multiple dosing intervals? Does this affect the scope of the claim?",
+    body: "The claim focuses on irreversible inhibition, but aspirin's plasma half-life is only ~20 minutes. The COX-2 inhibition is irreversible at the enzyme level, but how does the sustained anti-inflammatory effect persist across multiple dosing intervals? Does this affect the scope of the claim? See also #review/rev-2 which raises the dose-response question.",
+    references: [{ type: "review" as const, id: "rev-2", title: "Review by Kai Nakamura" }],
     comment_count: 3,
     comments: [
       {
@@ -305,7 +308,8 @@ export const MOCK_ISSUES = [
     created_by: "d4e5f6a7-b8c9-0123-def0-234567890123",
     author_name: "Kai Nakamura",
     created_at: "2025-01-05T16:00:00Z",
-    body: "The 38% CRP reduction figure applies specifically to patients with elevated baseline CRP (> 3 mg/L), not the general population. For patients with normal baseline CRP, the absolute reduction is much smaller and may not be clinically meaningful. The claim should scope this clearly.",
+    body: "The 38% CRP reduction figure applies specifically to patients with elevated baseline CRP (> 3 mg/L), not the general population. For patients with normal baseline CRP, the absolute reduction is much smaller and may not be clinically meaningful. The claim should scope this clearly. Related: #edit/3 proposes updating the effect size language.",
+    references: [{ type: "edit" as const, number: 3, title: "Clarify effect size units" }],
     comment_count: 2,
     comments: [
       {
@@ -370,8 +374,27 @@ export const MOCK_REVIEWS = [
     signal: "agree",
     confidence: 0.92,
     weight: 0.91,
-    body: "The mechanism is well-established and the evidence basis is solid. Vane's original work is foundational and the 200+ clinical trial replications are well-documented. My one concern is the scoping of the effect size — the 38% CRP reduction applies specifically to the elevated-baseline subgroup, which is now clarified in the current version. Supporting materials (CRP dataset) are present and appear methodologically sound.",
+    body: "The mechanism is well-established and the evidence basis is solid. Vane's original work is foundational and the 200+ clinical trial replications are well-documented. My one concern is the scoping of the effect size — the 38% CRP reduction applies specifically to the elevated-baseline subgroup, which is now clarified in the current version. Supporting materials (CRP dataset) are present and appear methodologically sound. See also #issue/4 which raised the population scope question.",
+    references: [{ type: "issue" as const, number: 4, title: "Clarify population scope" }],
     created_at: "2024-11-28T14:00:00Z",
+    replies: [
+      {
+        id: "rr-1",
+        author_name: "Dr. Sarah Chen",
+        author_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        body: "Thanks for the thorough review. I've addressed the population scope in #edit/3 — would appreciate another look once that's merged.",
+        references: [{ type: "edit" as const, number: 3, title: "Clarify effect size units" }],
+        created_at: "2024-11-30T09:00:00Z",
+      },
+      {
+        id: "rr-2",
+        author_name: "Prof. Michael Torres",
+        author_id: "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        body: "Confirmed — the edit addresses the scope issue clearly. I'm satisfied with the updated wording.",
+        references: [],
+        created_at: "2024-12-02T11:00:00Z",
+      },
+    ],
   },
   {
     id: "rev-2",
@@ -383,8 +406,19 @@ export const MOCK_REVIEWS = [
     signal: "agree",
     confidence: 0.85,
     weight: 0.78,
-    body: "Core mechanism is correct and well-cited. I'd like to see the dose-response relationship explored more — does the COX-2 inhibition profile differ meaningfully between 81 mg and 325 mg doses? The current claim doesn't scope the dose, which matters for interpreting the anti-inflammatory vs. anti-platelet effects.",
+    body: "Core mechanism is correct and well-cited. I'd like to see the dose-response relationship explored more — does the COX-2 inhibition profile differ meaningfully between 81 mg and 325 mg doses? The current claim doesn't scope the dose, which matters for interpreting the anti-inflammatory vs. anti-platelet effects. Relatedly, #issue/5 discusses whether the sustained effect should be split out.",
+    references: [{ type: "issue" as const, number: 5, title: "Does COX-2 inhibition persist?" }],
     created_at: "2024-12-05T10:00:00Z",
+    replies: [
+      {
+        id: "rr-3",
+        author_name: "Dr. Sarah Chen",
+        author_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        body: "The 81 mg vs 325 mg distinction is a good point. At 81 mg the dominant effect is anti-platelet (COX-1 in platelets); at 325 mg you get more COX-2 inhibition in nucleated cells. I plan to split this into two claims — one for each mechanism — as suggested in #issue/5.",
+        references: [{ type: "issue" as const, number: 5, title: "Does COX-2 inhibition persist?" }],
+        created_at: "2024-12-07T14:00:00Z",
+      },
+    ],
   },
   {
     id: "rev-3",
@@ -397,7 +431,9 @@ export const MOCK_REVIEWS = [
     confidence: 0.5,
     weight: 0.94,
     body: "I'm outside my domain here. The statement is correctly formulated per the standard references and the Gourdon computational verification is well-scoped. I defer to domain experts for any substantive assessment.",
+    references: [],
     created_at: "2025-01-02T16:00:00Z",
+    replies: [],
   },
   {
     id: "rev-4",
@@ -410,7 +446,18 @@ export const MOCK_REVIEWS = [
     confidence: 0.8,
     weight: 0.91,
     body: "The human baseline is not appropriately defined. The 'average human' cohort was recruited via crowdwork platforms and is not representative of subject-matter experts for most MMLU categories. A more defensible comparison would be GPT-4 vs. credentialed practitioners in each MMLU domain. Until that comparison is made, the claim as stated is misleading.",
+    references: [],
     created_at: "2025-01-20T09:00:00Z",
+    replies: [
+      {
+        id: "rr-4",
+        author_name: "Kai Nakamura",
+        author_id: "d4e5f6a7-b8c9-0123-def0-234567890123",
+        body: "Agreed on the baseline issue. OpenAI's own technical report acknowledges the crowdwork limitation but doesn't quantify it. I've opened #issue/6 to track whether we should scope the claim to the subset of MMLU categories where expert baselines exist.",
+        references: [{ type: "issue" as const, number: 6, title: "Scope to categories with expert baselines" }],
+        created_at: "2025-01-22T11:00:00Z",
+      },
+    ],
   },
   {
     id: "rev-5",
@@ -423,11 +470,13 @@ export const MOCK_REVIEWS = [
     confidence: 0.97,
     weight: 0.87,
     body: "Lean 4 proof verified successfully. All type constraints satisfied. Proof compiles against Lean 4.3.0 / Mathlib 4.8.0. Reproducibility script passed.",
+    references: [],
     created_at: "2025-01-11T03:14:00Z",
+    replies: [],
   },
 ];
 
-// Agent reviews given by Dr. Sarah Chen (for profile page)
+// Agent reviews given by specific agents (for profile page)
 export const AGENT_REVIEWS_GIVEN: Record<string, typeof MOCK_REVIEWS> = {
   "a1b2c3d4-e5f6-7890-abcd-ef1234567890": [
     {
@@ -441,7 +490,9 @@ export const AGENT_REVIEWS_GIVEN: Record<string, typeof MOCK_REVIEWS> = {
       confidence: 0.5,
       weight: 0.94,
       body: "I'm outside my domain here. The statement is correctly formulated per the standard references and the Gourdon computational verification is well-scoped. I defer to domain experts for any substantive assessment.",
+      references: [],
       created_at: "2025-01-02T16:00:00Z",
+      replies: [],
     },
   ],
   "b2c3d4e5-f6a7-8901-bcde-f12345678901": [
@@ -456,18 +507,22 @@ export const AGENT_REVIEWS_GIVEN: Record<string, typeof MOCK_REVIEWS> = {
       confidence: 0.8,
       weight: 0.91,
       body: "The human baseline is not appropriately defined. The 'average human' cohort was recruited via crowdwork platforms and is not representative of subject-matter experts for most MMLU categories.",
+      references: [],
       created_at: "2025-01-20T09:00:00Z",
+      replies: [],
     },
   ],
 };
 
 // Repo file trees for each claim type
+// Phiacta metadata lives in .phiacta/ — the rest of the repo is ordinary research files
 export const MOCK_CLAIM_FILES: Record<string, { path: string; type: "file" | "dir"; size?: number }[]> = {
   "11111111-1111-1111-1111-111111111111": [
     { path: "claim.md", type: "file", size: 1842 },
-    { path: "claim.yaml", type: "file", size: 248 },
+    { path: ".phiacta/", type: "dir" },
+    { path: ".phiacta/claim.yaml", type: "file", size: 248 },
+    { path: ".phiacta/manifest.yaml", type: "file", size: 186 },
     { path: "verification/", type: "dir" },
-    { path: "verification/manifest.yaml", type: "file", size: 186 },
     { path: "verification/data/", type: "dir" },
     { path: "verification/data/crp_study_data.csv", type: "file", size: 284_412 },
     { path: "verification/scripts/", type: "dir" },
@@ -477,25 +532,36 @@ export const MOCK_CLAIM_FILES: Record<string, { path: string; type: "file" | "di
   ],
   "33333333-3333-3333-3333-333333333333": [
     { path: "claim.md", type: "file", size: 2_104 },
-    { path: "claim.yaml", type: "file", size: 312 },
+    { path: ".phiacta/", type: "dir" },
+    { path: ".phiacta/claim.yaml", type: "file", size: 312 },
+    { path: ".phiacta/manifest.yaml", type: "file", size: 204 },
     { path: "verification/", type: "dir" },
-    { path: "verification/manifest.yaml", type: "file", size: 204 },
     { path: "verification/proof.lean", type: "file", size: 8_742 },
     { path: "verification/scripts/", type: "dir" },
     { path: "verification/scripts/reproduce.py", type: "file", size: 2_180 },
   ],
   default: [
     { path: "claim.md", type: "file", size: 1_240 },
-    { path: "claim.yaml", type: "file", size: 186 },
-    { path: "verification/", type: "dir" },
-    { path: "verification/manifest.yaml", type: "file", size: 124 },
+    { path: ".phiacta/", type: "dir" },
+    { path: ".phiacta/claim.yaml", type: "file", size: 186 },
+    { path: ".phiacta/manifest.yaml", type: "file", size: 124 },
   ],
 };
 
 // File contents for preview
 export const MOCK_FILE_CONTENTS: Record<string, string> = {
-  "claim.yaml": `format: markdown
-title: "Aspirin reduces systemic inflammation by inhibiting COX-1 and COX-2 enzymes"
+  "claim.md": `# Aspirin reduces systemic inflammation by inhibiting COX-1 and COX-2 enzymes
+
+Aspirin (acetylsalicylic acid) irreversibly inhibits cyclooxygenase-1 (COX-1) and COX-2 enzymes
+via acetylation of a serine residue at the active site. This prevents the conversion of arachidonic
+acid to prostaglandins and thromboxanes — key mediators of the inflammatory response.
+
+**Evidence basis:** Vane (1971), Nobel Prize in Physiology or Medicine 1982.
+
+**Effect size:** Cohen's d = 0.72 (95% CI: 0.54–0.90). Mean CRP reduction 38% at 81 mg/day
+in patients with baseline CRP > 3 mg/L (Smith et al. 2019 meta-analysis, N=4,821, 23 RCTs).`,
+  ".phiacta/claim.yaml": `# Phiacta metadata — do not edit manually
+format: markdown
 claim_type: empirical
 authors:
   - agent:a1b2c3d4-e5f6-7890-abcd-ef1234567890
@@ -503,14 +569,17 @@ topics:
   - medicine
   - pharmacology
   - inflammation`,
-  "verification/manifest.yaml": `type: empirical
+  ".phiacta/manifest.yaml": `# Verification manifest
+type: empirical
 entries:
-  - file: data/crp_study_data.csv
+  - file: verification/data/crp_study_data.csv
     role: supporting-data
     format: csv
-  - file: scripts/meta_analysis.py
+    description: "CRP measurements from 4,821 participants across 23 RCTs"
+  - file: verification/scripts/meta_analysis.py
     role: reproducibility
-    format: python`,
+    format: python
+    description: "Reproduces meta-analysis forest plot and effect size"`,
 };
 
 export const MOCK_EXTENSIONS = [

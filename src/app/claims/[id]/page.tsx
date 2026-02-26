@@ -32,6 +32,8 @@ import {
   File,
   Eye,
   Star,
+  Upload,
+  FilePlus,
 } from "lucide-react";
 import {
   MOCK_CLAIMS,
@@ -62,6 +64,39 @@ function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+// Cross-reference chips — rendered below post bodies
+type PostRef =
+  | { type: "issue"; number: number; title: string }
+  | { type: "edit"; number: number; title: string }
+  | { type: "review"; id: string; title: string };
+
+function CrossRefs({ refs }: { refs: PostRef[] }) {
+  if (!refs || refs.length === 0) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 pt-1">
+      {refs.map((ref, i) => (
+        <span
+          key={i}
+          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+            ref.type === "issue"
+              ? "border-green-200 bg-green-50 text-green-700 dark:border-green-800 dark:bg-green-950/40 dark:text-green-300"
+              : ref.type === "edit"
+              ? "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-300"
+              : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+          }`}
+        >
+          {ref.type === "issue" && <CircleDot className="h-2.5 w-2.5" />}
+          {ref.type === "edit" && <GitBranch className="h-2.5 w-2.5" />}
+          {ref.type === "review" && <Star className="h-2.5 w-2.5" />}
+          {ref.type === "issue" && `#issue/${ref.number}`}
+          {ref.type === "edit" && `#edit/${ref.number}`}
+          {ref.type === "review" && `#review`}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 // Inline expandable issue
@@ -107,7 +142,10 @@ function IssueRow({ issue }: { issue: (typeof MOCK_ISSUES)[0] }) {
 
       {open && (
         <div className="border-t border-border bg-background p-4 space-y-4">
-          <p className="text-sm leading-relaxed text-foreground">{issue.body}</p>
+          <div>
+            <p className="text-sm leading-relaxed text-foreground">{issue.body}</p>
+            <CrossRefs refs={(issue as { references?: PostRef[] }).references ?? []} />
+          </div>
           {issue.comments.length > 0 && (
             <div className="space-y-3 pt-2">
               {issue.comments.map((comment) => (
@@ -186,7 +224,10 @@ function EditRow({ edit }: { edit: (typeof MOCK_EDITS)[0] }) {
 
       {open && (
         <div className="border-t border-border bg-background p-4 space-y-4">
-          <p className="text-sm leading-relaxed text-foreground">{edit.body}</p>
+          <div>
+            <p className="text-sm leading-relaxed text-foreground">{edit.body}</p>
+            <CrossRefs refs={(edit as { references?: PostRef[] }).references ?? []} />
+          </div>
           <div>
             <p className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Proposed diff
@@ -312,6 +353,173 @@ function FileRow({ file, claimId }: { file: { path: string; type: "file" | "dir"
           <pre className="font-mono text-xs leading-relaxed overflow-x-auto text-foreground whitespace-pre-wrap">
             {content}
           </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Expandable review with reply thread
+function ReviewRow({ review }: { review: (typeof MOCK_REVIEWS)[0] }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
+      >
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarFallback className="text-xs">{getInitials(review.author_name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 mb-0.5">
+            <Link
+              href={`/agents/${review.author_id}`}
+              className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {review.author_name}
+            </Link>
+            <Badge
+              variant="outline"
+              className={
+                review.signal === "agree"
+                  ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                  : review.signal === "disagree"
+                  ? "text-red-700 border-red-200 bg-red-50 dark:text-red-300 dark:border-red-800 dark:bg-red-950/50"
+                  : "text-muted-foreground"
+              }
+            >
+              {review.signal}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {Math.round(review.confidence * 100)}% confidence
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground line-clamp-1">{review.body}</p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {review.replies.length > 0 && (
+            <span className="text-xs text-muted-foreground">{review.replies.length} replies</span>
+          )}
+          <span className="text-xs text-muted-foreground">
+            {new Date(review.created_at).toLocaleDateString()}
+          </span>
+          {open ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-border bg-background p-4 space-y-4">
+          <div>
+            <p className="text-sm leading-relaxed text-foreground">{review.body}</p>
+            <CrossRefs refs={review.references as PostRef[]} />
+          </div>
+          {review.replies.length > 0 && (
+            <div className="space-y-3 pt-2">
+              {review.replies.map((reply) => (
+                <div key={reply.id} className="flex gap-3">
+                  <Avatar className="h-7 w-7 shrink-0">
+                    <AvatarFallback className="text-[10px]">
+                      {getInitials(reply.author_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1 rounded-lg border border-border bg-card p-3">
+                    <div className="mb-1.5 flex items-center gap-2 text-xs">
+                      <span className="font-semibold text-foreground">{reply.author_name}</span>
+                      <span className="text-muted-foreground">
+                        {new Date(reply.created_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground">{reply.body}</p>
+                    {reply.references.length > 0 && (
+                      <CrossRefs refs={reply.references as PostRef[]} />
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <Button variant="outline" size="sm">Reply</Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// File upload area
+function FileUploadArea() {
+  const [dragging, setDragging] = useState(false);
+  const [newFileName, setNewFileName] = useState("");
+  const [newFileContent, setNewFileContent] = useState("");
+  const [showNewFile, setShowNewFile] = useState(false);
+
+  return (
+    <div className="mb-4 space-y-3">
+      {/* Upload zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); }}
+        className={`rounded-xl border-2 border-dashed p-6 text-center transition-colors ${
+          dragging
+            ? "border-primary bg-primary/5"
+            : "border-border bg-secondary/30 hover:border-muted-foreground/40"
+        }`}
+      >
+        <Upload className="mx-auto mb-2 h-6 w-6 text-muted-foreground" />
+        <p className="text-sm font-medium text-foreground">Drop files here to upload</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">
+          Upload data files, scripts, proofs, or any supporting materials
+        </p>
+        <div className="mt-3 flex justify-center gap-2">
+          <Button size="sm" variant="outline">
+            <Upload className="mr-1.5 h-3.5 w-3.5" />
+            Choose files
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowNewFile((v) => !v)}
+          >
+            <FilePlus className="mr-1.5 h-3.5 w-3.5" />
+            New file
+          </Button>
+        </div>
+      </div>
+
+      {/* Inline new file editor */}
+      {showNewFile && (
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Create new file
+          </p>
+          <input
+            type="text"
+            value={newFileName}
+            onChange={(e) => setNewFileName(e.target.value)}
+            placeholder="File name (e.g. verification/data/my_dataset.csv)"
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
+          />
+          <textarea
+            value={newFileContent}
+            onChange={(e) => setNewFileContent(e.target.value)}
+            rows={8}
+            placeholder="File contents…"
+            className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+          <div className="flex gap-2">
+            <Button size="sm" disabled={!newFileName.trim()}>
+              Save file
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => setShowNewFile(false)}>
+              Cancel
+            </Button>
+          </div>
         </div>
       )}
     </div>
@@ -507,51 +715,13 @@ export default function ClaimPage({ params }: ClaimPageProps) {
             <TabsContent value="reviews">
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  Structured peer assessments with confidence ratings.
+                  Peer assessments with confidence ratings. Click a review to read the full discussion.
                 </p>
                 <Button size="sm">Write review</Button>
               </div>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {claimReviews.map((review) => (
-                  <div
-                    key={review.id}
-                    className="rounded-xl border border-border bg-card p-5 space-y-3"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="h-8 w-8 shrink-0">
-                        <AvatarFallback className="text-xs">{getInitials(review.author_name)}</AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <Link
-                            href={`/agents/${review.author_id}`}
-                            className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
-                          >
-                            {review.author_name}
-                          </Link>
-                          <Badge
-                            variant="outline"
-                            className={
-                              review.signal === "agree"
-                                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                                : review.signal === "disagree"
-                                ? "text-red-700 border-red-200 bg-red-50 dark:text-red-300 dark:border-red-800 dark:bg-red-950/50"
-                                : "text-muted-foreground"
-                            }
-                          >
-                            {review.signal}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {Math.round(review.confidence * 100)}% confidence
-                          </span>
-                          <span className="text-xs text-muted-foreground ml-auto">
-                            {new Date(review.created_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <p className="text-sm leading-relaxed text-foreground">{review.body}</p>
-                      </div>
-                    </div>
-                  </div>
+                  <ReviewRow key={review.id} review={review} />
                 ))}
                 {claimReviews.length === 0 && (
                   <div className="rounded-xl border border-dashed border-border py-10 text-center">
@@ -572,28 +742,22 @@ export default function ClaimPage({ params }: ClaimPageProps) {
 
             {/* Files */}
             <TabsContent value="files">
+              <FileUploadArea />
               <div className="rounded-xl border border-border overflow-hidden bg-card">
                 <div className="border-b border-border px-4 py-3 flex items-center justify-between">
                   <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Repository contents
+                    Files
                   </p>
-                  <code className="font-mono text-xs text-muted-foreground">
-                    {claim.id.slice(0, 8)}
-                  </code>
+                  <p className="text-xs text-muted-foreground">
+                    Phiacta metadata lives in{" "}
+                    <code className="font-mono rounded bg-secondary px-1 py-0.5">.phiacta/</code>
+                  </p>
                 </div>
                 <div className="divide-y-0">
                   {claimFiles.map((file) => (
                     <FileRow key={file.path} file={file} claimId={claim.id} />
                   ))}
                 </div>
-              </div>
-              <div className="mt-3 rounded-xl border border-border bg-card p-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  Clone this claim
-                </p>
-                <code className="block w-full rounded-md bg-muted px-3 py-2 font-mono text-xs text-muted-foreground break-all">
-                  git clone https://phiacta.com/git/{claim.id.slice(0, 8)}.git
-                </code>
               </div>
             </TabsContent>
 
