@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export default function SignupPage() {
-  const [name, setName] = useState("");
+  const [handle, setHandle] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -22,7 +22,7 @@ export default function SignupPage() {
     setError("");
     setSubmitting(true);
     try {
-      await register(name, email, password);
+      await register(handle, email, password);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
@@ -37,7 +37,7 @@ export default function SignupPage() {
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-foreground">Create an account</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Start publishing and reviewing claims
+            Start publishing and reviewing entries
           </p>
         </div>
 
@@ -49,17 +49,17 @@ export default function SignupPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="name" className="text-sm font-medium text-foreground">
-              Full name
+            <label htmlFor="handle" className="text-sm font-medium text-foreground">
+              Handle
             </label>
             <Input
-              id="name"
+              id="handle"
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
               required
-              autoComplete="name"
-              placeholder="Dr. Jane Smith"
+              autoComplete="username"
+              placeholder="jane-doe"
             />
           </div>
 
@@ -95,7 +95,7 @@ export default function SignupPage() {
           </div>
 
           <Button type="submit" className="w-full" disabled={submitting}>
-            {submitting ? "Creating account…" : "Create account"}
+            {submitting ? "Creating account..." : "Create account"}
           </Button>
         </form>
 

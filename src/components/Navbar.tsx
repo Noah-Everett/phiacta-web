@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ThemeToggle from "./ThemeToggle";
 import NavbarAuth from "./NavbarAuth";
@@ -23,7 +22,6 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur-sm">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-6 py-3">
-        {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center">
           <Image
             src="/logo-navbar.svg"
@@ -34,7 +32,6 @@ export default function Navbar() {
           />
         </Link>
 
-        {/* Nav links */}
         <div className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map(({ href, label }) => (
             <Link
@@ -52,23 +49,21 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* Search */}
         <div className="ml-auto hidden w-72 sm:block">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search claims…"
+              placeholder="Search entries..."
               className="h-8 pl-8 text-sm"
-              onFocus={(e) => {
+              onFocus={() => {
                 if (typeof window !== "undefined") {
-                  window.location.href = "/search?q=" + encodeURIComponent(e.target.value);
+                  window.location.href = "/explore";
                 }
               }}
             />
           </div>
         </div>
 
-        {/* Right actions */}
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <NavbarAuth />

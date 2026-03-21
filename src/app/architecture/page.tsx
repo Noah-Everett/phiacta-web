@@ -12,19 +12,17 @@ export default function ArchitecturePage() {
           Git for Content, Postgres for Facts
         </h2>
         <p className="text-gray-600 leading-relaxed dark:text-gray-400">
-          Every claim on Phiacta is a{" "}
+          Every entry on Phiacta is a{" "}
           <strong className="dark:text-gray-200">git repository</strong>. Version
-          history, supporting files, proposals, and issues all live in that
+          history, supporting files, edit proposals, and issues all live in that
           repository. What lives in the database are the facts that need to be
-          queryable and scored: votes, reviews, typed references between claims,
-          and identity.
+          queryable: references between entries, tags, and identity.
         </p>
         <p className="mt-4 text-gray-600 leading-relaxed dark:text-gray-400">
           The database stores only what users directly provide&mdash;no derived
-          or computed values. Confidence scores, graph embeddings, and knowledge
-          maps are computed at query time by separate analysis{" "}
-          <strong className="dark:text-gray-200">layers</strong> and are never
-          written back into the ground truth store.
+          or computed values. Search indexes and knowledge maps are computed at
+          query time by separate analysis modules and are never written back into
+          the ground truth store.
         </p>
 
         {/* Stack diagram */}
@@ -54,7 +52,7 @@ export default function ArchitecturePage() {
             {/* API */}
             <div className="rounded-md border border-gray-400 bg-white px-4 py-2.5 text-center dark:border-gray-500 dark:bg-gray-800">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">REST API</span>
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">/v1/claims, /v1/references, /v1/search</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">/v1/entries, /v1/extensions, /v1/agents</span>
             </div>
             <div className="flex justify-center text-gray-300 dark:text-gray-600">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -65,14 +63,14 @@ export default function ArchitecturePage() {
             {/* Layers */}
             <div className="rounded-md border-2 border-dashed border-gray-400 bg-white p-3 dark:border-gray-500 dark:bg-gray-800">
               <p className="mb-2 text-center text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-                Layers (computed, never stored in core)
+                Extensions &amp; Views (computed, never stored in core)
               </p>
               <div className="flex gap-2">
                 <div className="flex-1 rounded bg-gray-100 px-3 py-2 text-center text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                  Graph
+                  Tags
                 </div>
                 <div className="flex-1 rounded bg-gray-100 px-3 py-2 text-center text-xs font-medium text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                  Confidence
+                  Search
                 </div>
                 <div className="flex-1 rounded border border-dashed border-gray-300 bg-white px-3 py-2 text-center text-xs text-gray-400 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-500">
                   Custom
@@ -88,7 +86,7 @@ export default function ArchitecturePage() {
             {/* Core schema */}
             <div className="rounded-md border-2 border-gray-900 bg-gray-900 px-4 py-3 text-center dark:border-gray-100 dark:bg-gray-100">
               <span className="text-sm font-semibold text-white dark:text-gray-900">Core Database</span>
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">Claims, References, Interactions, Agents&hellip;</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">Entries, References, Agents&hellip;</span>
             </div>
             <div className="flex justify-center text-gray-300 dark:text-gray-600">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -100,7 +98,7 @@ export default function ArchitecturePage() {
             <div className="flex gap-2">
               <div className="flex-1 rounded-md border border-gray-400 bg-white px-3 py-2.5 text-center dark:border-gray-500 dark:bg-gray-800">
                 <span className="text-xs font-medium text-gray-700 dark:text-gray-300">PostgreSQL</span>
-                <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">scores, identity, search</p>
+                <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">identity, refs, search</p>
               </div>
               <div className="flex-1 rounded-md border border-gray-400 bg-white px-3 py-2.5 text-center dark:border-gray-500 dark:bg-gray-800">
                 <span className="text-xs font-medium text-gray-700 dark:text-gray-300">Forgejo</span>
@@ -117,10 +115,9 @@ export default function ArchitecturePage() {
           Core Entities
         </h2>
         <p className="mb-4 text-gray-600 leading-relaxed dark:text-gray-400">
-          The core schema is deliberately minimal. Every entity carries an{" "}
-          <code className="rounded bg-gray-100 px-1.5 py-0.5 text-sm dark:bg-gray-800">attrs</code>{" "}
-          JSONB field for domain-specific metadata that doesn&rsquo;t need a
-          column of its own.
+          The core schema is deliberately minimal. The four-layer architecture
+          separates entries (core), extensions (tags, etc.), views (search), and
+          tools (external).
         </p>
 
         {/* Entity grid */}
@@ -129,7 +126,7 @@ export default function ArchitecturePage() {
             Entity Relationships
           </p>
           <div className="mx-auto mb-5 w-fit rounded-md border-2 border-gray-900 bg-gray-900 px-6 py-3 text-center dark:border-gray-100 dark:bg-gray-100">
-            <span className="text-sm font-semibold text-white dark:text-gray-900">Claims</span>
+            <span className="text-sm font-semibold text-white dark:text-gray-900">Entries</span>
             <p className="mt-0.5 text-[11px] text-gray-400 dark:text-gray-500">
               The central entity &mdash; everything connects here
             </p>
@@ -138,13 +135,13 @@ export default function ArchitecturePage() {
             <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-600 dark:bg-gray-800">
               <p className="text-xs font-medium text-gray-800 dark:text-gray-200">References</p>
               <p className="mt-1 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
-                Typed connections between any two claims or sub-resources
+                Typed connections between any two entries
               </p>
             </div>
             <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-600 dark:bg-gray-800">
-              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Votes &amp; Reviews</p>
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Edit Proposals</p>
               <p className="mt-1 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
-                Community assessments that feed confidence scoring
+                Content change requests on an entry&apos;s repository
               </p>
             </div>
             <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-600 dark:bg-gray-800">
@@ -154,21 +151,21 @@ export default function ArchitecturePage() {
               </p>
             </div>
             <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-600 dark:bg-gray-800">
-              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Sources</p>
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Tags</p>
               <p className="mt-1 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
-                Papers, recordings, datasets claims are drawn from
+                Extension: categorize entries with freeform labels
               </p>
             </div>
             <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-600 dark:bg-gray-800">
-              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Provenance</p>
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Files</p>
               <p className="mt-1 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
-                Links each claim to its source with extraction metadata
+                Supporting materials stored in the entry&apos;s git repo
               </p>
             </div>
             <div className="rounded-md border border-gray-300 bg-white px-3 py-2.5 dark:border-gray-600 dark:bg-gray-800">
-              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">Bundles</p>
+              <p className="text-xs font-medium text-gray-800 dark:text-gray-200">History</p>
               <p className="mt-1 text-[11px] leading-snug text-gray-400 dark:text-gray-500">
-                Atomic batches: all claims and references succeed or fail together
+                Git commit log for every entry
               </p>
             </div>
           </div>
@@ -176,54 +173,37 @@ export default function ArchitecturePage() {
 
         <ul className="list-inside list-disc space-y-3 text-gray-600 leading-relaxed dark:text-gray-400">
           <li>
-            <strong className="dark:text-gray-200">Claims</strong> &mdash; Atomic
+            <strong className="dark:text-gray-200">Entries</strong> &mdash; Atomic
             assertions, each backed by a git repository. Content is versioned via
-            git commits. Proposals (branches + PRs) and issues live in the same
+            git commits. Edit proposals (branches + PRs) and issues live in the same
             repository. Supporting materials&mdash;data, code, proofs&mdash;are
-            committed alongside the claim content.
+            committed alongside the entry content.
           </li>
           <li>
             <strong className="dark:text-gray-200">References</strong> &mdash; Typed,
-            directed connections between any two addressable URIs in the system
-            (claims, issues, PRs, commits, interactions, agents). Reference types
+            directed connections between entries. Reference types
             include evidence, rebuttal, citation, derivation, supersession, and more.
-          </li>
-          <li>
-            <strong className="dark:text-gray-200">Votes &amp; Reviews</strong> &mdash;
-            Community assessments. Each vote carries a signal (agree / disagree /
-            neutral) and a confidence. Reviews add a written body. Aggregate scores
-            are computed at query time&mdash;never stored.
           </li>
           <li>
             <strong className="dark:text-gray-200">Agents</strong> &mdash; Any entity
             that contributes knowledge: humans, AI models, organizations, or automated
-            pipelines. Each carries a trust score used as vote weight.
+            pipelines.
           </li>
           <li>
-            <strong className="dark:text-gray-200">Sources</strong> &mdash; Real-world
-            artifacts (papers, recordings, datasets) from which claims were extracted.
-            A content hash enables integrity verification.
-          </li>
-          <li>
-            <strong className="dark:text-gray-200">Provenance</strong> &mdash; Records
-            which source a claim came from, by what extraction method, and with what
-            confidence.
-          </li>
-          <li>
-            <strong className="dark:text-gray-200">Bundles</strong> &mdash; Atomic write
-            units for batch ingestion. All claims, references, and sources in a bundle
-            succeed or fail together, preventing partial ingestion.
+            <strong className="dark:text-gray-200">Tags</strong> &mdash; An extension
+            that allows freeform categorization of entries. Tags are stored separately
+            from the entry core schema.
           </li>
         </ul>
       </section>
 
-      {/* Claims as git repos */}
+      {/* Entries as git repos */}
       <section className="mb-10">
         <h2 className="mb-3 text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Claims as Git Repositories
+          Entries as Git Repositories
         </h2>
         <p className="text-gray-600 leading-relaxed dark:text-gray-400">
-          Each claim is a git repository hosted internally on Forgejo. Users never
+          Each entry is a git repository hosted internally on Forgejo. Users never
           interact with Forgejo directly&mdash;they use the Phiacta API or website,
           which proxy all git operations.
         </p>
@@ -240,12 +220,12 @@ export default function ArchitecturePage() {
             </thead>
             <tbody className="divide-y divide-gray-200 bg-white dark:divide-gray-700 dark:bg-gray-800">
               {[
-                ["Repository", "Claim"],
+                ["Repository", "Entry"],
                 ["Commit", "Update / version"],
-                ["Branch + pull request", "Proposal"],
+                ["Branch + pull request", "Edit proposal"],
                 ["Issue", "Issue"],
-                ["Merge", "Accept proposal"],
-                ["Close PR", "Reject proposal"],
+                ["Merge", "Accept edit"],
+                ["Close PR", "Reject edit"],
                 ["Fork", "Derive"],
               ].map(([git, user]) => (
                 <tr key={git}>
@@ -260,74 +240,52 @@ export default function ArchitecturePage() {
         {/* Repo structure */}
         <div className="mt-6 rounded-lg border border-gray-200 bg-gray-50 p-5 dark:border-gray-700 dark:bg-gray-800/50">
           <p className="mb-3 text-xs font-medium uppercase tracking-wide text-gray-400 dark:text-gray-500">
-            Claim repository structure
+            Entry repository structure
           </p>
-          <pre className="text-xs text-gray-600 leading-relaxed dark:text-gray-400">{`{claim_uuid}/
-├── claim.md              # claim content
-├── claim.yaml            # title, type, authors, topics
+          <pre className="text-xs text-gray-600 leading-relaxed dark:text-gray-400">{`{entry_uuid}/
+├── README.md             # entry content
+├── .phiacta/
+│   ├── entry.yaml        # title, layout_hint, authors
+│   └── manifest.yaml     # what kind of verification is present
 ├── verification/
-│   ├── manifest.yaml     # what kind of verification is present
 │   ├── proof.lean        # formal proof (if applicable)
 │   ├── data/             # supporting datasets
 │   └── scripts/          # reproducibility scripts
 └── attachments/          # figures and supporting files`}</pre>
         </div>
-
-        {/* Verification */}
-        <div className="mt-6">
-          <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">Verification Status</h3>
-          <p className="mb-4 text-sm text-gray-600 leading-relaxed dark:text-gray-400">
-            Each claim has a verification status derived from what is present in its
-            repository. Unverified claims are accepted&mdash;but the absence of proof
-            is visible to everyone.
-          </p>
-          <div className="space-y-2">
-            {[
-              { label: "Verified", desc: "Automated check passed (e.g., Lean proof compiled)", color: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" },
-              { label: "Empirical", desc: "Data and code present; no formal proof", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" },
-              { label: "Submitted", desc: "Materials uploaded; automated check pending", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" },
-              { label: "Unverified", desc: "No supporting materials", color: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400" },
-            ].map(({ label, desc, color }) => (
-              <div key={label} className="flex items-center gap-3">
-                <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium ${color}`}>{label}</span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{desc}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </section>
 
-      {/* Layers and Extensions */}
+      {/* Extensions */}
       <section className="mb-10">
         <h2 className="mb-3 text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Layers &amp; Extensions
+          Extensions &amp; Views
         </h2>
         <p className="text-gray-600 leading-relaxed dark:text-gray-400">
           The core schema is interpretation-free. Higher-level meaning lives in{" "}
-          <strong className="dark:text-gray-200">layers</strong>&mdash;composable
-          analysis modules that read core data and expose their own computed views and
+          <strong className="dark:text-gray-200">extensions</strong>&mdash;composable
+          modules that read core data and expose their own computed views and
           API endpoints.
         </p>
         <div className="mt-6 space-y-4">
           <div className="rounded-lg border border-gray-200 p-5 dark:border-gray-700">
-            <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">Confidence Layer</h3>
+            <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">Tags Extension</h3>
             <p className="text-sm text-gray-600 leading-relaxed dark:text-gray-400">
-              Aggregates votes and reviews into an epistemic status for each claim:
-              unverified, under review, endorsed, or disputed. Different communities
-              can deploy alternative scoring models by replacing this layer.
+              Allows freeform tagging of entries. Tags are stored in a separate table
+              and exposed through the /v1/extensions/tags/ API. Supports filtering
+              entries by tag combinations.
             </p>
           </div>
           <div className="rounded-lg border border-gray-200 p-5 dark:border-gray-700">
-            <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">Graph Layer</h3>
+            <h3 className="mb-2 font-semibold text-gray-900 dark:text-gray-100">Search View</h3>
             <p className="text-sm text-gray-600 leading-relaxed dark:text-gray-400">
-              Interprets the references table as a typed knowledge graph. Maintains a
-              registry of relationship types with formal properties (transitivity,
-              symmetry, inverse names). Provides neighbor lookup and BFS/DFS traversal.
+              A database view that provides full-text search across entry titles and
+              content. Computed at query time from the entries table using PostgreSQL
+              tsvector indexing.
             </p>
           </div>
         </div>
         <p className="mt-6 text-gray-600 leading-relaxed dark:text-gray-400">
-          <strong className="dark:text-gray-200">Extensions</strong> are third-party
+          <strong className="dark:text-gray-200">External extensions</strong> are third-party
           applications that connect to the Phiacta API to produce new outputs
           (papers, podcasts, slide decks, summaries) or enable new input methods
           (PDF ingestion, voice dictation). Extensions run their own compute.
@@ -344,13 +302,13 @@ export default function ArchitecturePage() {
         <ul className="list-inside list-disc space-y-3 text-gray-600 leading-relaxed dark:text-gray-400">
           <li>
             <strong className="dark:text-gray-200">Git-backed permanence</strong> &mdash;
-            Every version of every claim is preserved forever. Nothing is deleted.
+            Every version of every entry is preserved forever. Nothing is deleted.
             Citations always resolve.
           </li>
           <li>
             <strong className="dark:text-gray-200">Proof over assertion</strong> &mdash;
             Supporting materials (data, code, formal proofs) are first-class
-            content in every claim repository. Verification status is explicit.
+            content in every entry repository.
           </li>
           <li>
             <strong className="dark:text-gray-200">API first</strong> &mdash;
@@ -359,13 +317,12 @@ export default function ArchitecturePage() {
           </li>
           <li>
             <strong className="dark:text-gray-200">Ground truth only</strong> &mdash;
-            The database stores only what users provide. Derived values (confidence
-            scores, graph embeddings) are computed on demand and never contaminate
-            the source data.
+            The database stores only what users provide. Derived values are computed
+            on demand and never contaminate the source data.
           </li>
           <li>
             <strong className="dark:text-gray-200">Record, don&rsquo;t resolve</strong> &mdash;
-            Contradictory claims coexist. The system records what has been asserted
+            Contradictory entries coexist. The system records what has been asserted
             and by whom. Resolution is left to the community.
           </li>
           <li>

@@ -23,7 +23,7 @@ interface AuthContextValue {
   token: string | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (handle: string, email: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -40,7 +40,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       return;
     }
-
     getMeApi()
       .then((me) => {
         setAgent(me);
@@ -62,8 +61,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (name: string, email: string, password: string) => {
-      const data = await registerApi(name, email, password);
+    async (handle: string, email: string, password: string) => {
+      const data = await registerApi(handle, email, password);
       setStoredToken(data.access_token);
       setToken(data.access_token);
       setAgent(data.agent);
