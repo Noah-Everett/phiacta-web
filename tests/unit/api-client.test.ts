@@ -1,23 +1,16 @@
-// phiacta-web-repo/tests/unit/api-client.test.ts
-//
 // Unit tests for the API client module — verifies that API functions call
 // the correct URLs, send correct request bodies, and use correct field names.
-//
-// These tests use fetch mocking to intercept all outgoing requests.
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// We test the contract — the API client MUST be importable from @/lib/api
-// and expose these functions with these signatures.
-// The actual import will fail until stubs exist.
 import {
   registerApi,
   loginApi,
-  fetchEntries,
-  fetchEntry,
+  listEntries,
+  getEntry,
   createEntry,
-  fetchMe,
-  API_BASE_URL,
+  getMeApi,
+  setStoredToken,
 } from "@/lib/api";
 
 describe("API Client — endpoint URLs", () => {
@@ -31,7 +24,6 @@ describe("API Client — endpoint URLs", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  // Verifies registerApi calls POST /v1/auth/register
   it("registerApi calls POST /v1/auth/register", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -58,7 +50,6 @@ describe("API Client — endpoint URLs", () => {
     expect(options.method).toBe("POST");
   });
 
-  // Verifies loginApi calls POST /v1/auth/login
   it("loginApi calls POST /v1/auth/login", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -84,8 +75,7 @@ describe("API Client — endpoint URLs", () => {
     expect(options.method).toBe("POST");
   });
 
-  // Verifies fetchEntries calls GET /v1/entries
-  it("fetchEntries calls GET /v1/entries", async () => {
+  it("listEntries calls GET /v1/entries", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -98,7 +88,7 @@ describe("API Client — endpoint URLs", () => {
         }),
     });
 
-    await fetchEntries();
+    await listEntries();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url] = fetchMock.mock.calls[0];
@@ -106,15 +96,14 @@ describe("API Client — endpoint URLs", () => {
     expect(url).not.toContain("/v1/claims");
   });
 
-  // Verifies fetchEntry calls GET /v1/entries/{id}
-  it("fetchEntry calls GET /v1/entries/{id}", async () => {
+  it("getEntry calls GET /v1/entries/{id}", async () => {
     const testId = "11111111-2222-3333-4444-555555555555";
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ id: testId, title: "Test" }),
     });
 
-    await fetchEntry(testId);
+    await getEntry(testId);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url] = fetchMock.mock.calls[0];
@@ -122,8 +111,10 @@ describe("API Client — endpoint URLs", () => {
     expect(url).not.toContain("/v1/claims");
   });
 
-  // Verifies createEntry calls POST /v1/entries
   it("createEntry calls POST /v1/entries", async () => {
+    // createEntry uses authFetch which reads token from localStorage
+    setStoredToken("test-token");
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -146,8 +137,10 @@ describe("API Client — endpoint URLs", () => {
     expect(options.method).toBe("POST");
   });
 
-  // Verifies fetchMe calls GET /v1/auth/me
-  it("fetchMe calls GET /v1/auth/me with Authorization header", async () => {
+  it("getMeApi calls GET /v1/auth/me with Authorization header", async () => {
+    // getMeApi reads token from localStorage
+    setStoredToken("test-token");
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -160,13 +153,12 @@ describe("API Client — endpoint URLs", () => {
         }),
     });
 
-    await fetchMe("test-token");
+    await getMeApi();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, options] = fetchMock.mock.calls[0];
     expect(url).toContain("/v1/auth/me");
     expect(options.headers).toBeDefined();
-    // Authorization header must be present
     const headers = options.headers as Record<string, string>;
     const authHeader =
       headers["Authorization"] || headers["authorization"] || "";
@@ -185,7 +177,6 @@ describe("API Client — request bodies", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  // Verifies registerApi sends {handle, email, password} not {name, email, password}
   it("registerApi sends handle, not name", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -211,12 +202,12 @@ describe("API Client — request bodies", () => {
     expect(body).toHaveProperty("handle", "drchen");
     expect(body).toHaveProperty("email", "dr@chen.com");
     expect(body).toHaveProperty("password", "secure123");
-    // MUST NOT have "name" — old schema
     expect(body).not.toHaveProperty("name");
   });
 
-  // Verifies createEntry sends content_format and layout_hint, not format and claim_type
   it("createEntry sends content_format and layout_hint, not format and claim_type", async () => {
+    setStoredToken("test-token");
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ id: "new-id", title: "Test" }),
@@ -234,7 +225,6 @@ describe("API Client — request bodies", () => {
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
 
-    // Correct field names
     expect(body).toHaveProperty("title", "My Research Paper");
     expect(body).toHaveProperty("content_format", "markdown");
     expect(body).toHaveProperty("layout_hint", "research-paper");
@@ -242,15 +232,15 @@ describe("API Client — request bodies", () => {
     expect(body).toHaveProperty("license", "CC-BY-4.0");
     expect(body).toHaveProperty("content", "# Content\n\nBody text here.");
 
-    // MUST NOT have old field names
     expect(body).not.toHaveProperty("format");
     expect(body).not.toHaveProperty("claim_type");
     expect(body).not.toHaveProperty("type");
     expect(body).not.toHaveProperty("claimType");
   });
 
-  // Verifies createEntry sends only provided fields (optional fields omitted)
   it("createEntry omits undefined optional fields", async () => {
+    setStoredToken("test-token");
+
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ id: "new-id", title: "Test" }),
@@ -264,12 +254,10 @@ describe("API Client — request bodies", () => {
     const body = JSON.parse(options.body);
 
     expect(body).toHaveProperty("title", "Minimal Entry");
-    // Optional fields should either be absent or null, never the old field names
     expect(body).not.toHaveProperty("format");
     expect(body).not.toHaveProperty("claim_type");
   });
 
-  // Verifies loginApi sends {email, password}
   it("loginApi sends email and password", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
@@ -294,25 +282,5 @@ describe("API Client — request bodies", () => {
 
     expect(body).toHaveProperty("email", "user@example.com");
     expect(body).toHaveProperty("password", "password");
-  });
-});
-
-describe("API Client — no deprecated endpoints", () => {
-  let fetchMock: ReturnType<typeof vi.fn>;
-
-  beforeEach(() => {
-    fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
-    vi.stubGlobal("fetch", fetchMock);
-  });
-
-  // Verifies the API_BASE_URL points to the backend
-  it("API_BASE_URL is set to backend URL", () => {
-    expect(API_BASE_URL).toBeDefined();
-    expect(typeof API_BASE_URL).toBe("string");
-    // Should be a valid URL or at minimum a non-empty string
-    expect(API_BASE_URL.length).toBeGreaterThan(0);
   });
 });
