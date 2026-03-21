@@ -161,11 +161,12 @@ function FileRow({ file }: { file: FileListItem }) {
   );
 }
 
-// Reference row
-function RefRow({ entryRef: r }: { entryRef: EntryRefResponse }) {
+// Reference row — direction determines which entry ID to link to
+function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direction: "outgoing" | "incoming" }) {
+  const targetId = direction === "outgoing" ? r.to_entry_id : r.from_entry_id;
   return (
     <Link
-      href={`/entries/${r.to_entry_id}`}
+      href={`/entries/${targetId}`}
       className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
     >
       <Badge
@@ -176,7 +177,7 @@ function RefRow({ entryRef: r }: { entryRef: EntryRefResponse }) {
       </Badge>
       <div className="min-w-0 flex-1">
         <span className="text-sm text-foreground hover:text-primary truncate block transition-colors">
-          {r.to_entry_id}
+          {targetId}
         </span>
         {r.note && (
           <span className="text-xs text-muted-foreground">{r.note}</span>
@@ -216,7 +217,7 @@ export default function EntryPage({ params }: EntryPageProps) {
         setEntry(data);
         setOutgoingRefs(data.outgoing_refs);
         setIncomingRefs(data.incoming_refs);
-        getAgent(data.created_by).then(setAuthor).catch(() => {});
+        getAgent(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 404) {
@@ -226,10 +227,10 @@ export default function EntryPage({ params }: EntryPageProps) {
       })
       .finally(() => setLoading(false));
 
-    getEntryFiles(resolvedId).then(setEntryFiles).catch(() => {});
-    getEntryEdits(resolvedId).then(setEdits).catch(() => {});
-    getEntryHistory(resolvedId).then(setHistory).catch(() => {});
-    getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch(() => {});
+    getEntryFiles(resolvedId).then(setEntryFiles).catch((err) => console.warn("Failed to load files:", err));
+    getEntryEdits(resolvedId).then(setEdits).catch((err) => console.warn("Failed to load edits:", err));
+    getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
+    getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch((err) => console.warn("Failed to load tags:", err));
   }, [resolvedId]);
 
   if (loading) {
@@ -386,11 +387,10 @@ export default function EntryPage({ params }: EntryPageProps) {
 
             {/* Edits */}
             <TabsContent value="edits">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="mb-3">
                 <p className="text-sm text-muted-foreground">
                   Edit proposals are content changes — like pull requests on the entry&apos;s repository.
                 </p>
-                <Button size="sm">Propose edit</Button>
               </div>
               <div className="space-y-2">
                 {edits.map((edit) => (
@@ -445,7 +445,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </h3>
                   <div className="space-y-2">
                     {outgoingRefs.map((r) => (
-                      <RefRow key={r.id} entryRef={r} />
+                      <RefRow key={r.id} entryRef={r} direction="outgoing" />
                     ))}
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </h3>
                   <div className="space-y-2">
                     {incomingRefs.map((r) => (
-                      <RefRow key={r.id} entryRef={r} />
+                      <RefRow key={r.id} entryRef={r} direction="incoming" />
                     ))}
                   </div>
                 </div>
