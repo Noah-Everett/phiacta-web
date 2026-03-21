@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
+import { listEntries } from "@/lib/api";
 import { MOCK_ENTRIES } from "@/lib/mock-data";
+import type { EntryListItem } from "@/lib/types";
 import {
   Search,
   SlidersHorizontal,
@@ -15,16 +17,25 @@ import {
 } from "lucide-react";
 
 function ExploreContent() {
+  const [entries, setEntries] = useState<EntryListItem[]>(MOCK_ENTRIES);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [selectedHint, setSelectedHint] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
 
+  useEffect(() => {
+    listEntries(100, 0)
+      .then((res) => setEntries(res.items))
+      .catch(() => {}) // fall back to mock data
+      .finally(() => setLoading(false));
+  }, []);
+
   // Derive available layout_hint values from the data
   const availableHints = Array.from(
-    new Set(MOCK_ENTRIES.map((e) => e.layout_hint).filter(Boolean) as string[])
+    new Set(entries.map((e) => e.layout_hint).filter(Boolean) as string[])
   ).sort();
 
-  const filtered = MOCK_ENTRIES.filter((entry) => {
+  const filtered = entries.filter((entry) => {
     if (search) {
       const q = search.toLowerCase();
       if (

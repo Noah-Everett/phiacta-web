@@ -30,11 +30,14 @@ import {
   MOCK_REFERENCES,
   MOCK_ENTRY_FILES,
 } from "@/lib/mock-data";
+import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory } from "@/lib/api";
 import type {
+  EntryDetailResponse,
   EditProposalListItem,
   CommitListItem,
   FileListItem,
   EntryRefResponse,
+  PublicAgentResponse,
 } from "@/lib/types";
 
 interface EntryPageProps {
@@ -210,19 +213,47 @@ function RefRow({ ref: r, entries }: { ref: EntryRefResponse; entries: typeof MO
 
 export default function EntryPage({ params }: EntryPageProps) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
+  const [entry, setEntry] = useState<EntryDetailResponse | ((typeof MOCK_ENTRIES)[0] & { content_cache?: string | null; outgoing_refs?: EntryRefResponse[]; incoming_refs?: EntryRefResponse[] })>(MOCK_ENTRIES[0]);
+  const [author, setAuthor] = useState<PublicAgentResponse>(MOCK_AGENTS[0]);
+  const [entryFiles, setEntryFiles] = useState<FileListItem[]>(MOCK_ENTRY_FILES.default);
+  const [edits, setEdits] = useState<EditProposalListItem[]>(MOCK_EDITS);
+  const [history, setHistory] = useState<CommitListItem[]>(MOCK_HISTORY);
+  const [outgoingRefs, setOutgoingRefs] = useState<EntryRefResponse[]>([]);
+  const [incomingRefs, setIncomingRefs] = useState<EntryRefResponse[]>([]);
 
   useEffect(() => {
     params.then((p) => setResolvedId(p.id));
   }, [params]);
 
-  const id = resolvedId ?? "11111111-1111-1111-1111-111111111111";
-  const entry = MOCK_ENTRIES.find((e) => e.id === id) ?? MOCK_ENTRIES[0];
-  const author = MOCK_AGENTS.find((a) => a.id === entry.created_by) ?? MOCK_AGENTS[0];
-  const entryFiles = MOCK_ENTRY_FILES[entry.id] ?? MOCK_ENTRY_FILES.default;
+  useEffect(() => {
+    if (!resolvedId) return;
 
-  // Filter references for this entry
-  const outgoingRefs = MOCK_REFERENCES.filter((r) => r.from_entry_id === entry.id);
-  const incomingRefs = MOCK_REFERENCES.filter((r) => r.to_entry_id === entry.id);
+    // Fetch entry detail from API, fall back to mock data
+    getEntry(resolvedId)
+      .then((data) => {
+        setEntry(data);
+        setOutgoingRefs(data.outgoing_refs);
+        setIncomingRefs(data.incoming_refs);
+        // Fetch author
+        getAgent(data.created_by).then(setAuthor).catch(() => {});
+      })
+      .catch(() => {
+        // Fall back to mock data
+        const mockEntry = MOCK_ENTRIES.find((e) => e.id === resolvedId) ?? MOCK_ENTRIES[0];
+        setEntry(mockEntry);
+        const mockAuthor = MOCK_AGENTS.find((a) => a.id === mockEntry.created_by) ?? MOCK_AGENTS[0];
+        setAuthor(mockAuthor);
+        setOutgoingRefs(MOCK_REFERENCES.filter((r) => r.from_entry_id === mockEntry.id));
+        setIncomingRefs(MOCK_REFERENCES.filter((r) => r.to_entry_id === mockEntry.id));
+      });
+
+    // Fetch files, edits, history — fall back to mock data on error
+    getEntryFiles(resolvedId).then(setEntryFiles).catch(() => {
+      setEntryFiles(MOCK_ENTRY_FILES[resolvedId] ?? MOCK_ENTRY_FILES.default);
+    });
+    getEntryEdits(resolvedId).then(setEdits).catch(() => {});
+    getEntryHistory(resolvedId).then(setHistory).catch(() => {});
+  }, [resolvedId]);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
