@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
 import {
   GitBranch,
@@ -20,8 +21,9 @@ import {
   ChevronDown,
   FileCode2,
   File,
+  Tag,
 } from "lucide-react";
-import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory } from "@/lib/api";
+import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory, getEntryTags, ApiError } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
@@ -29,6 +31,7 @@ import type {
   FileListItem,
   EntryRefResponse,
   PublicAgentResponse,
+  TagResponse,
 } from "@/lib/types";
 
 interface EntryPageProps {
@@ -191,10 +194,12 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
   const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
+  const [tags, setTags] = useState<TagResponse[]>([]);
   const [outgoingRefs, setOutgoingRefs] = useState<EntryRefResponse[]>([]);
   const [incomingRefs, setIncomingRefs] = useState<EntryRefResponse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     params.then((p) => setResolvedId(p.id));
@@ -213,27 +218,70 @@ export default function EntryPage({ params }: EntryPageProps) {
         setIncomingRefs(data.incoming_refs);
         getAgent(data.created_by).then(setAuthor).catch(() => {});
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load entry"))
+      .catch((err) => {
+        if (err instanceof ApiError && err.status === 404) {
+          setNotFound(true);
+        }
+        setError(err instanceof Error ? err.message : "Failed to load entry");
+      })
       .finally(() => setLoading(false));
 
     getEntryFiles(resolvedId).then(setEntryFiles).catch(() => {});
     getEntryEdits(resolvedId).then(setEdits).catch(() => {});
     getEntryHistory(resolvedId).then(setHistory).catch(() => {});
+    getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch(() => {});
   }, [resolvedId]);
 
   if (loading) {
     return (
       <div className="mx-auto max-w-6xl px-6 py-8">
-        <p className="text-sm text-muted-foreground">Loading entry...</p>
+        {/* Breadcrumb skeleton */}
+        <div className="mb-5 flex items-center gap-1.5">
+          <Skeleton className="h-3 w-12" />
+          <Skeleton className="h-3 w-3" />
+          <Skeleton className="h-3 w-40" />
+        </div>
+        {/* Header skeleton */}
+        <div className="mb-6 space-y-3">
+          <div className="flex gap-2">
+            <Skeleton className="h-5 w-24" />
+            <Skeleton className="h-5 w-16" />
+          </div>
+          <Skeleton className="h-8 w-2/3" />
+          <Skeleton className="h-4 w-full" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        {/* Content skeleton */}
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
+          <div className="space-y-3">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-64 w-full rounded-xl" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-40 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
+        </div>
       </div>
     );
   }
 
   if (error || !entry) {
+    const is404 = notFound || !entry;
     return (
       <div className="mx-auto max-w-6xl px-6 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-foreground">Entry not found</h1>
-        <p className="mb-4 text-sm text-muted-foreground">{error || "This entry does not exist."}</p>
+        <h1 className="mb-2 text-2xl font-bold text-foreground">
+          {is404 ? "Entry not found" : "Something went wrong"}
+        </h1>
+        <p className="mb-4 text-sm text-muted-foreground">
+          {is404
+            ? "This entry does not exist or has been removed."
+            : error || "An unexpected error occurred."}
+        </p>
         <Button asChild variant="outline">
           <Link href="/explore">Browse entries</Link>
         </Button>
@@ -463,6 +511,22 @@ export default function EntryPage({ params }: EntryPageProps) {
               ))}
             </dl>
           </div>
+
+          {tags.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Tag className="mr-1.5 inline h-3 w-3" />
+              Tags
+            </h3>
+            <div className="flex flex-wrap gap-1.5">
+              {tags.map((t) => (
+                <Badge key={t.tag} variant="secondary" className="text-xs">
+                  {t.tag}
+                </Badge>
+              ))}
+            </div>
+          </div>
+          )}
         </div>
       </div>
     </div>
