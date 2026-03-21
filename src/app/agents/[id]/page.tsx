@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
+import { getAgent, listEntries } from "@/lib/api";
 import {
   ChevronRight,
   Bot,
@@ -12,6 +13,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { MOCK_AGENTS, MOCK_ENTRIES } from "@/lib/mock-data";
+import type { PublicAgentResponse, EntryListItem } from "@/lib/types";
 
 interface AgentPageProps {
   params: Promise<{ id: string }>;
@@ -27,8 +29,19 @@ const AGENT_TYPE_ICONS: Record<string, React.ElementType> = {
 export default async function AgentPage({ params }: AgentPageProps) {
   const { id } = await params;
 
-  const agent = MOCK_AGENTS.find((a) => a.id === id) ?? MOCK_AGENTS[0];
-  const agentEntries = MOCK_ENTRIES.filter((e) => e.created_by === agent.id);
+  let agent: PublicAgentResponse;
+  let agentEntries: EntryListItem[];
+
+  try {
+    agent = await getAgent(id);
+    // Fetch all entries and filter by created_by (backend doesn't have a created_by filter yet)
+    const res = await listEntries(100, 0);
+    agentEntries = res.items.filter((e) => e.created_by === id);
+  } catch {
+    // Fall back to mock data
+    agent = MOCK_AGENTS.find((a) => a.id === id) ?? MOCK_AGENTS[0];
+    agentEntries = MOCK_ENTRIES.filter((e) => e.created_by === agent.id);
+  }
 
   const TypeIcon = AGENT_TYPE_ICONS[agent.agent_type] ?? User;
 

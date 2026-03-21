@@ -15,7 +15,9 @@ import {
   Cpu,
 } from "lucide-react";
 import { MOCK_ENTRIES } from "@/lib/mock-data";
+import { listEntries } from "@/lib/api";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
+import type { EntryListItem } from "@/lib/types";
 
 const FEATURES = [
   {
@@ -45,9 +47,14 @@ const STATS = [
   { label: "Verified proofs", value: "94" },
 ];
 
-const FEATURED_ENTRIES = MOCK_ENTRIES.slice(0, 4);
-
-export default function Home() {
+export default async function Home() {
+  let featuredEntries: EntryListItem[];
+  try {
+    const res = await listEntries(4, 0);
+    featuredEntries = res.items;
+  } catch {
+    featuredEntries = MOCK_ENTRIES.slice(0, 4);
+  }
   return (
     <div className="flex flex-col">
       {/* Hero */}
@@ -132,7 +139,7 @@ export default function Home() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {FEATURED_ENTRIES.map((entry) => (
+          {featuredEntries.map((entry) => (
             <Link
               key={entry.id}
               href={`/entries/${entry.id}`}
