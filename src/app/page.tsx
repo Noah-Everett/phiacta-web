@@ -14,38 +14,38 @@ import {
   BookOpen,
   Cpu,
 } from "lucide-react";
-import { MOCK_CLAIMS } from "@/lib/mock-data";
-import { EpistemicBadge, VerificationBadge, ClaimTypeBadge } from "@/components/ClaimBadges";
+import { MOCK_ENTRIES } from "@/lib/mock-data";
+import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 
 const FEATURES = [
   {
     icon: GitBranch,
     title: "Git-backed permanence",
     description:
-      "Every claim is a version-controlled repository. History is immutable. Anyone who cites a claim can always access the exact version they cited.",
+      "Every entry is a version-controlled repository. History is immutable. Anyone who cites an entry can always access the exact version they cited.",
   },
   {
     icon: ShieldCheck,
     title: "Proof over assertion",
     description:
-      "Claims carry their supporting materials: data, machine-checkable proofs, reproducibility scripts. The absence of proof is visible to everyone.",
+      "Entries carry their supporting materials: data, machine-checkable proofs, reproducibility scripts. The absence of proof is visible to everyone.",
   },
   {
     icon: Users,
-    title: "Community confidence",
+    title: "Community review",
     description:
-      "Votes and peer reviews surface the epistemic status of every claim. Contradictions coexist — the database records what is asserted and by whom.",
+      "Edit proposals and peer reviews surface the quality of every entry. Contradictions coexist — the database records what is asserted and by whom.",
   },
 ];
 
 const STATS = [
-  { label: "Claims", value: "1,247" },
+  { label: "Entries", value: "1,247" },
   { label: "Contributors", value: "89" },
-  { label: "Reviews", value: "3,841" },
+  { label: "Edit proposals", value: "3,841" },
   { label: "Verified proofs", value: "94" },
 ];
 
-const FEATURED_CLAIMS = MOCK_CLAIMS.slice(0, 4);
+const FEATURED_ENTRIES = MOCK_ENTRIES.slice(0, 4);
 
 export default function Home() {
   return (
@@ -64,25 +64,25 @@ export default function Home() {
           The knowledge backend.
         </p>
         <p className="mb-8 max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">
-          Every piece of knowledge is a{" "}
-          <span className="text-foreground font-medium">claim</span> — an atomic, versioned
+          Every piece of knowledge is an{" "}
+          <span className="text-foreground font-medium">entry</span> — an atomic, versioned
           assertion backed by evidence, reviewed by the community, and permanently citable.
         </p>
 
         <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <form action="/search">
+            <form action="/explore">
               <Input
                 name="q"
-                placeholder="Search claims, topics, authors…"
+                placeholder="Search entries, topics, authors..."
                 className="pl-9 h-10"
               />
             </form>
           </div>
           <Button asChild>
             <Link href="/explore">
-              Browse all claims <ArrowRight className="ml-2 h-4 w-4" />
+              Browse all entries <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
         </div>
@@ -120,10 +120,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Recent claims */}
+      {/* Recent entries */}
       <section className="mx-auto w-full max-w-5xl px-6 pb-16">
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-foreground">Recent claims</h2>
+          <h2 className="text-xl font-semibold text-foreground">Recent entries</h2>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/explore">
               View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -132,35 +132,29 @@ export default function Home() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
-          {FEATURED_CLAIMS.map((claim) => (
+          {FEATURED_ENTRIES.map((entry) => (
             <Link
-              key={claim.id}
-              href={`/claims/${claim.id}`}
+              key={entry.id}
+              href={`/entries/${entry.id}`}
               className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 transition hover:border-primary/30 hover:shadow-sm"
             >
               <div className="flex flex-wrap items-start gap-2">
-                <ClaimTypeBadge type={claim.claim_type} />
-                <EpistemicBadge status={claim.epistemic_status} />
-                <VerificationBadge status={claim.verification_status} />
+                <LayoutHintBadge hint={entry.layout_hint} />
+                <StatusBadge status={entry.status} />
               </div>
 
               <p className="text-sm font-medium leading-snug text-card-foreground group-hover:text-primary transition-colors">
-                {claim.title}
+                {entry.title}
               </p>
 
-              <div className="flex flex-wrap gap-1.5">
-                {claim.topics.slice(0, 3).map((topic) => (
-                  <span
-                    key={topic}
-                    className="rounded-full bg-secondary px-2.5 py-0.5 text-xs text-secondary-foreground"
-                  >
-                    {topic}
-                  </span>
-                ))}
-              </div>
+              {entry.summary && (
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {entry.summary}
+                </p>
+              )}
 
               <p className="text-xs text-muted-foreground">
-                {new Date(claim.created_at).toLocaleDateString("en-US", {
+                {new Date(entry.created_at).toLocaleDateString("en-US", {
                   year: "numeric",
                   month: "short",
                   day: "numeric",

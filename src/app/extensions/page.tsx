@@ -29,10 +29,10 @@ export default function ExtensionsPage() {
         <h1 className="text-2xl font-bold text-foreground">Extensions</h1>
       </div>
       <p className="mb-2 text-sm text-muted-foreground">
-        Third-party apps that connect to the Phiacta API to generate new outputs from your claims.
+        Third-party apps that connect to the Phiacta API to generate new outputs from your entries.
       </p>
       <p className="mb-8 text-sm text-muted-foreground">
-        Extensions run their own compute and read your claims through the API — you authorize access,
+        Extensions run their own compute and read your entries through the API — you authorize access,
         they do the work.
       </p>
 
@@ -41,14 +41,14 @@ export default function ExtensionsPage() {
         <span>
           <span className="font-semibold text-foreground">{MOCK_EXTENSIONS.length}</span> extensions
         </span>
-        <span>·</span>
+        <span>&middot;</span>
         <span>
           <span className="font-semibold text-foreground">
             {MOCK_EXTENSIONS.filter((e) => e.is_official).length}
           </span>{" "}
           official
         </span>
-        <span>·</span>
+        <span>&middot;</span>
         <span>
           <span className="font-semibold text-foreground">
             {MOCK_EXTENSIONS.reduce((sum, e) => sum + e.uses, 0).toLocaleString()}
@@ -61,7 +61,7 @@ export default function ExtensionsPage() {
       <div className="relative mb-6">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search extensions…"
+          placeholder="Search extensions..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pl-9"
@@ -143,7 +143,7 @@ export default function ExtensionsPage() {
         <Puzzle className="mx-auto mb-3 h-8 w-8 text-muted-foreground" />
         <h3 className="mb-1 text-base font-semibold text-foreground">Build your own extension</h3>
         <p className="mb-4 mx-auto max-w-sm text-sm text-muted-foreground">
-          Extensions connect to the Phiacta API with standard OAuth. They read claims and push
+          Extensions connect to the Phiacta API with standard OAuth. They read entries and push
           outputs — papers, audio, slides, graphs. List yours in this marketplace.
         </p>
         <div className="flex justify-center gap-2">

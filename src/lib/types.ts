@@ -1,141 +1,14 @@
-export type ClaimType =
-  | "assertion"
-  | "definition"
-  | "theorem"
-  | "proof"
-  | "evidence"
-  | "empirical"
-  | "conjecture"
-  | "refutation"
-  | "hypothesis";
-
-export interface Claim {
-  id: string;
-  title: string;
-  claim_type: string;
-  format: string;
-  content_cache: string | null;
-  namespace_id: string;
-  created_by: string;
-  status: string;
-  forgejo_repo_id: number | null;
-  repo_status: string;
-  cached_confidence: number | null;
-  confidence_updated_at: string | null;
-  attrs: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface Reference {
-  id: string;
-  source_uri: string;
-  target_uri: string;
-  role: string;
-  created_by: string;
-  source_type: string;
-  target_type: string;
-  source_claim_id: string | null;
-  target_claim_id: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  limit: number;
-  offset: number;
-}
-
-export interface SearchResultItem {
-  claim: Claim;
-  rank: number;
-}
-
-export interface SearchResponse {
-  results: SearchResultItem[];
-  total: number;
-  query: string;
-}
-
-export interface Namespace {
-  id: string;
-  name: string;
-  parent_id: string | null;
-  description: string | null;
-  attrs: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ConfidenceStatus {
-  claim_id: string;
-  title: string;
-  claim_type: string;
-  status: string;
-  signal_count: number;
-  interaction_count: number;
-  weighted_agree_confidence: number | null;
-  agree_count: number;
-  disagree_count: number;
-  neutral_count: number;
-  epistemic_status: string;
-}
-
-export interface Neighbor {
-  reference_id: string;
-  neighbor_id: string;
-  role: string;
-  source_uri: string;
-  target_uri: string;
-  direction: string;
-  edge_type_info: {
-    is_transitive: boolean;
-    is_symmetric: boolean;
-    category: string;
-    inverse_name: string;
-  } | null;
-}
-
+// Agent types — mirrors auth.py AgentResponse
 export interface Agent {
   id: string;
-  name: string;
-  email: string | null;
+  handle: string;
   agent_type: string;
-  trust_score: number;
+  is_active: boolean;
   created_at: string;
 }
 
-export interface PublicAgent {
-  id: string;
-  name: string;
-  agent_type: string;
-  trust_score: number;
-  created_at: string;
-}
-
-export interface AuthorSummary {
-  id: string;
-  name: string;
-  agent_type: string;
-  trust_score: number;
-}
-
-export interface Interaction {
-  id: string;
-  claim_id: string;
-  author: AuthorSummary;
-  kind: string;
-  signal: string | null;
-  confidence: number | null;
-  weight: number;
-  body: string | null;
-  attrs: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-}
+// Same shape — backend uses identical fields for public view
+export type PublicAgentResponse = Agent;
 
 export interface AuthResponse {
   access_token: string;
@@ -143,13 +16,145 @@ export interface AuthResponse {
   agent: Agent;
 }
 
-export interface Source {
+// Entry types — mirrors entry.py
+export interface EntryListItem {
   id: string;
-  source_type: string;
-  title: string | null;
-  external_ref: string | null;
-  content_hash: string | null;
-  submitted_by: string;
-  submitted_at: string;
-  attrs: Record<string, unknown>;
+  title: string;
+  layout_hint: string | null;
+  summary: string | null;
+  license: string | null;
+  content_format: string;
+  schema_version: number;
+  forgejo_repo_id: number | null;
+  repo_name: string;
+  current_head_sha: string | null;
+  repo_status: string;
+  status: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface EntryResponse extends EntryListItem {
+  content_cache: string | null;
+}
+
+export interface EntryDetailResponse extends EntryResponse {
+  outgoing_refs: EntryRefResponse[];
+  incoming_refs: EntryRefResponse[];
+}
+
+export interface EntryCreate {
+  title: string;
+  content_format?: string;
+  layout_hint?: string | null;
+  summary?: string | null;
+  license?: string | null;
+  content?: string | null;
+}
+
+// Entry ref types — mirrors entry_ref.py
+export interface EntryRefResponse {
+  id: string;
+  from_entry_id: string;
+  to_entry_id: string;
+  rel: string;
+  version_sha: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+// Pagination — mirrors common.py
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
+// File types — mirrors entry_file.py
+export interface FileListItem {
+  name: string;
+  path: string;
+  type: string;
+  size: number;
+}
+
+export interface FileWriteResponse {
+  sha: string;
+}
+
+// Edit proposal types — mirrors entry_edit.py
+export interface EditProposalAuthor {
+  handle: string;
+  agent_type: string;
+}
+
+export interface EditProposalListItem {
+  number: number;
+  title: string;
+  body: string | null;
+  state: string;
+  is_draft: boolean;
+  author: EditProposalAuthor;
+  head_branch: string;
+  base_branch: string;
+  created_at: string;
+  updated_at: string;
+  merged_at: string | null;
+}
+
+export interface EditProposalFileDiff {
+  path: string;
+  patch: string;
+  additions: number;
+  deletions: number;
+}
+
+export interface EditProposalDetail extends EditProposalListItem {
+  diff: EditProposalFileDiff[];
+}
+
+// History types — mirrors entry_history.py
+export interface CommitAuthor {
+  name: string;
+  email: string;
+}
+
+export interface CommitListItem {
+  sha: string;
+  message: string;
+  author: CommitAuthor;
+  timestamp: string;
+}
+
+export interface FileDiffItem {
+  path: string;
+  patch: string;
+  additions: number;
+  deletions: number;
+}
+
+export interface CommitDiffResponse {
+  base_sha: string;
+  head_sha: string;
+  files_changed: FileDiffItem[];
+}
+
+// Tags extension types — mirrors tags/schemas.py
+export interface TagResponse {
+  tag: string;
+  created_by: string;
+  created_at: string;
+}
+
+export interface TagListResponse {
+  entry_id: string;
+  tags: TagResponse[];
+}
+
+export interface EntryTagItem {
+  entry_id: string;
+  title: string;
 }

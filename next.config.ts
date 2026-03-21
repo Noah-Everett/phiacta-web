@@ -2,6 +2,15 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  async redirects() {
+    return [
+      {
+        source: "/claims/:path*",
+        destination: "/entries/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     return [
       {

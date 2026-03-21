@@ -17,33 +17,33 @@ import {
 const PRINCIPLES = [
   {
     icon: Atom,
-    title: "Claims are the unit of knowledge",
-    body: "A claim is atomic — one assertion, not a paper. Complex arguments are expressed as networks of related claims. Every individual statement is citable, reviewable, and verifiable on its own terms.",
+    title: "Entries are the unit of knowledge",
+    body: "An entry is atomic — one assertion, not a paper. Complex arguments are expressed as networks of related entries. Every individual statement is citable, reviewable, and verifiable on its own terms.",
   },
   {
     icon: GitBranch,
     title: "Permanent versioned history",
-    body: "Every version of every claim is preserved forever. Nothing is deleted — claims are archived or retracted with full history intact. Anyone who cites a claim can always access the exact version they cited.",
+    body: "Every version of every entry is preserved forever. Nothing is deleted — entries are archived or retracted with full history intact. Anyone who cites an entry can always access the exact version they cited.",
   },
   {
     icon: ShieldCheck,
     title: "Proof over assertion",
-    body: "Empirical claims attach the data and code that produced the result. Mathematical claims attach machine-checkable proofs. Unverified claims are accepted — but the absence of proof is visible to everyone.",
+    body: "Empirical entries attach the data and code that produced the result. Mathematical entries attach machine-checkable proofs. Unverified entries are accepted — but the absence of proof is visible to everyone.",
   },
   {
     icon: Globe,
     title: "Public by default, author-controlled",
-    body: "Claims are publicly readable by anyone. Only the author and explicit collaborators can modify a claim. This mirrors a public open-source repository: the knowledge is open; commit access is not.",
+    body: "Entries are publicly readable by anyone. Only the author and explicit collaborators can modify an entry. This mirrors a public open-source repository: the knowledge is open; commit access is not.",
   },
   {
     icon: XCircle,
     title: "Negative results count",
-    body: "The current system only rewards what worked. On Phiacta, a null result, a failed replication, or an experiment that didn't pan out is just as valuable as a positive finding — and should be a claim.",
+    body: "The current system only rewards what worked. On Phiacta, a null result, a failed replication, or an experiment that didn't pan out is just as valuable as a positive finding — and should be an entry.",
   },
   {
     icon: MessageSquare,
     title: "Record, don't resolve",
-    body: "Contradictory claims coexist. The system records what has been asserted and by whom. Resolving disagreements is left to the community through votes, reviews, and discussion — not decided by the platform.",
+    body: "Contradictory entries coexist. The system records what has been asserted and by whom. Resolving disagreements is left to the community through reviews and discussion — not decided by the platform.",
   },
   {
     icon: Database,
@@ -53,22 +53,22 @@ const PRINCIPLES = [
   {
     icon: Puzzle,
     title: "Open platform",
-    body: "Every feature on the website is accessible through the API. Third-party extensions connect to produce new outputs — papers, podcasts, slide decks — from the same underlying claim data.",
+    body: "Every feature on the website is accessible through the API. Third-party extensions connect to produce new outputs — papers, podcasts, slide decks — from the same underlying entry data.",
   },
 ];
 
 const NOT_LIST = [
   {
     label: "Not a content generator",
-    body: "Phiacta does not produce summaries, papers, or visualizations. That is the job of extensions. Phiacta's job is to maintain a clean, permanent, queryable store of claims.",
+    body: "Phiacta does not produce summaries, papers, or visualizations. That is the job of extensions. Phiacta's job is to maintain a clean, permanent, queryable store of entries.",
   },
   {
     label: "Not a social network",
-    body: "Community features (votes, reviews, discussion) exist to surface the quality of claims — not to maximise engagement.",
+    body: "Community features (reviews, discussion) exist to surface the quality of entries — not to maximise engagement.",
   },
   {
     label: "Not a software repository",
-    body: "Claims are for knowledge assertions. Versioned repositories inside claims hold supporting materials (data, proofs, scripts), not software projects.",
+    body: "Entries are for knowledge assertions. Versioned repositories inside entries hold supporting materials (data, proofs, scripts), not software projects.",
   },
 ];
 
@@ -90,12 +90,12 @@ export default function AboutPage() {
         <h2 className="mb-3 text-xl font-semibold text-foreground">The Name</h2>
         <p className="leading-relaxed text-muted-foreground">
           <strong className="text-foreground">Phiacta</strong> blends two roots:{" "}
-          <strong className="text-foreground">phi</strong> (φ), the Greek letter representing
+          <strong className="text-foreground">phi</strong> (phi), the Greek letter representing
           the golden ratio and used throughout mathematics and science, and{" "}
           <strong className="text-foreground">facta</strong>, the Latin word for &ldquo;things done&rdquo; —
           the origin of the English word &ldquo;fact.&rdquo; Together the name captures the idea of
           structured, well-formed facts: knowledge shaped with the same elegance and precision
-          that φ embodies.
+          that phi embodies.
         </p>
       </section>
 
@@ -110,8 +110,8 @@ export default function AboutPage() {
             in mind.
           </p>
           <p>
-            Phiacta is built around a different idea: every piece of knowledge should be a{" "}
-            <strong className="text-foreground">claim</strong> — an atomic, versioned assertion
+            Phiacta is built around a different idea: every piece of knowledge should be an{" "}
+            <strong className="text-foreground">entry</strong> — an atomic, versioned assertion
             that stands on its own, can be backed by evidence, and can be reviewed, challenged,
             and cited independently.
           </p>
@@ -119,8 +119,8 @@ export default function AboutPage() {
             <div className="rounded-xl border border-border bg-card p-5">
               <Badge variant="secondary" className="mb-2">Near-term</Badge>
               <p className="text-sm">
-                Phiacta replaces academic papers. Researchers publish individual claims backed
-                by data, code, and proofs — no more monolithic PDFs. Each claim is citable,
+                Phiacta replaces academic papers. Researchers publish individual entries backed
+                by data, code, and proofs — no more monolithic PDFs. Each entry is citable,
                 reviewable, and updatable without touching anything else.
               </p>
             </div>
@@ -129,7 +129,7 @@ export default function AboutPage() {
               <p className="text-sm">
                 A general knowledge layer for the internet — a more trustworthy, more structured
                 alternative to how knowledge is shared across X, Reddit, Wikipedia, and Stack
-                Exchange. Grounded in claims that can be backed by evidence and tracked over time.
+                Exchange. Grounded in entries that can be backed by evidence and tracked over time.
               </p>
             </div>
           </div>
@@ -156,11 +156,11 @@ export default function AboutPage() {
 
       <Separator className="mb-10" />
 
-      {/* Claim vocabulary */}
+      {/* Entry vocabulary */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">How Claims Work</h2>
+        <h2 className="mb-3 text-xl font-semibold text-foreground">How Entries Work</h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
-          Claims are backed by versioned git repositories. Phiacta surfaces the underlying
+          Entries are backed by versioned git repositories. Phiacta surfaces the underlying
           concepts with plain language that requires no technical knowledge:
         </p>
         <div className="overflow-hidden rounded-xl border border-border">
@@ -173,12 +173,12 @@ export default function AboutPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {[
-                ["Repository", "Claim"],
+                ["Repository", "Entry"],
                 ["Commit", "Update / version"],
-                ["Branch + pull request", "Edit"],
+                ["Branch + pull request", "Edit proposal"],
                 ["Issue", "Issue"],
                 ["Merge PR", "Accept edit"],
-                ["Fork", "Derive (creates a new claim)"],
+                ["Fork", "Derive (creates a new entry)"],
               ].map(([under, display]) => (
                 <tr key={under} className="bg-card">
                   <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{under}</td>
@@ -215,10 +215,10 @@ export default function AboutPage() {
           third-party tools are listed.
         </p>
         <p className="leading-relaxed text-muted-foreground">
-          The <strong className="text-foreground">claim format</strong> — the structure of{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">claim.md</code>,{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">claim.yaml</code>,
-          and the repository layout — is publicly documented. Claims are not trapped on the
+          The <strong className="text-foreground">entry format</strong> — the structure of{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">README.md</code>,{" "}
+          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">.phiacta/entry.yaml</code>,
+          and the repository layout — is publicly documented. Entries are not trapped on the
           platform. Anyone can read, export, or build tools around them.
         </p>
       </section>
@@ -239,10 +239,10 @@ export default function AboutPage() {
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            "A paper generator that takes a set of claims and produces a formatted academic paper",
-            "A podcast creator that turns a claim and its discussion into audio",
-            "A lecture slide builder that generates teaching materials from a topic's claims",
-            "A PDF ingestion pipeline that reads a paper and submits its claims to the API",
+            "A paper generator that takes a set of entries and produces a formatted academic paper",
+            "A podcast creator that turns an entry and its discussion into audio",
+            "A lecture slide builder that generates teaching materials from a set of entries",
+            "A PDF ingestion pipeline that reads a paper and submits its entries to the API",
           ].map((example) => (
             <div
               key={example}
