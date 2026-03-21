@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { authFetch } from "@/lib/api";
+import { createEntry } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
@@ -47,16 +47,13 @@ export default function ContributePage() {
     setSuccess(false);
     setSubmitting(true);
     try {
-      await authFetch("/v1/entries", {
-        method: "POST",
-        body: JSON.stringify({
-          title,
-          content: content || null,
-          content_format: contentFormat,
-          layout_hint: layoutHint || null,
-          summary: summary || null,
-          license: license || null,
-        }),
+      await createEntry({
+        title,
+        content: content || null,
+        content_format: contentFormat,
+        layout_hint: layoutHint || null,
+        summary: summary || null,
+        license: license || null,
       });
       setSuccess(true);
       setTitle("");

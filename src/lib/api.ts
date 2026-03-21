@@ -26,13 +26,14 @@ const API_URL =
     : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const { headers: extraHeaders, ...restOptions } = options ?? {};
   const res = await fetch(`${API_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
-      ...options?.headers,
+      ...extraHeaders,
     },
     cache: "no-store",
-    ...options,
+    ...restOptions,
   });
   if (!res.ok) {
     const body = await res.json().catch(() => null);
@@ -69,14 +70,15 @@ function getAuthHeaders(): Record<string, string> {
 let isLoggingOut = false;
 
 export async function authFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const { headers: extraHeaders, ...restOptions } = options ?? {};
   const res = await fetch(`${API_URL}${path}`, {
     headers: {
       "Content-Type": "application/json",
       ...getAuthHeaders(),
-      ...options?.headers,
+      ...extraHeaders,
     },
     cache: "no-store",
-    ...options,
+    ...restOptions,
   });
 
   if (res.status === 401) {

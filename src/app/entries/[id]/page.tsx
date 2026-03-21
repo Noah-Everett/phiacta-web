@@ -20,7 +20,6 @@ import {
   ChevronDown,
   FileCode2,
   File,
-  Eye,
 } from "lucide-react";
 import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory } from "@/lib/api";
 import type {
@@ -91,19 +90,6 @@ function EditRow({ edit }: { edit: EditProposalListItem }) {
             <p>Branch: <code className="font-mono">{edit.head_branch}</code> &rarr; <code className="font-mono">{edit.base_branch}</code></p>
             {edit.is_draft && <p className="text-amber-600 dark:text-amber-400">Draft</p>}
           </div>
-          {edit.state === "open" && (
-            <div className="flex gap-2">
-              <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-                Accept edit
-              </Button>
-              <Button variant="outline" size="sm">
-                Reject
-              </Button>
-              <Button variant="ghost" size="sm">
-                Request changes
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </div>
@@ -151,9 +137,6 @@ function CommitRow({ commit, index }: { commit: CommitListItem; index: number })
             <p>Author: {commit.author.name} &lt;{commit.author.email}&gt;</p>
             <p>Full SHA: <code className="font-mono">{commit.sha}</code></p>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5 text-xs">
-            <Eye className="h-3.5 w-3.5" /> View at this version
-          </Button>
         </div>
       )}
     </div>
@@ -176,7 +159,7 @@ function FileRow({ file }: { file: FileListItem }) {
 }
 
 // Reference row
-function RefRow({ ref: r }: { ref: EntryRefResponse }) {
+function RefRow({ entryRef: r }: { entryRef: EntryRefResponse }) {
   return (
     <Link
       href={`/entries/${r.to_entry_id}`}
@@ -365,6 +348,9 @@ export default function EntryPage({ params }: EntryPageProps) {
                 {edits.map((edit) => (
                   <EditRow key={edit.number} edit={edit} />
                 ))}
+                {edits.length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No edit proposals yet.</p>
+                )}
               </div>
             </TabsContent>
 
@@ -374,6 +360,9 @@ export default function EntryPage({ params }: EntryPageProps) {
                 {history.map((commit, i) => (
                   <CommitRow key={commit.sha} commit={commit} index={i} />
                 ))}
+                {history.length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
+                )}
               </div>
             </TabsContent>
 
@@ -392,6 +381,9 @@ export default function EntryPage({ params }: EntryPageProps) {
                   {entryFiles.map((file) => (
                     <FileRow key={file.path} file={file} />
                   ))}
+                  {entryFiles.length === 0 && (
+                    <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -405,7 +397,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </h3>
                   <div className="space-y-2">
                     {outgoingRefs.map((r) => (
-                      <RefRow key={r.id} ref={r}  />
+                      <RefRow key={r.id} entryRef={r} />
                     ))}
                   </div>
                 </div>
@@ -417,7 +409,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </h3>
                   <div className="space-y-2">
                     {incomingRefs.map((r) => (
-                      <RefRow key={r.id} ref={r}  />
+                      <RefRow key={r.id} entryRef={r} />
                     ))}
                   </div>
                 </div>
