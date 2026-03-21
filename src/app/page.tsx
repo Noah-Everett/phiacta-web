@@ -14,7 +14,6 @@ import {
   BookOpen,
   Cpu,
 } from "lucide-react";
-import { MOCK_ENTRIES } from "@/lib/mock-data";
 import { listEntries } from "@/lib/api";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import type { EntryListItem } from "@/lib/types";
@@ -48,12 +47,12 @@ const STATS = [
 ];
 
 export default async function Home() {
-  let featuredEntries: EntryListItem[];
+  let featuredEntries: EntryListItem[] = [];
   try {
     const res = await listEntries(4, 0);
     featuredEntries = res.items;
   } catch {
-    featuredEntries = MOCK_ENTRIES.slice(0, 4);
+    // API unavailable — show empty
   }
   return (
     <div className="flex flex-col">
@@ -128,6 +127,7 @@ export default async function Home() {
       </section>
 
       {/* Recent entries */}
+      {featuredEntries.length > 0 && (
       <section className="mx-auto w-full max-w-5xl px-6 pb-16">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-foreground">Recent entries</h2>
@@ -171,6 +171,7 @@ export default async function Home() {
           ))}
         </div>
       </section>
+      )}
 
       {/* Extensions CTA */}
       <section className="border-t border-border bg-muted/30 px-6 py-14">

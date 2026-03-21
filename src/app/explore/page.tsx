@@ -8,17 +8,18 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import { listEntries } from "@/lib/api";
-import { MOCK_ENTRIES } from "@/lib/mock-data";
 import type { EntryListItem } from "@/lib/types";
 import {
   Search,
   SlidersHorizontal,
   X,
+  Loader2,
 } from "lucide-react";
 
 function ExploreContent() {
-  const [entries, setEntries] = useState<EntryListItem[]>(MOCK_ENTRIES);
+  const [entries, setEntries] = useState<EntryListItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [selectedHint, setSelectedHint] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -26,7 +27,7 @@ function ExploreContent() {
   useEffect(() => {
     listEntries(100, 0)
       .then((res) => setEntries(res.items))
-      .catch(() => {}) // fall back to mock data
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load entries"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -139,6 +140,21 @@ function ExploreContent() {
       )}
 
       {/* Results */}
+      {loading && (
+        <div className="flex items-center justify-center py-16">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-sm text-muted-foreground">Loading entries...</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
+      {!loading && !error && (
+        <>
       <p className="mb-3 text-sm text-muted-foreground">
         {filtered.length} entr{filtered.length !== 1 ? "ies" : "y"}
       </p>
@@ -178,21 +194,27 @@ function ExploreContent() {
 
         {filtered.length === 0 && (
           <div className="rounded-xl border border-dashed border-border py-16 text-center">
-            <p className="text-sm text-muted-foreground">No entries match your filters.</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-2"
-              onClick={() => {
-                setSearch("");
-                setSelectedHint(null);
-              }}
-            >
-              Clear filters
-            </Button>
+            <p className="text-sm text-muted-foreground">
+              {entries.length === 0 ? "No entries yet. Create one from the Contribute page." : "No entries match your filters."}
+            </p>
+            {entries.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  setSearch("");
+                  setSelectedHint(null);
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }
