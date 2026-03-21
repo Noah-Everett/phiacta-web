@@ -31,8 +31,8 @@ describe("getInitials — handle-style strings", () => {
   });
 
   // Empty string
-  it('returns empty string for empty input: "" -> ""', () => {
-    expect(getInitials("")).toBe("");
+  it('returns fallback for empty input: "" -> "?"', () => {
+    expect(getInitials("")).toBe("?");
   });
 
   // Two character handle
