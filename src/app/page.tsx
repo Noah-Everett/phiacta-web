@@ -3,12 +3,10 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   GitBranch,
   ShieldCheck,
   Users,
-  Search,
   ArrowRight,
   FlaskConical,
   BookOpen,
@@ -39,12 +37,6 @@ const FEATURES = [
   },
 ];
 
-const STATS = [
-  { label: "Entries", value: "1,247" },
-  { label: "Contributors", value: "89" },
-  { label: "Edit proposals", value: "3,841" },
-  { label: "Verified proofs", value: "94" },
-];
 
 export default async function Home() {
   let featuredEntries: EntryListItem[] = [];
@@ -75,35 +67,11 @@ export default async function Home() {
           assertion backed by evidence, reviewed by the community, and permanently citable.
         </p>
 
-        <div className="flex w-full max-w-lg flex-col gap-3 sm:flex-row">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <form action="/explore">
-              <Input
-                name="q"
-                placeholder="Search entries, topics, authors..."
-                className="pl-9 h-10"
-              />
-            </form>
-          </div>
-          <Button asChild>
-            <Link href="/explore">
-              Browse all entries <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="border-y border-border bg-muted/40">
-        <div className="mx-auto flex max-w-3xl divide-x divide-border">
-          {STATS.map(({ label, value }) => (
-            <div key={label} className="flex-1 py-5 text-center">
-              <p className="text-xl font-semibold tabular-nums text-foreground">{value}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">{label}</p>
-            </div>
-          ))}
-        </div>
+        <Button asChild size="lg">
+          <Link href="/explore">
+            Browse entries <ArrowRight className="ml-2 h-4 w-4" />
+          </Link>
+        </Button>
       </section>
 
       {/* Features */}
