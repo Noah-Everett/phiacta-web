@@ -22,14 +22,6 @@ import {
   File,
   Eye,
 } from "lucide-react";
-import {
-  MOCK_ENTRIES,
-  MOCK_AGENTS,
-  MOCK_EDITS,
-  MOCK_HISTORY,
-  MOCK_REFERENCES,
-  MOCK_ENTRY_FILES,
-} from "@/lib/mock-data";
 import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory } from "@/lib/api";
 import type {
   EntryDetailResponse,
@@ -184,9 +176,7 @@ function FileRow({ file }: { file: FileListItem }) {
 }
 
 // Reference row
-function RefRow({ ref: r, entries }: { ref: EntryRefResponse; entries: typeof MOCK_ENTRIES }) {
-  const target = entries.find((e) => e.id === r.to_entry_id);
-  const source = entries.find((e) => e.id === r.from_entry_id);
+function RefRow({ ref: r }: { ref: EntryRefResponse }) {
   return (
     <Link
       href={`/entries/${r.to_entry_id}`}
@@ -200,7 +190,7 @@ function RefRow({ ref: r, entries }: { ref: EntryRefResponse; entries: typeof MO
       </Badge>
       <div className="min-w-0 flex-1">
         <span className="text-sm text-foreground hover:text-primary truncate block transition-colors">
-          {target?.title || r.to_entry_id}
+          {r.to_entry_id}
         </span>
         {r.note && (
           <span className="text-xs text-muted-foreground">{r.note}</span>
@@ -213,13 +203,15 @@ function RefRow({ ref: r, entries }: { ref: EntryRefResponse; entries: typeof MO
 
 export default function EntryPage({ params }: EntryPageProps) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
-  const [entry, setEntry] = useState<EntryDetailResponse | ((typeof MOCK_ENTRIES)[0] & { content_cache?: string | null; outgoing_refs?: EntryRefResponse[]; incoming_refs?: EntryRefResponse[] })>(MOCK_ENTRIES[0]);
-  const [author, setAuthor] = useState<PublicAgentResponse>(MOCK_AGENTS[0]);
-  const [entryFiles, setEntryFiles] = useState<FileListItem[]>(MOCK_ENTRY_FILES.default);
-  const [edits, setEdits] = useState<EditProposalListItem[]>(MOCK_EDITS);
-  const [history, setHistory] = useState<CommitListItem[]>(MOCK_HISTORY);
+  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
+  const [author, setAuthor] = useState<PublicAgentResponse | null>(null);
+  const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
+  const [edits, setEdits] = useState<EditProposalListItem[]>([]);
+  const [history, setHistory] = useState<CommitListItem[]>([]);
   const [outgoingRefs, setOutgoingRefs] = useState<EntryRefResponse[]>([]);
   const [incomingRefs, setIncomingRefs] = useState<EntryRefResponse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     params.then((p) => setResolvedId(p.id));
@@ -228,32 +220,43 @@ export default function EntryPage({ params }: EntryPageProps) {
   useEffect(() => {
     if (!resolvedId) return;
 
-    // Fetch entry detail from API, fall back to mock data
+    setLoading(true);
+    setError(null);
+
     getEntry(resolvedId)
       .then((data) => {
         setEntry(data);
         setOutgoingRefs(data.outgoing_refs);
         setIncomingRefs(data.incoming_refs);
-        // Fetch author
         getAgent(data.created_by).then(setAuthor).catch(() => {});
       })
-      .catch(() => {
-        // Fall back to mock data
-        const mockEntry = MOCK_ENTRIES.find((e) => e.id === resolvedId) ?? MOCK_ENTRIES[0];
-        setEntry(mockEntry);
-        const mockAuthor = MOCK_AGENTS.find((a) => a.id === mockEntry.created_by) ?? MOCK_AGENTS[0];
-        setAuthor(mockAuthor);
-        setOutgoingRefs(MOCK_REFERENCES.filter((r) => r.from_entry_id === mockEntry.id));
-        setIncomingRefs(MOCK_REFERENCES.filter((r) => r.to_entry_id === mockEntry.id));
-      });
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load entry"))
+      .finally(() => setLoading(false));
 
-    // Fetch files, edits, history — fall back to mock data on error
-    getEntryFiles(resolvedId).then(setEntryFiles).catch(() => {
-      setEntryFiles(MOCK_ENTRY_FILES[resolvedId] ?? MOCK_ENTRY_FILES.default);
-    });
+    getEntryFiles(resolvedId).then(setEntryFiles).catch(() => {});
     getEntryEdits(resolvedId).then(setEdits).catch(() => {});
     getEntryHistory(resolvedId).then(setHistory).catch(() => {});
   }, [resolvedId]);
+
+  if (loading) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        <p className="text-sm text-muted-foreground">Loading entry...</p>
+      </div>
+    );
+  }
+
+  if (error || !entry) {
+    return (
+      <div className="mx-auto max-w-6xl px-6 py-8">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Entry not found</h1>
+        <p className="mb-4 text-sm text-muted-foreground">{error || "This entry does not exist."}</p>
+        <Button asChild variant="outline">
+          <Link href="/explore">Browse entries</Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
@@ -282,19 +285,23 @@ export default function EntryPage({ params }: EntryPageProps) {
         )}
 
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          <Link
-            href={`/agents/${author.id}`}
-            className="flex items-center gap-2 hover:text-foreground transition-colors"
-          >
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px]">{getInitials(author.handle)}</AvatarFallback>
-            </Avatar>
-            <span className="font-medium text-foreground">{author.handle}</span>
-            <Badge variant="outline" className="text-xs py-0">
-              {author.agent_type}
-            </Badge>
-          </Link>
-          <Separator orientation="vertical" className="h-4" />
+          {author && (
+            <>
+            <Link
+              href={`/agents/${author.id}`}
+              className="flex items-center gap-2 hover:text-foreground transition-colors"
+            >
+              <Avatar className="h-6 w-6">
+                <AvatarFallback className="text-[10px]">{getInitials(author.handle)}</AvatarFallback>
+              </Avatar>
+              <span className="font-medium text-foreground">{author.handle}</span>
+              <Badge variant="outline" className="text-xs py-0">
+                {author.agent_type}
+              </Badge>
+            </Link>
+            <Separator orientation="vertical" className="h-4" />
+            </>
+          )}
           <span>
             {new Date(entry.created_at).toLocaleDateString("en-US", {
               year: "numeric",
@@ -315,7 +322,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                 <GitBranch className="h-3.5 w-3.5" />
                 Edits
                 <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {MOCK_EDITS.filter((e) => e.state === "open").length}
+                  {edits.filter((e) => e.state === "open").length}
                 </Badge>
               </TabsTrigger>
               <TabsTrigger value="history" className="gap-1.5">
@@ -355,7 +362,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                 <Button size="sm">Propose edit</Button>
               </div>
               <div className="space-y-2">
-                {MOCK_EDITS.map((edit) => (
+                {edits.map((edit) => (
                   <EditRow key={edit.number} edit={edit} />
                 ))}
               </div>
@@ -364,7 +371,7 @@ export default function EntryPage({ params }: EntryPageProps) {
             {/* History */}
             <TabsContent value="history">
               <div className="space-y-2">
-                {MOCK_HISTORY.map((commit, i) => (
+                {history.map((commit, i) => (
                   <CommitRow key={commit.sha} commit={commit} index={i} />
                 ))}
               </div>
@@ -398,7 +405,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </h3>
                   <div className="space-y-2">
                     {outgoingRefs.map((r) => (
-                      <RefRow key={r.id} ref={r} entries={MOCK_ENTRIES} />
+                      <RefRow key={r.id} ref={r}  />
                     ))}
                   </div>
                 </div>
@@ -410,7 +417,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </h3>
                   <div className="space-y-2">
                     {incomingRefs.map((r) => (
-                      <RefRow key={r.id} ref={r} entries={MOCK_ENTRIES} />
+                      <RefRow key={r.id} ref={r}  />
                     ))}
                   </div>
                 </div>
@@ -424,6 +431,7 @@ export default function EntryPage({ params }: EntryPageProps) {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {author && (
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Author</h3>
             <Link href={`/agents/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -444,6 +452,7 @@ export default function EntryPage({ params }: EntryPageProps) {
               })}
             </p>
           </div>
+          )}
 
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metadata</h3>

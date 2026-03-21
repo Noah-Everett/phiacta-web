@@ -5,13 +5,21 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { MOCK_EXTENSIONS } from "@/lib/mock-data";
 import { Search, ExternalLink, Link2, ShieldCheck, Puzzle } from "lucide-react";
+
+const EXTENSIONS = [
+  { id: "ext-1", name: "Paper Generator", slug: "paper-generator", description: "Takes a set of entries and produces a formatted academic paper in LaTeX or PDF. Handles citation formatting, figure placement, and journal style templates.", icon: "\u{1F4C4}", author: "Phiacta Labs", is_official: true, uses: 1_243, tags: ["publishing", "latex", "pdf"] },
+  { id: "ext-2", name: "Lecture Slide Builder", slug: "slide-builder", description: "Generates teaching materials from entries. Creates structured slide decks with summaries, evidence levels, and discussion questions for classroom use.", icon: "\u{1F393}", author: "EduFlow", is_official: false, uses: 892, tags: ["education", "slides", "teaching"] },
+  { id: "ext-3", name: "Podcast Creator", slug: "podcast-creator", description: "Converts an entry and its discussion threads into a structured audio conversation. Two AI hosts summarize the entry, review the evidence, and present opposing views.", icon: "\u{1F399}\uFE0F", author: "AudioKnowledge", is_official: false, uses: 2_108, tags: ["audio", "ai", "accessibility"] },
+  { id: "ext-4", name: "Literature Review Builder", slug: "lit-review", description: "Generates a structured literature review from a set of entries. Organises evidence by status, groups related entries, and produces a formatted survey document.", icon: "\u{1F4DA}", author: "OpenClaims Community", is_official: false, uses: 1_677, tags: ["research", "survey", "publishing"] },
+  { id: "ext-5", name: "Entry Graph Explorer", slug: "graph-explorer", description: "An interactive visual explorer for entry reference networks. Pan, zoom, filter by type, and export graph views as SVG or PNG for use in presentations and papers.", icon: "\u{1F578}\uFE0F", author: "Phiacta Labs", is_official: true, uses: 3_481, tags: ["visualisation", "graph", "presentation"] },
+  { id: "ext-6", name: "Textbook Composer", slug: "textbook-composer", description: "Assembles a set of entries into a structured textbook chapter. Produces introduction, body sections organised by reference graph, summary, and review questions.", icon: "\u{1F4D6}", author: "CurriculaAI", is_official: false, uses: 417, tags: ["education", "publishing", "long-form"] },
+];
 
 export default function ExtensionsPage() {
   const [search, setSearch] = useState("");
 
-  const filtered = MOCK_EXTENSIONS.filter((ext) => {
+  const filtered = EXTENSIONS.filter((ext) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -39,19 +47,19 @@ export default function ExtensionsPage() {
       {/* Stats row */}
       <div className="mb-6 flex flex-wrap gap-4 text-sm text-muted-foreground">
         <span>
-          <span className="font-semibold text-foreground">{MOCK_EXTENSIONS.length}</span> extensions
+          <span className="font-semibold text-foreground">{EXTENSIONS.length}</span> extensions
         </span>
         <span>&middot;</span>
         <span>
           <span className="font-semibold text-foreground">
-            {MOCK_EXTENSIONS.filter((e) => e.is_official).length}
+            {EXTENSIONS.filter((e) => e.is_official).length}
           </span>{" "}
           official
         </span>
         <span>&middot;</span>
         <span>
           <span className="font-semibold text-foreground">
-            {MOCK_EXTENSIONS.reduce((sum, e) => sum + e.uses, 0).toLocaleString()}
+            {EXTENSIONS.reduce((sum, e) => sum + e.uses, 0).toLocaleString()}
           </span>{" "}
           total uses
         </span>

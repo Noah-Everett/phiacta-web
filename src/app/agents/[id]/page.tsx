@@ -12,7 +12,6 @@ import {
   Building2,
   Cpu,
 } from "lucide-react";
-import { MOCK_AGENTS, MOCK_ENTRIES } from "@/lib/mock-data";
 import type { PublicAgentResponse, EntryListItem } from "@/lib/types";
 
 interface AgentPageProps {
@@ -34,13 +33,16 @@ export default async function AgentPage({ params }: AgentPageProps) {
 
   try {
     agent = await getAgent(id);
-    // Fetch all entries and filter by created_by (backend doesn't have a created_by filter yet)
     const res = await listEntries(100, 0);
     agentEntries = res.items.filter((e) => e.created_by === id);
   } catch {
-    // Fall back to mock data
-    agent = MOCK_AGENTS.find((a) => a.id === id) ?? MOCK_AGENTS[0];
-    agentEntries = MOCK_ENTRIES.filter((e) => e.created_by === agent.id);
+    return (
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Agent not found</h1>
+        <p className="mb-4 text-sm text-muted-foreground">This agent does not exist or the API is unavailable.</p>
+        <Link href="/explore" className="text-sm text-primary hover:underline">Browse entries</Link>
+      </div>
+    );
   }
 
   const TypeIcon = AGENT_TYPE_ICONS[agent.agent_type] ?? User;
