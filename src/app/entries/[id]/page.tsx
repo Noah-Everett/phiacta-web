@@ -22,6 +22,8 @@ import {
   FileCode2,
   File,
   Tag,
+  Copy,
+  Check,
 } from "lucide-react";
 import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory, getEntryTags, ApiError } from "@/lib/api";
 import type {
@@ -164,6 +166,24 @@ function FileRow({ file }: { file: FileListItem }) {
 // Reference row — direction determines which entry ID to link to
 function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direction: "outgoing" | "incoming" }) {
   const targetId = direction === "outgoing" ? r.to_entry_id : r.from_entry_id;
+  const [title, setTitle] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    getEntry(targetId)
+      .then((e) => setTitle(e.title))
+      .catch(() => setTitle(null));
+  }, [targetId]);
+
+  const handleCopy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(targetId).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
   return (
     <Link
       href={`/entries/${targetId}`}
@@ -177,12 +197,23 @@ function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direct
       </Badge>
       <div className="min-w-0 flex-1">
         <span className="text-sm text-foreground hover:text-primary truncate block transition-colors">
-          {targetId}
+          {title ?? targetId}
         </span>
         {r.note && (
           <span className="text-xs text-muted-foreground">{r.note}</span>
         )}
       </div>
+      <button
+        onClick={handleCopy}
+        title="Copy entry ID"
+        className="shrink-0 p-1 rounded hover:bg-muted transition-colors"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-green-500" />
+        ) : (
+          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+        )}
+      </button>
       <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
     </Link>
   );
