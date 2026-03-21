@@ -29,12 +29,8 @@ export default async function AgentPage({ params }: AgentPageProps) {
   const { id } = await params;
 
   let agent: PublicAgentResponse;
-  let agentEntries: EntryListItem[];
-
   try {
     agent = await getAgent(id);
-    const res = await listEntries(100, 0);
-    agentEntries = res.items.filter((e) => e.created_by === id);
   } catch {
     return (
       <div className="mx-auto max-w-4xl px-6 py-8">
@@ -43,6 +39,14 @@ export default async function AgentPage({ params }: AgentPageProps) {
         <Link href="/explore" className="text-sm text-primary hover:underline">Browse entries</Link>
       </div>
     );
+  }
+
+  let agentEntries: EntryListItem[] = [];
+  try {
+    const res = await listEntries(100, 0);
+    agentEntries = res.items.filter((e) => e.created_by === id);
+  } catch {
+    // Agent loaded successfully but entries failed — show profile with empty entries
   }
 
   const TypeIcon = AGENT_TYPE_ICONS[agent.agent_type] ?? User;

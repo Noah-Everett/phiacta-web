@@ -25,6 +25,15 @@ const API_URL =
       "http://localhost:8000"
     : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const { headers: extraHeaders, ...restOptions } = options ?? {};
   const res = await fetch(`${API_URL}${path}`, {
@@ -38,7 +47,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     const detail = body?.detail;
-    throw new Error(detail || `API error: ${res.status} ${res.statusText}`);
+    throw new ApiError(res.status, detail || `API error: ${res.status} ${res.statusText}`);
   }
   return res.json() as Promise<T>;
 }
@@ -100,7 +109,7 @@ export async function authFetch<T>(path: string, options?: RequestInit): Promise
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     const detail = body?.detail;
-    throw new Error(detail || `API error: ${res.status} ${res.statusText}`);
+    throw new ApiError(res.status, detail || `API error: ${res.status} ${res.statusText}`);
   }
 
   return res.json() as Promise<T>;

@@ -3,14 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createEntry } from "@/lib/api";
+import { createEntry, setEntryTags } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
   CheckCircle2,
   LogIn,
-  ArrowRight,
+  X,
 } from "lucide-react";
 
 const LAYOUT_HINTS = [
@@ -35,11 +36,42 @@ export default function ContributePage() {
   const [content, setContent] = useState("");
   const [contentFormat, setContentFormat] = useState<string>("markdown");
   const [layoutHint, setLayoutHint] = useState<string>("empirical");
+  const [customHint, setCustomHint] = useState("");
+  const [useCustomHint, setUseCustomHint] = useState(false);
   const [summary, setSummary] = useState("");
   const [license, setLicense] = useState("CC-BY-4.0");
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [createdEntryId, setCreatedEntryId] = useState<string | null>(null);
+  const [tagWarning, setTagWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const MAX_TAGS = 20;
+
+  function addTag() {
+    const tag = tagInput.trim().toLowerCase();
+    if (!tag || tag.length > 50 || tags.length >= MAX_TAGS || tags.includes(tag)) {
+      setTagInput("");
+      return;
+    }
+    setTags((prev) => [...prev, tag]);
+    setTagInput("");
+  }
+
+  function removeTag(tag: string) {
+    setTags((prev) => prev.filter((t) => t !== tag));
+  }
+
+  function handleTagKeyDown(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTag();
+    }
+  }
+
+  const effectiveHint = useCustomHint ? customHint.trim() : layoutHint;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,21 +79,34 @@ export default function ContributePage() {
     setSuccess(false);
     setSubmitting(true);
     try {
-      await createEntry({
+      const entry = await createEntry({
         title,
         content: content || null,
         content_format: contentFormat,
-        layout_hint: layoutHint || null,
+        layout_hint: effectiveHint || null,
         summary: summary || null,
         license: license || null,
       });
+      // Set tags if any were added
+      if (tags.length > 0 && entry.id) {
+        try {
+          await setEntryTags(entry.id, tags);
+        } catch {
+          setTagWarning("Entry published, but tags could not be saved. You can add them from the entry page.");
+        }
+      }
+      setCreatedEntryId(entry.id);
       setSuccess(true);
       setTitle("");
       setContent("");
       setSummary("");
       setLayoutHint("empirical");
+      setCustomHint("");
+      setUseCustomHint(false);
       setContentFormat("markdown");
       setLicense("CC-BY-4.0");
+      setTags([]);
+      setTagInput("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit entry.");
     } finally {
@@ -89,13 +134,28 @@ export default function ContributePage() {
           </div>
         </div>
 
+        {tagWarning && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+            {tagWarning}
+          </div>
+        )}
+
         <div className="flex gap-2">
-          <Button asChild>
+          {createdEntryId && (
+            <Button asChild>
+              <Link href={`/entries/${createdEntryId}`}>View your entry</Link>
+            </Button>
+          )}
+          <Button asChild variant={createdEntryId ? "outline" : "default"}>
             <Link href="/explore">Browse entries</Link>
           </Button>
           <Button
             variant="outline"
-            onClick={() => setSuccess(false)}
+            onClick={() => {
+              setSuccess(false);
+              setCreatedEntryId(null);
+              setTagWarning("");
+            }}
           >
             Publish another
           </Button>
@@ -138,24 +198,43 @@ export default function ContributePage() {
 
         {/* Layout hint */}
         <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground">Layout hint</p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {LAYOUT_HINTS.map(({ value, label, description }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setLayoutHint(value)}
-                className={`rounded-lg border p-3 text-left transition-colors ${
-                  layoutHint === value
-                    ? "border-primary bg-primary/5"
-                    : "border-border bg-background hover:border-muted-foreground/30"
-                }`}
-              >
-                <p className="text-sm font-medium text-foreground">{label}</p>
-                <p className="text-xs text-muted-foreground">{description}</p>
-              </button>
-            ))}
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-foreground">Layout hint</p>
+            <button
+              type="button"
+              onClick={() => setUseCustomHint((v) => !v)}
+              className="text-xs text-primary hover:underline"
+            >
+              {useCustomHint ? "Use preset" : "Custom value"}
+            </button>
           </div>
+          {useCustomHint ? (
+            <Input
+              type="text"
+              value={customHint}
+              onChange={(e) => setCustomHint(e.target.value)}
+              placeholder="Enter a custom layout hint..."
+              maxLength={100}
+            />
+          ) : (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {LAYOUT_HINTS.map(({ value, label, description }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setLayoutHint(value)}
+                  className={`rounded-lg border p-3 text-left transition-colors ${
+                    layoutHint === value
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-background hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <p className="text-sm font-medium text-foreground">{label}</p>
+                  <p className="text-xs text-muted-foreground">{description}</p>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Format */}
@@ -206,6 +285,39 @@ export default function ContributePage() {
             onChange={(e) => setLicense(e.target.value)}
             placeholder="e.g. CC-BY-4.0"
           />
+        </div>
+
+        {/* Tags */}
+        <div className="space-y-1.5">
+          <label htmlFor="tags" className="text-sm font-medium text-foreground">
+            Tags <span className="text-muted-foreground font-normal">(optional)</span>
+          </label>
+          <div className="flex gap-2">
+            <Input
+              id="tags"
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="Add a tag and press Enter..."
+              maxLength={50}
+            />
+            <Button type="button" variant="outline" size="sm" onClick={addTag} disabled={!tagInput.trim()}>
+              Add
+            </Button>
+          </div>
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+                  {tag}
+                  <button type="button" onClick={() => removeTag(tag)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Content */}

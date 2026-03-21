@@ -119,14 +119,14 @@ describe("No dead API references in source code", () => {
     const violations: string[] = [];
     for (const file of sourceFiles) {
       const content = readFileSync(file, "utf-8");
-      // Look for type/interface definitions that have Agent in the name
-      // and contain a "name:" field
-      if (
-        (content.includes("interface Agent") ||
-          content.includes("type Agent")) &&
-        content.match(/\bname\s*[?:]?\s*:\s*string/)
-      ) {
-        violations.push(file);
+      // Extract Agent interface/type blocks specifically and check for "name" field
+      const agentBlocks = content.match(/(?:interface|type)\s+\w*Agent\w*\s*(?:extends\s+\w+\s*)?\{[^}]*\}/g);
+      if (agentBlocks) {
+        for (const block of agentBlocks) {
+          if (block.match(/\bname\s*[?:]?\s*:\s*string/)) {
+            violations.push(file);
+          }
+        }
       }
     }
     expect(violations).toEqual([]);
