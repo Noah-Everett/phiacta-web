@@ -4,7 +4,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function GET() {
   try {
-    const res = await fetch(`${API_URL}/api/v1/health`, {
+    const res = await fetch(`${API_URL}/health`, {
       next: { revalidate: 0 },
     });
 

@@ -232,9 +232,7 @@ export default function AboutPage() {
           Third-party applications connect to the Phiacta API to produce new outputs or enable
           new input methods. Extensions run their own compute and push results back through the API.
           They are listed in the{" "}
-          <Link href="/extensions" className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity">
-            extensions marketplace
-          </Link>
+          <span className="text-foreground font-medium">extensions marketplace</span> (coming soon)
           .
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
