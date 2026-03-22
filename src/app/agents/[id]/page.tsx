@@ -49,7 +49,7 @@ export default async function AgentPage({ params }: AgentPageProps) {
     // Agent loaded successfully but entries failed — show profile with empty entries
   }
 
-  const TypeIcon = AGENT_TYPE_ICONS[agent.agent_type] ?? User;
+  const TypeIcon = (agent.agent_type ? AGENT_TYPE_ICONS[agent.agent_type] : null) ?? User;
 
   return (
     <div className="mx-auto max-w-4xl px-6 py-8">
@@ -73,18 +73,11 @@ export default async function AgentPage({ params }: AgentPageProps) {
         <div className="flex-1">
           <div className="mb-1 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold text-foreground">{agent.handle}</h1>
-            <Badge variant="secondary" className="gap-1 capitalize">
-              <TypeIcon className="h-3 w-3" />
-              {agent.agent_type}
-            </Badge>
-            {agent.is_active ? (
-              <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
-                active
-              </span>
-            ) : (
-              <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                inactive
-              </span>
+            {agent.agent_type && (
+              <Badge variant="secondary" className="gap-1 capitalize">
+                <TypeIcon className="h-3 w-3" />
+                {agent.agent_type}
+              </Badge>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm">

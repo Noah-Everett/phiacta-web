@@ -261,7 +261,7 @@ export async function getEntryCommitDiff(
 // --- Agents ---
 
 export async function getAgent(id: string): Promise<PublicAgentResponse> {
-  return request<PublicAgentResponse>(`/v1/agents/${id}`);
+  return request<PublicAgentResponse>(`/v1/users/${id}`);
 }
 
 // --- Entry Issues ---
