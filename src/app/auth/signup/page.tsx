@@ -50,7 +50,7 @@ export default function SignupPage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="handle" className="text-sm font-medium text-foreground">
-              Handle
+              Username
             </label>
             <Input
               id="handle"

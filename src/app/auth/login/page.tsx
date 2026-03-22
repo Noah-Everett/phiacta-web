@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [handle, setHandle] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError("");
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(handle, password);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed. Please try again.");
@@ -46,17 +46,17 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-foreground">
-              Email
+            <label htmlFor="handle" className="text-sm font-medium text-foreground">
+              Username
             </label>
             <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="handle"
+              type="text"
+              value={handle}
+              onChange={(e) => setHandle(e.target.value)}
               required
-              autoComplete="email"
-              placeholder="you@example.com"
+              autoComplete="username"
+              placeholder="your-username"
             />
           </div>
 

@@ -119,18 +119,18 @@ export async function authFetch<T>(path: string, options?: RequestInit): Promise
 
 // --- Auth API ---
 
-export async function loginApi(email: string, password: string): Promise<AuthResponse> {
+export async function loginApi(handle: string, password: string): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ handle, password }),
   });
   if (res.status === 429) {
     throw new Error("Too many requests. Please wait a moment and try again.");
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.detail || "Invalid email or password.");
+    throw new Error(body?.detail || "Invalid handle or password.");
   }
   return res.json() as Promise<AuthResponse>;
 }
@@ -227,6 +227,24 @@ export async function getEntryEditDetail(
   return request<EditProposalDetail>(`/v1/entries/${id}/edits/${number}`);
 }
 
+export async function mergeEditProposal(
+  id: string,
+  number: number
+): Promise<{ sha: string }> {
+  return authFetch<{ sha: string }>(`/v1/entries/${id}/edits/${number}/merge`, {
+    method: "POST",
+  });
+}
+
+export async function closeEditProposal(
+  id: string,
+  number: number
+): Promise<{ detail: string }> {
+  return authFetch<{ detail: string }>(`/v1/entries/${id}/edits/${number}/close`, {
+    method: "POST",
+  });
+}
+
 // --- Entry History ---
 
 export async function getEntryHistory(id: string): Promise<CommitListItem[]> {
@@ -261,6 +279,15 @@ export async function getEntryIssueDetail(
   number: number
 ): Promise<IssueDetail> {
   return request<IssueDetail>(`/v1/entries/${id}/issues/${number}`);
+}
+
+export async function closeIssue(
+  id: string,
+  number: number
+): Promise<{ detail: string }> {
+  return authFetch<{ detail: string }>(`/v1/entries/${id}/issues/${number}/close`, {
+    method: "POST",
+  });
 }
 
 // --- Tags Extension ---
