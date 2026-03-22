@@ -158,3 +158,32 @@ export interface EntryTagItem {
   entry_id: string;
   title: string;
 }
+
+// Issue types — mirrors entry_issue.py
+export interface IssueAuthor {
+  handle: string;
+}
+
+export interface IssueListItem {
+  number: number;
+  title: string;
+  body: string | null;
+  state: string;
+  author: IssueAuthor;
+  comments_count: number;
+  created_at: string;
+  updated_at: string;
+  closed_at: string | null;
+}
+
+export interface IssueCommentResponse {
+  id: number;
+  body: string;
+  author: IssueAuthor;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface IssueDetail extends IssueListItem {
+  comments: IssueCommentResponse[];
+}
