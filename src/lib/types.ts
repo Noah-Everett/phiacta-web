@@ -1,4 +1,13 @@
-export type ClaimType = "assertion" | "definition" | "theorem" | "proof" | "evidence" | "conjecture" | "refutation";
+export type ClaimType =
+  | "assertion"
+  | "definition"
+  | "theorem"
+  | "proof"
+  | "evidence"
+  | "empirical"
+  | "conjecture"
+  | "refutation"
+  | "hypothesis";
 
 export interface Claim {
   id: string;

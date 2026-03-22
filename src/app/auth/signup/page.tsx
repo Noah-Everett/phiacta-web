@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -29,54 +32,57 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center px-6">
+    <div className="flex min-h-[70vh] items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
-          Create an Account
-        </h1>
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-bold text-foreground">Create an account</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Start publishing and reviewing claims
+          </p>
+        </div>
 
         {error && (
-          <div className="mb-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/30 dark:text-red-400">
+          <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Name
+          <div className="space-y-1.5">
+            <label htmlFor="name" className="text-sm font-medium text-foreground">
+              Full name
             </label>
-            <input
+            <Input
               id="name"
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               autoComplete="name"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-gray-400 dark:focus:ring-gray-400"
+              placeholder="Dr. Jane Smith"
             />
           </div>
 
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="text-sm font-medium text-foreground">
               Email
             </label>
-            <input
+            <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-gray-400 dark:focus:ring-gray-400"
+              placeholder="you@example.com"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="text-sm font-medium text-foreground">
               Password
             </label>
-            <input
+            <Input
               id="password"
               type="password"
               value={password}
@@ -84,22 +90,20 @@ export default function SignupPage() {
               required
               minLength={8}
               autoComplete="new-password"
-              className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-500 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 dark:focus:border-gray-400 dark:focus:ring-gray-400"
+              placeholder="At least 8 characters"
             />
           </div>
 
-          <button
-            type="submit"
-            disabled={submitting}
-            className="w-full rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-300"
-          >
-            {submitting ? "Creating account..." : "Sign up"}
-          </button>
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "Creating account…" : "Create account"}
+          </Button>
         </form>
 
-        <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
+        <Separator className="my-5" />
+
+        <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/auth/login" className="text-gray-900 hover:underline dark:text-gray-100">
+          <Link href="/auth/login" className="font-medium text-foreground hover:underline">
             Log in
           </Link>
         </p>

@@ -1,26 +1,28 @@
 import Link from "next/link";
+import { Separator } from "@/components/ui/separator";
+
+const LINKS = [
+  { href: "/explore", label: "Explore" },
+  { href: "/contribute", label: "Contribute" },
+  { href: "/about", label: "About" },
+];
 
 export default function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 py-8 text-sm text-gray-500 dark:text-gray-400 sm:flex-row">
-        <p>Phiacta &mdash; The Knowledge Backend</p>
-        <div className="flex gap-6">
-          <Link href="/search" className="hover:text-gray-700 dark:hover:text-gray-300">
-            Search
-          </Link>
-          <Link href="/explore" className="hover:text-gray-700 dark:hover:text-gray-300">
-            Explore
-          </Link>
-          <Link href="/contribute" className="hover:text-gray-700 dark:hover:text-gray-300">
-            Contribute
-          </Link>
-          <Link href="/architecture" className="hover:text-gray-700 dark:hover:text-gray-300">
-            Architecture
-          </Link>
-          <Link href="/about" className="hover:text-gray-700 dark:hover:text-gray-300">
-            About
-          </Link>
+    <footer className="border-t border-border bg-background">
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Phiacta</p>
+            <p className="text-xs text-muted-foreground">The knowledge backend.</p>
+          </div>
+          <div className="flex items-center gap-5 text-sm text-muted-foreground">
+            {LINKS.map(({ href, label }) => (
+              <Link key={href} href={href} className="hover:text-foreground transition-colors">
+                {label}
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </footer>
