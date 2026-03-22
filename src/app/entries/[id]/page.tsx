@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
+import DiffBlock from "@/components/DiffBlock";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
 import {
@@ -25,16 +26,10 @@ import {
   Copy,
   Check,
   Loader2,
-  Plus,
-  Minus,
-  Eye,
   MessageCircle,
   CircleDot,
-  GitPullRequestArrow,
-  X,
 } from "lucide-react";
-import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryEditDetail, mergeEditProposal, closeEditProposal, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, getEntryIssueDetail, closeIssue, ApiError } from "@/lib/api";
-import { getStoredToken } from "@/lib/api";
+import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryEditDetail, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, ApiError } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
@@ -46,7 +41,6 @@ import type {
   PublicAgentResponse,
   TagResponse,
   IssueListItem,
-  IssueDetail,
 } from "@/lib/types";
 
 const API_URL =
@@ -60,195 +54,43 @@ interface EntryPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Diff line renderer — used by both commit and edit diffs
-function DiffBlock({ patch, path }: { patch: string; path: string }) {
-  const lines = patch.split("\n");
-  return (
-    <div className="rounded-lg border border-border overflow-hidden text-xs font-mono">
-      <div className="bg-muted px-3 py-1.5 text-muted-foreground font-semibold border-b border-border">
-        {path}
-      </div>
-      <div className="overflow-x-auto">
-        {lines.map((line, i) => {
-          let bg = "";
-          let textColor = "text-foreground";
-          let icon = null;
-          if (line.startsWith("+") && !line.startsWith("+++")) {
-            bg = "bg-green-50 dark:bg-green-950/30";
-            textColor = "text-green-700 dark:text-green-300";
-            icon = <Plus className="h-3 w-3 shrink-0 text-green-500" />;
-          } else if (line.startsWith("-") && !line.startsWith("---")) {
-            bg = "bg-red-50 dark:bg-red-950/30";
-            textColor = "text-red-700 dark:text-red-300";
-            icon = <Minus className="h-3 w-3 shrink-0 text-red-500" />;
-          } else if (line.startsWith("@@")) {
-            bg = "bg-blue-50 dark:bg-blue-950/30";
-            textColor = "text-blue-600 dark:text-blue-400";
-          }
-          return (
-            <div key={i} className={`flex items-start gap-1 px-3 py-0 leading-5 ${bg}`}>
-              <span className="w-4 shrink-0 flex items-center justify-center">{icon}</span>
-              <span className={`whitespace-pre ${textColor}`}>{line}</span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-// Inline expandable edit
-function EditRow({ edit, entryId, onStatusChange }: { edit: EditProposalListItem; entryId: string; onStatusChange?: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [detail, setDetail] = useState<EditProposalDetail | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [merging, setMerging] = useState(false);
-  const [closing, setClosing] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const isLoggedIn = typeof window !== "undefined" && !!getStoredToken();
-
-  const handleToggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next && !detail && !loadingDetail) {
-      setLoadingDetail(true);
-      getEntryEditDetail(entryId, edit.number)
-        .then(setDetail)
-        .catch((err) => console.warn("Failed to load edit detail:", err))
-        .finally(() => setLoadingDetail(false));
-    }
-  };
-
-  const handleMerge = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setMerging(true);
-    setActionError(null);
-    mergeEditProposal(entryId, edit.number)
-      .then(() => onStatusChange?.())
-      .catch((err) => setActionError(err instanceof Error ? err.message : "Merge failed"))
-      .finally(() => setMerging(false));
-  };
-
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setClosing(true);
-    setActionError(null);
-    closeEditProposal(entryId, edit.number)
-      .then(() => onStatusChange?.())
-      .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
-      .finally(() => setClosing(false));
-  };
-
-  // Parse "closes #N" / "fixes #N" from body
-  const linkedIssues = edit.body
-    ? [...edit.body.matchAll(/(?:closes|fixes|resolves)\s+#(\d+)/gi)].map((m) => parseInt(m[1]))
-    : [];
-
+// Edit row — links to full page
+function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: string }) {
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <button
-        onClick={handleToggle}
-        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
-      >
-        {edit.state === "open" ? (
-          <GitBranch className="mt-0.5 h-4 w-4 shrink-0 text-green-500" />
-        ) : (
-          <GitMerge className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-        )}
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground">{edit.title}</p>
-          <p className="text-xs text-muted-foreground">
-            #{edit.number} &middot; {edit.author.handle} &middot;{" "}
-            {new Date(edit.created_at).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge
-            variant="outline"
-            className={
-              edit.state === "open"
-                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                : "text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:bg-violet-950/50"
-            }
-          >
-            {edit.merged_at ? "merged" : edit.state}
-          </Badge>
-          {open ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </div>
-      </button>
-
-      {open && (
-        <div className="border-t border-border bg-background p-4 space-y-4">
-          {edit.body && (
-            <MarkdownContent content={edit.body} className="text-sm" />
-          )}
-          {linkedIssues.length > 0 && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <CircleDot className="h-3 w-3" />
-              Linked issues: {linkedIssues.map((n) => `#${n}`).join(", ")}
-            </div>
-          )}
-          <div className="text-xs text-muted-foreground space-y-1">
-            <p>Branch: <code className="font-mono">{edit.head_branch}</code> &rarr; <code className="font-mono">{edit.base_branch}</code></p>
-            {edit.is_draft && <p className="text-amber-600 dark:text-amber-400">Draft</p>}
-          </div>
-          {loadingDetail && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading diff&hellip;
-            </div>
-          )}
-          {detail && detail.diff.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {detail.diff.length} file{detail.diff.length > 1 ? "s" : ""} changed
-              </p>
-              {detail.diff.map((f) => (
-                <DiffBlock key={f.path} path={f.path} patch={f.patch} />
-              ))}
-            </div>
-          )}
-          {detail && detail.diff.length === 0 && (
-            <p className="text-xs text-muted-foreground">No file changes.</p>
-          )}
-          {actionError && (
-            <p className="text-xs text-red-600 dark:text-red-400">{actionError}</p>
-          )}
-          {edit.state === "open" && isLoggedIn && (
-            <div className="flex items-center gap-2 pt-2 border-t border-border">
-              <Button
-                size="sm"
-                onClick={handleMerge}
-                disabled={merging || closing}
-                className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
-              >
-                {merging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}
-                Merge
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleClose}
-                disabled={merging || closing}
-                className="gap-1.5"
-              >
-                {closing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                Close
-              </Button>
-            </div>
-          )}
-        </div>
+    <Link
+      href={`/entries/${entryId}/edits/${edit.number}`}
+      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
+    >
+      {edit.state === "open" ? (
+        <GitBranch className="h-4 w-4 shrink-0 text-green-500" />
+      ) : (
+        <GitMerge className="h-4 w-4 shrink-0 text-violet-500" />
       )}
-    </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground">{edit.title}</p>
+        <p className="text-xs text-muted-foreground">
+          #{edit.number} &middot; {edit.author.handle} &middot;{" "}
+          {new Date(edit.created_at).toLocaleDateString()}
+        </p>
+      </div>
+      <Badge
+        variant="outline"
+        className={
+          edit.state === "open"
+            ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+            : "text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:bg-violet-950/50"
+        }
+      >
+        {edit.merged_at ? "merged" : edit.state}
+      </Badge>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
   );
 }
 
@@ -472,144 +314,41 @@ function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direct
   );
 }
 
-// Issue row — expandable with comments
-function IssueRow({ issue, entryId, onStatusChange, linkedPrs }: { issue: IssueListItem; entryId: string; onStatusChange?: () => void; linkedPrs?: { number: number; title: string }[] }) {
-  const [open, setOpen] = useState(false);
-  const [detail, setDetail] = useState<IssueDetail | null>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [closingIssue, setClosingIssue] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
-  const isLoggedIn = typeof window !== "undefined" && !!getStoredToken();
-
-  const handleToggle = () => {
-    const next = !open;
-    setOpen(next);
-    if (next && !detail && !loadingDetail) {
-      setLoadingDetail(true);
-      getEntryIssueDetail(entryId, issue.number)
-        .then(setDetail)
-        .catch((err) => console.warn("Failed to load issue detail:", err))
-        .finally(() => setLoadingDetail(false));
-    }
-  };
-
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setClosingIssue(true);
-    setActionError(null);
-    closeIssue(entryId, issue.number)
-      .then(() => onStatusChange?.())
-      .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
-      .finally(() => setClosingIssue(false));
-  };
-
+// Issue row — links to full page
+function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string }) {
   return (
-    <div className="rounded-xl border border-border overflow-hidden">
-      <button
-        onClick={handleToggle}
-        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
-      >
-        <CircleDot className={`mt-0.5 h-4 w-4 shrink-0 ${issue.state === "open" ? "text-green-500" : "text-muted-foreground"}`} />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground">{issue.title}</p>
-          <p className="text-xs text-muted-foreground">
-            #{issue.number} &middot; {issue.author.handle} &middot;{" "}
-            {new Date(issue.created_at).toLocaleDateString()}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {issue.comments_count > 0 && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <MessageCircle className="h-3 w-3" />
-              {issue.comments_count}
-            </span>
-          )}
-          <Badge
-            variant="outline"
-            className={
-              issue.state === "open"
-                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                : "text-muted-foreground border-border"
-            }
-          >
-            {issue.state}
-          </Badge>
-          {open ? (
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          ) : (
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          )}
-        </div>
-      </button>
-
-      {open && (
-        <div className="border-t border-border bg-background p-4 space-y-4">
-          {issue.body && (
-            <div className="text-sm leading-relaxed text-foreground">
-              <MarkdownContent content={issue.body} className="text-sm" />
-            </div>
-          )}
-          {linkedPrs && linkedPrs.length > 0 && (
-            <div className="flex items-center gap-2 flex-wrap text-xs">
-              <GitMerge className="h-3 w-3 text-violet-500" />
-              <span className="text-muted-foreground">Linked PRs:</span>
-              {linkedPrs.map((pr) => (
-                <Badge key={pr.number} variant="outline" className="text-xs gap-1 bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800">
-                  #{pr.number} {pr.title}
-                </Badge>
-              ))}
-            </div>
-          )}
-          {loadingDetail && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading comments&hellip;
-            </div>
-          )}
-          {detail && detail.comments.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                {detail.comments.length} comment{detail.comments.length > 1 ? "s" : ""}
-              </p>
-              {detail.comments.map((c) => (
-                <div key={c.id} className="rounded-lg border border-border bg-card p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-medium text-foreground">{c.author.handle}</span>
-                    <span className="text-xs text-muted-foreground">
-                      {new Date(c.created_at).toLocaleDateString("en-US", {
-                        year: "numeric", month: "short", day: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  <div className="text-sm text-foreground">
-                    <MarkdownContent content={c.body} className="text-sm" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          {detail && detail.comments.length === 0 && (
-            <p className="text-xs text-muted-foreground">No comments yet.</p>
-          )}
-          {actionError && (
-            <p className="text-xs text-red-600 dark:text-red-400">{actionError}</p>
-          )}
-          {issue.state === "open" && isLoggedIn && (
-            <div className="flex items-center gap-2 pt-2 border-t border-border">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleClose}
-                disabled={closingIssue}
-                className="gap-1.5"
-              >
-                {closingIssue ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
-                Close issue
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <Link
+      href={`/entries/${entryId}/issues/${issue.number}`}
+      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
+    >
+      <CircleDot className={`h-4 w-4 shrink-0 ${issue.state === "open" ? "text-green-500" : "text-muted-foreground"}`} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground">{issue.title}</p>
+        <p className="text-xs text-muted-foreground">
+          #{issue.number} &middot; {issue.author.handle} &middot;{" "}
+          {new Date(issue.created_at).toLocaleDateString()}
+        </p>
+      </div>
+      <div className="flex items-center gap-2 shrink-0">
+        {issue.comments_count > 0 && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <MessageCircle className="h-3 w-3" />
+            {issue.comments_count}
+          </span>
+        )}
+        <Badge
+          variant="outline"
+          className={
+            issue.state === "open"
+              ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+              : "text-muted-foreground border-border"
+          }
+        >
+          {issue.state}
+        </Badge>
+        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+      </div>
+    </Link>
   );
 }
 
@@ -658,18 +397,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
     getEntryIssues(resolvedId).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
     getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch((err) => console.warn("Failed to load tags:", err));
-  }, [resolvedId]);
-
-  const refreshData = useCallback(() => {
-    if (!resolvedId) return;
-    getEntryEdits(resolvedId).then(setEdits).catch(() => {});
-    getEntryIssues(resolvedId).then(setIssues).catch(() => {});
-    getEntryHistory(resolvedId).then(setHistory).catch(() => {});
-    getEntry(resolvedId).then((data) => {
-      setEntry(data);
-      setOutgoingRefs(data.outgoing_refs);
-      setIncomingRefs(data.incoming_refs);
-    }).catch(() => {});
   }, [resolvedId]);
 
   if (loading) {
@@ -841,15 +568,7 @@ export default function EntryPage({ params }: EntryPageProps) {
               </div>
               <div className="space-y-2">
                 {issues.map((issue) => (
-                  <IssueRow
-                    key={issue.number}
-                    issue={issue}
-                    entryId={entry.id}
-                    onStatusChange={refreshData}
-                    linkedPrs={edits
-                      .filter((e) => e.body && [...e.body.matchAll(/(?:closes|fixes|resolves)\s+#(\d+)/gi)].some((m) => parseInt(m[1]) === issue.number))
-                      .map((e) => ({ number: e.number, title: e.title }))}
-                  />
+                  <IssueRow key={issue.number} issue={issue} entryId={entry.id} />
                 ))}
                 {issues.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No issues yet.</p>
@@ -866,7 +585,7 @@ export default function EntryPage({ params }: EntryPageProps) {
               </div>
               <div className="space-y-2">
                 {edits.map((edit) => (
-                  <EditRow key={edit.number} edit={edit} entryId={entry.id} onStatusChange={refreshData} />
+                  <EditRow key={edit.number} edit={edit} entryId={entry.id} />
                 ))}
                 {edits.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No edit proposals yet.</p>
