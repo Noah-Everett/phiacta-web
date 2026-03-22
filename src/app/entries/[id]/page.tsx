@@ -30,8 +30,11 @@ import {
   Eye,
   MessageCircle,
   CircleDot,
+  GitPullRequestArrow,
+  X,
 } from "lucide-react";
-import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryEditDetail, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, getEntryIssueDetail, ApiError } from "@/lib/api";
+import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryEditDetail, mergeEditProposal, closeEditProposal, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, getEntryIssueDetail, closeIssue, ApiError } from "@/lib/api";
+import { getStoredToken } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
@@ -101,10 +104,14 @@ function formatBytes(n: number) {
 }
 
 // Inline expandable edit
-function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: string }) {
+function EditRow({ edit, entryId, onStatusChange }: { edit: EditProposalListItem; entryId: string; onStatusChange?: () => void }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<EditProposalDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [merging, setMerging] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const isLoggedIn = typeof window !== "undefined" && !!getStoredToken();
 
   const handleToggle = () => {
     const next = !open;
@@ -117,6 +124,31 @@ function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: strin
         .finally(() => setLoadingDetail(false));
     }
   };
+
+  const handleMerge = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setMerging(true);
+    setActionError(null);
+    mergeEditProposal(entryId, edit.number)
+      .then(() => onStatusChange?.())
+      .catch((err) => setActionError(err instanceof Error ? err.message : "Merge failed"))
+      .finally(() => setMerging(false));
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setClosing(true);
+    setActionError(null);
+    closeEditProposal(entryId, edit.number)
+      .then(() => onStatusChange?.())
+      .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
+      .finally(() => setClosing(false));
+  };
+
+  // Parse "closes #N" / "fixes #N" from body
+  const linkedIssues = edit.body
+    ? [...edit.body.matchAll(/(?:closes|fixes|resolves)\s+#(\d+)/gi)].map((m) => parseInt(m[1]))
+    : [];
 
   return (
     <div className="rounded-xl border border-border overflow-hidden">
@@ -158,7 +190,13 @@ function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: strin
       {open && (
         <div className="border-t border-border bg-background p-4 space-y-4">
           {edit.body && (
-            <p className="text-sm leading-relaxed text-foreground">{edit.body}</p>
+            <MarkdownContent content={edit.body} className="text-sm" />
+          )}
+          {linkedIssues.length > 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <CircleDot className="h-3 w-3" />
+              Linked issues: {linkedIssues.map((n) => `#${n}`).join(", ")}
+            </div>
           )}
           <div className="text-xs text-muted-foreground space-y-1">
             <p>Branch: <code className="font-mono">{edit.head_branch}</code> &rarr; <code className="font-mono">{edit.base_branch}</code></p>
@@ -181,6 +219,32 @@ function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: strin
           )}
           {detail && detail.diff.length === 0 && (
             <p className="text-xs text-muted-foreground">No file changes.</p>
+          )}
+          {actionError && (
+            <p className="text-xs text-red-600 dark:text-red-400">{actionError}</p>
+          )}
+          {edit.state === "open" && isLoggedIn && (
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              <Button
+                size="sm"
+                onClick={handleMerge}
+                disabled={merging || closing}
+                className="gap-1.5 bg-violet-600 hover:bg-violet-700 text-white"
+              >
+                {merging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitMerge className="h-3.5 w-3.5" />}
+                Merge
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleClose}
+                disabled={merging || closing}
+                className="gap-1.5"
+              >
+                {closing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                Close
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -409,10 +473,13 @@ function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direct
 }
 
 // Issue row — expandable with comments
-function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string }) {
+function IssueRow({ issue, entryId, onStatusChange, linkedPrs }: { issue: IssueListItem; entryId: string; onStatusChange?: () => void; linkedPrs?: { number: number; title: string }[] }) {
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<IssueDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [closingIssue, setClosingIssue] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const isLoggedIn = typeof window !== "undefined" && !!getStoredToken();
 
   const handleToggle = () => {
     const next = !open;
@@ -424,6 +491,16 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
         .catch((err) => console.warn("Failed to load issue detail:", err))
         .finally(() => setLoadingDetail(false));
     }
+  };
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setClosingIssue(true);
+    setActionError(null);
+    closeIssue(entryId, issue.number)
+      .then(() => onStatusChange?.())
+      .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
+      .finally(() => setClosingIssue(false));
   };
 
   return (
@@ -472,6 +549,17 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
               <MarkdownContent content={issue.body} className="text-sm" />
             </div>
           )}
+          {linkedPrs && linkedPrs.length > 0 && (
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <GitMerge className="h-3 w-3 text-violet-500" />
+              <span className="text-muted-foreground">Linked PRs:</span>
+              {linkedPrs.map((pr) => (
+                <Badge key={pr.number} variant="outline" className="text-xs gap-1 bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800">
+                  #{pr.number} {pr.title}
+                </Badge>
+              ))}
+            </div>
+          )}
           {loadingDetail && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading comments&hellip;
@@ -501,6 +589,23 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
           )}
           {detail && detail.comments.length === 0 && (
             <p className="text-xs text-muted-foreground">No comments yet.</p>
+          )}
+          {actionError && (
+            <p className="text-xs text-red-600 dark:text-red-400">{actionError}</p>
+          )}
+          {issue.state === "open" && isLoggedIn && (
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleClose}
+                disabled={closingIssue}
+                className="gap-1.5"
+              >
+                {closingIssue ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <X className="h-3.5 w-3.5" />}
+                Close issue
+              </Button>
+            </div>
           )}
         </div>
       )}
@@ -553,6 +658,18 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
     getEntryIssues(resolvedId).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
     getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch((err) => console.warn("Failed to load tags:", err));
+  }, [resolvedId]);
+
+  const refreshData = useCallback(() => {
+    if (!resolvedId) return;
+    getEntryEdits(resolvedId).then(setEdits).catch(() => {});
+    getEntryIssues(resolvedId).then(setIssues).catch(() => {});
+    getEntryHistory(resolvedId).then(setHistory).catch(() => {});
+    getEntry(resolvedId).then((data) => {
+      setEntry(data);
+      setOutgoingRefs(data.outgoing_refs);
+      setIncomingRefs(data.incoming_refs);
+    }).catch(() => {});
   }, [resolvedId]);
 
   if (loading) {
@@ -707,6 +824,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                   <MarkdownContent
                     content={entry.content_cache}
                     className="text-sm leading-relaxed text-card-foreground"
+                    entryId={entry.id}
                   />
                 ) : (
                   <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
@@ -723,7 +841,15 @@ export default function EntryPage({ params }: EntryPageProps) {
               </div>
               <div className="space-y-2">
                 {issues.map((issue) => (
-                  <IssueRow key={issue.number} issue={issue} entryId={entry.id} />
+                  <IssueRow
+                    key={issue.number}
+                    issue={issue}
+                    entryId={entry.id}
+                    onStatusChange={refreshData}
+                    linkedPrs={edits
+                      .filter((e) => e.body && [...e.body.matchAll(/(?:closes|fixes|resolves)\s+#(\d+)/gi)].some((m) => parseInt(m[1]) === issue.number))
+                      .map((e) => ({ number: e.number, title: e.title }))}
+                  />
                 ))}
                 {issues.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No issues yet.</p>
@@ -740,7 +866,7 @@ export default function EntryPage({ params }: EntryPageProps) {
               </div>
               <div className="space-y-2">
                 {edits.map((edit) => (
-                  <EditRow key={edit.number} edit={edit} entryId={entry.id} />
+                  <EditRow key={edit.number} edit={edit} entryId={entry.id} onStatusChange={refreshData} />
                 ))}
                 {edits.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No edit proposals yet.</p>
