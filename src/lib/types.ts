@@ -1,9 +1,9 @@
-// Agent types — mirrors auth.py AgentResponse
+// User types — mirrors auth.py UserResponse
 export interface Agent {
   id: string;
   handle: string;
-  agent_type: string;
-  is_active: boolean;
+  agent_type?: string;
+  is_active?: boolean;
   created_at: string;
 }
 
@@ -13,7 +13,7 @@ export type PublicAgentResponse = Agent;
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  agent: Agent;
+  user: Agent;
 }
 
 // Entry types — mirrors entry.py
