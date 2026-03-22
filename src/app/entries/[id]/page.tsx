@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -24,20 +24,74 @@ import {
   Tag,
   Copy,
   Check,
+  Loader2,
+  Plus,
+  Minus,
+  Eye,
+  MessageCircle,
+  CircleDot,
 } from "lucide-react";
-import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryHistory, getEntryTags, ApiError } from "@/lib/api";
+import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryEditDetail, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, getEntryIssueDetail, ApiError } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
+  EditProposalDetail,
   CommitListItem,
+  CommitDiffResponse,
   FileListItem,
   EntryRefResponse,
   PublicAgentResponse,
   TagResponse,
+  IssueListItem,
+  IssueDetail,
 } from "@/lib/types";
+
+const API_URL =
+  typeof window === "undefined"
+    ? process.env.API_URL_INTERNAL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8000"
+    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface EntryPageProps {
   params: Promise<{ id: string }>;
+}
+
+// Diff line renderer — used by both commit and edit diffs
+function DiffBlock({ patch, path }: { patch: string; path: string }) {
+  const lines = patch.split("\n");
+  return (
+    <div className="rounded-lg border border-border overflow-hidden text-xs font-mono">
+      <div className="bg-muted px-3 py-1.5 text-muted-foreground font-semibold border-b border-border">
+        {path}
+      </div>
+      <div className="overflow-x-auto">
+        {lines.map((line, i) => {
+          let bg = "";
+          let textColor = "text-foreground";
+          let icon = null;
+          if (line.startsWith("+") && !line.startsWith("+++")) {
+            bg = "bg-green-50 dark:bg-green-950/30";
+            textColor = "text-green-700 dark:text-green-300";
+            icon = <Plus className="h-3 w-3 shrink-0 text-green-500" />;
+          } else if (line.startsWith("-") && !line.startsWith("---")) {
+            bg = "bg-red-50 dark:bg-red-950/30";
+            textColor = "text-red-700 dark:text-red-300";
+            icon = <Minus className="h-3 w-3 shrink-0 text-red-500" />;
+          } else if (line.startsWith("@@")) {
+            bg = "bg-blue-50 dark:bg-blue-950/30";
+            textColor = "text-blue-600 dark:text-blue-400";
+          }
+          return (
+            <div key={i} className={`flex items-start gap-1 px-3 py-0 leading-5 ${bg}`}>
+              <span className="w-4 shrink-0 flex items-center justify-center">{icon}</span>
+              <span className={`whitespace-pre ${textColor}`}>{line}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function formatBytes(n: number) {
@@ -47,12 +101,27 @@ function formatBytes(n: number) {
 }
 
 // Inline expandable edit
-function EditRow({ edit }: { edit: EditProposalListItem }) {
+function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: string }) {
   const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState<EditProposalDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !detail && !loadingDetail) {
+      setLoadingDetail(true);
+      getEntryEditDetail(entryId, edit.number)
+        .then(setDetail)
+        .catch((err) => console.warn("Failed to load edit detail:", err))
+        .finally(() => setLoadingDetail(false));
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
       >
         {edit.state === "open" ? (
@@ -95,6 +164,24 @@ function EditRow({ edit }: { edit: EditProposalListItem }) {
             <p>Branch: <code className="font-mono">{edit.head_branch}</code> &rarr; <code className="font-mono">{edit.base_branch}</code></p>
             {edit.is_draft && <p className="text-amber-600 dark:text-amber-400">Draft</p>}
           </div>
+          {loadingDetail && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading diff&hellip;
+            </div>
+          )}
+          {detail && detail.diff.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {detail.diff.length} file{detail.diff.length > 1 ? "s" : ""} changed
+              </p>
+              {detail.diff.map((f) => (
+                <DiffBlock key={f.path} path={f.path} patch={f.patch} />
+              ))}
+            </div>
+          )}
+          {detail && detail.diff.length === 0 && (
+            <p className="text-xs text-muted-foreground">No file changes.</p>
+          )}
         </div>
       )}
     </div>
@@ -102,12 +189,27 @@ function EditRow({ edit }: { edit: EditProposalListItem }) {
 }
 
 // Inline expandable commit
-function CommitRow({ commit, index }: { commit: CommitListItem; index: number }) {
+function CommitRow({ commit, index, entryId }: { commit: CommitListItem; index: number; entryId: string }) {
   const [open, setOpen] = useState(false);
+  const [diff, setDiff] = useState<CommitDiffResponse | null>(null);
+  const [loadingDiff, setLoadingDiff] = useState(false);
+
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !diff && !loadingDiff) {
+      setLoadingDiff(true);
+      getEntryCommitDiff(entryId, commit.sha)
+        .then(setDiff)
+        .catch((err) => console.warn("Failed to load commit diff:", err))
+        .finally(() => setLoadingDiff(false));
+    }
+  };
+
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={handleToggle}
         className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
       >
         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-mono text-muted-foreground">
@@ -142,23 +244,110 @@ function CommitRow({ commit, index }: { commit: CommitListItem; index: number })
             <p>Author: {commit.author.name} &lt;{commit.author.email}&gt;</p>
             <p>Full SHA: <code className="font-mono">{commit.sha}</code></p>
           </div>
+          {loadingDiff && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading diff&hellip;
+            </div>
+          )}
+          {diff && diff.files_changed.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {diff.files_changed.length} file{diff.files_changed.length > 1 ? "s" : ""} changed
+              </p>
+              {diff.files_changed.map((f) => (
+                <DiffBlock key={f.path} path={f.path} patch={f.patch} />
+              ))}
+            </div>
+          )}
+          {diff && diff.files_changed.length === 0 && (
+            <p className="text-xs text-muted-foreground">No file changes in this commit.</p>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-// File row
-function FileRow({ file }: { file: FileListItem }) {
+// File row — expandable with content preview
+function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
+  const [open, setOpen] = useState(false);
+  const [content, setContent] = useState<string | null>(null);
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [isText, setIsText] = useState(true);
+
+  const textExtensions = new Set([
+    ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".csv", ".tex",
+    ".py", ".js", ".ts", ".tsx", ".jsx", ".html", ".css", ".sh", ".lean",
+    ".rs", ".go", ".java", ".c", ".h", ".cpp", ".hpp", ".rb", ".r",
+    ".sql", ".xml", ".ini", ".cfg", ".env", ".gitignore", ".dockerfile",
+  ]);
+
+  const isTextFile = useCallback((path: string) => {
+    const ext = path.substring(path.lastIndexOf(".")).toLowerCase();
+    return textExtensions.has(ext) || !path.includes(".");
+  }, []);
+
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && content === null && !loadingContent) {
+      if (!isTextFile(file.path)) {
+        setIsText(false);
+        return;
+      }
+      setLoadingContent(true);
+      fetch(`${API_URL}/v1/entries/${entryId}/files/${file.path}`, { cache: "no-store" })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch");
+          const ct = res.headers.get("content-type") || "";
+          if (ct.startsWith("text/") || ct.includes("json") || ct.includes("yaml") || ct.includes("xml")) {
+            return res.text();
+          }
+          setIsText(false);
+          return null;
+        })
+        .then((text) => { if (text !== null) setContent(text); })
+        .catch((err) => { console.warn("Failed to load file:", err); setContent(null); })
+        .finally(() => setLoadingContent(false));
+    }
+  };
+
   return (
     <div className="border-b border-border last:border-0">
-      <div className="flex w-full items-center gap-2.5 px-3 py-2.5">
+      <button
+        onClick={handleToggle}
+        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-accent/40 transition-colors"
+      >
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        )}
         <File className="h-4 w-4 shrink-0 text-muted-foreground" />
         <code className="flex-1 font-mono text-sm text-foreground">{file.path}</code>
         <span className="shrink-0 font-mono text-xs text-muted-foreground">
           {formatBytes(file.size)}
         </span>
-      </div>
+      </button>
+      {open && (
+        <div className="border-t border-border bg-background">
+          {loadingContent && (
+            <div className="flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading&hellip;
+            </div>
+          )}
+          {!isText && (
+            <div className="px-4 py-3 text-xs text-muted-foreground">
+              Binary file &mdash; preview not available.
+            </div>
+          )}
+          {content !== null && (
+            <pre className="overflow-x-auto px-4 py-3 text-xs font-mono text-foreground leading-5 max-h-[500px] overflow-y-auto">
+              {content}
+            </pre>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -219,6 +408,106 @@ function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direct
   );
 }
 
+// Issue row — expandable with comments
+function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string }) {
+  const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState<IssueDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+
+  const handleToggle = () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !detail && !loadingDetail) {
+      setLoadingDetail(true);
+      getEntryIssueDetail(entryId, issue.number)
+        .then(setDetail)
+        .catch((err) => console.warn("Failed to load issue detail:", err))
+        .finally(() => setLoadingDetail(false));
+    }
+  };
+
+  return (
+    <div className="rounded-xl border border-border overflow-hidden">
+      <button
+        onClick={handleToggle}
+        className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
+      >
+        <CircleDot className={`mt-0.5 h-4 w-4 shrink-0 ${issue.state === "open" ? "text-green-500" : "text-muted-foreground"}`} />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-foreground">{issue.title}</p>
+          <p className="text-xs text-muted-foreground">
+            #{issue.number} &middot; {issue.author.handle} &middot;{" "}
+            {new Date(issue.created_at).toLocaleDateString()}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {issue.comments_count > 0 && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <MessageCircle className="h-3 w-3" />
+              {issue.comments_count}
+            </span>
+          )}
+          <Badge
+            variant="outline"
+            className={
+              issue.state === "open"
+                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                : "text-muted-foreground border-border"
+            }
+          >
+            {issue.state}
+          </Badge>
+          {open ? (
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          )}
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-border bg-background p-4 space-y-4">
+          {issue.body && (
+            <div className="text-sm leading-relaxed text-foreground">
+              <MarkdownContent content={issue.body} className="text-sm" />
+            </div>
+          )}
+          {loadingDetail && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading comments&hellip;
+            </div>
+          )}
+          {detail && detail.comments.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                {detail.comments.length} comment{detail.comments.length > 1 ? "s" : ""}
+              </p>
+              {detail.comments.map((c) => (
+                <div key={c.id} className="rounded-lg border border-border bg-card p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-xs font-medium text-foreground">{c.author.handle}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(c.created_at).toLocaleDateString("en-US", {
+                        year: "numeric", month: "short", day: "numeric",
+                      })}
+                    </span>
+                  </div>
+                  <div className="text-sm text-foreground">
+                    <MarkdownContent content={c.body} className="text-sm" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {detail && detail.comments.length === 0 && (
+            <p className="text-xs text-muted-foreground">No comments yet.</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EntryPage({ params }: EntryPageProps) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
@@ -226,6 +515,7 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
   const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
+  const [issues, setIssues] = useState<IssueListItem[]>([]);
   const [tags, setTags] = useState<TagResponse[]>([]);
   const [outgoingRefs, setOutgoingRefs] = useState<EntryRefResponse[]>([]);
   const [incomingRefs, setIncomingRefs] = useState<EntryRefResponse[]>([]);
@@ -261,6 +551,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntryFiles(resolvedId).then(setEntryFiles).catch((err) => console.warn("Failed to load files:", err));
     getEntryEdits(resolvedId).then(setEdits).catch((err) => console.warn("Failed to load edits:", err));
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
+    getEntryIssues(resolvedId).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
     getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch((err) => console.warn("Failed to load tags:", err));
   }, [resolvedId]);
 
@@ -381,6 +672,13 @@ export default function EntryPage({ params }: EntryPageProps) {
           <Tabs defaultValue="content">
             <TabsList className="mb-4 w-full justify-start flex-wrap h-auto gap-1">
               <TabsTrigger value="content">Content</TabsTrigger>
+              <TabsTrigger value="issues" className="gap-1.5">
+                <CircleDot className="h-3.5 w-3.5" />
+                Issues
+                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
+                  {issues.filter((i) => i.state === "open").length}
+                </Badge>
+              </TabsTrigger>
               <TabsTrigger value="edits" className="gap-1.5">
                 <GitBranch className="h-3.5 w-3.5" />
                 Edits
@@ -416,6 +714,23 @@ export default function EntryPage({ params }: EntryPageProps) {
               </div>
             </TabsContent>
 
+            {/* Issues */}
+            <TabsContent value="issues">
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground">
+                  Issues are discussions and bug reports on this entry.
+                </p>
+              </div>
+              <div className="space-y-2">
+                {issues.map((issue) => (
+                  <IssueRow key={issue.number} issue={issue} entryId={entry.id} />
+                ))}
+                {issues.length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No issues yet.</p>
+                )}
+              </div>
+            </TabsContent>
+
             {/* Edits */}
             <TabsContent value="edits">
               <div className="mb-3">
@@ -425,7 +740,7 @@ export default function EntryPage({ params }: EntryPageProps) {
               </div>
               <div className="space-y-2">
                 {edits.map((edit) => (
-                  <EditRow key={edit.number} edit={edit} />
+                  <EditRow key={edit.number} edit={edit} entryId={entry.id} />
                 ))}
                 {edits.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No edit proposals yet.</p>
@@ -437,7 +752,7 @@ export default function EntryPage({ params }: EntryPageProps) {
             <TabsContent value="history">
               <div className="space-y-2">
                 {history.map((commit, i) => (
-                  <CommitRow key={commit.sha} commit={commit} index={i} />
+                  <CommitRow key={commit.sha} commit={commit} index={i} entryId={entry.id} />
                 ))}
                 {history.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
@@ -458,7 +773,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                 </div>
                 <div className="divide-y-0">
                   {entryFiles.map((file) => (
-                    <FileRow key={file.path} file={file} />
+                    <FileRow key={file.path} file={file} entryId={entry.id} />
                   ))}
                   {entryFiles.length === 0 && (
                     <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>

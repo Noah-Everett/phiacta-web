@@ -15,6 +15,8 @@ import type {
   CommitDiffResponse,
   TagListResponse,
   EntryTagItem,
+  IssueListItem,
+  IssueDetail,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -242,6 +244,23 @@ export async function getEntryCommitDiff(
 
 export async function getAgent(id: string): Promise<PublicAgentResponse> {
   return request<PublicAgentResponse>(`/v1/agents/${id}`);
+}
+
+// --- Entry Issues ---
+
+export async function getEntryIssues(
+  id: string,
+  state?: string
+): Promise<IssueListItem[]> {
+  const params = state ? `?state=${state}` : "";
+  return request<IssueListItem[]>(`/v1/entries/${id}/issues${params}`);
+}
+
+export async function getEntryIssueDetail(
+  id: string,
+  number: number
+): Promise<IssueDetail> {
+  return request<IssueDetail>(`/v1/entries/${id}/issues/${number}`);
 }
 
 // --- Tags Extension ---
