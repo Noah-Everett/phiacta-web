@@ -2,20 +2,18 @@
 // Types are imported from the implementation to ensure they stay in sync.
 
 import type {
-  Agent,
+  User,
   AuthResponse,
   EntryListItem,
   EntryCreate,
   PaginatedResponse,
 } from "@/lib/types";
 
-/** Produces a realistic Agent matching the backend schema */
-export function makeAgent(overrides: Partial<Agent> = {}): Agent {
+/** Produces a realistic User matching the backend schema */
+export function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
     handle: "drchen",
-    agent_type: "human",
-    is_active: true,
     created_at: "2026-01-15T10:30:00Z",
     ...overrides,
   };
@@ -52,7 +50,7 @@ export function makeAuthResponse(
   return {
     access_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.signature",
     token_type: "bearer",
-    agent: makeAgent(),
+    user: makeUser(),
     ...overrides,
   };
 }

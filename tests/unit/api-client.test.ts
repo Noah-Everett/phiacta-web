@@ -31,17 +31,15 @@ describe("API Client — endpoint URLs", () => {
         Promise.resolve({
           access_token: "token",
           token_type: "bearer",
-          agent: {
+          user: {
             id: "test-id",
             handle: "testuser",
-            agent_type: "human",
-            is_active: true,
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
     });
 
-    await registerApi("testuser", "test@example.com", "password123");
+    await registerApi("testuser", "password123");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, options] = fetchMock.mock.calls[0];
@@ -57,17 +55,15 @@ describe("API Client — endpoint URLs", () => {
         Promise.resolve({
           access_token: "token",
           token_type: "bearer",
-          agent: {
+          user: {
             id: "test-id",
             handle: "testuser",
-            agent_type: "human",
-            is_active: true,
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
     });
 
-    await loginApi("test@example.com", "password123");
+    await loginApi("testuser", "password123");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, options] = fetchMock.mock.calls[0];
@@ -147,8 +143,6 @@ describe("API Client — endpoint URLs", () => {
         Promise.resolve({
           id: "test-id",
           handle: "testuser",
-          agent_type: "human",
-          is_active: true,
           created_at: "2026-01-01T00:00:00Z",
         }),
     });
@@ -177,32 +171,30 @@ describe("API Client — request bodies", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("registerApi sends handle, not name", async () => {
+  it("registerApi sends handle and password only, not email", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
         Promise.resolve({
           access_token: "token",
           token_type: "bearer",
-          agent: {
+          user: {
             id: "id",
             handle: "drchen",
-            agent_type: "human",
-            is_active: true,
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
     });
 
-    await registerApi("drchen", "dr@chen.com", "secure123");
+    await registerApi("drchen", "secure123");
 
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
 
     expect(body).toHaveProperty("handle", "drchen");
-    expect(body).toHaveProperty("email", "dr@chen.com");
     expect(body).toHaveProperty("password", "secure123");
     expect(body).not.toHaveProperty("name");
+    expect(body).not.toHaveProperty("email");
   });
 
   it("createEntry sends content_format and layout_hint, not format and claim_type", async () => {
@@ -258,29 +250,28 @@ describe("API Client — request bodies", () => {
     expect(body).not.toHaveProperty("claim_type");
   });
 
-  it("loginApi sends email and password", async () => {
+  it("loginApi sends handle and password", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
         Promise.resolve({
           access_token: "token",
           token_type: "bearer",
-          agent: {
+          user: {
             id: "id",
             handle: "user",
-            agent_type: "human",
-            is_active: true,
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
     });
 
-    await loginApi("user@example.com", "password");
+    await loginApi("testuser", "password");
 
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
 
-    expect(body).toHaveProperty("email", "user@example.com");
+    expect(body).toHaveProperty("handle", "testuser");
     expect(body).toHaveProperty("password", "password");
+    expect(body).not.toHaveProperty("email");
   });
 });

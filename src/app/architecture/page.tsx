@@ -52,7 +52,7 @@ export default function ArchitecturePage() {
             {/* API */}
             <div className="rounded-md border border-gray-400 bg-white px-4 py-2.5 text-center dark:border-gray-500 dark:bg-gray-800">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-300">REST API</span>
-              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">/v1/entries, /v1/extensions, /v1/agents</span>
+              <span className="ml-2 text-xs text-gray-400 dark:text-gray-500">/v1/entries, /v1/extensions, /v1/users</span>
             </div>
             <div className="flex justify-center text-gray-300 dark:text-gray-600">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

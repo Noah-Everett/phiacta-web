@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 
 export default function SignupPage() {
   const [handle, setHandle] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -22,7 +21,7 @@ export default function SignupPage() {
     setError("");
     setSubmitting(true);
     try {
-      await register(handle, email, password);
+      await register(handle, password);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
@@ -60,21 +59,6 @@ export default function SignupPage() {
               required
               autoComplete="username"
               placeholder="jane-doe"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="text-sm font-medium text-foreground">
-              Email
-            </label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              placeholder="you@example.com"
             />
           </div>
 

@@ -8,7 +8,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { Agent } from "./types";
+import type { User } from "./types";
 import {
   loginApi,
   registerApi,
@@ -19,18 +19,18 @@ import {
 } from "./api";
 
 interface AuthContextValue {
-  agent: Agent | null;
+  user: User | null;
   token: string | null;
   isLoading: boolean;
   login: (handle: string, password: string) => Promise<void>;
-  register: (handle: string, email: string, password: string) => Promise<void>;
+  register: (handle: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [agent, setAgent] = useState<Agent | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     getMeApi()
       .then((me) => {
-        setAgent(me);
+        setUser(me);
         setToken(stored);
       })
       .catch(() => {
@@ -57,15 +57,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await loginApi(handle, password);
     setStoredToken(data.access_token);
     setToken(data.access_token);
-    setAgent(data.user);
+    setUser(data.user);
   }, []);
 
   const register = useCallback(
-    async (handle: string, email: string, password: string) => {
-      const data = await registerApi(handle, email, password);
+    async (handle: string, password: string) => {
+      const data = await registerApi(handle, password);
       setStoredToken(data.access_token);
       setToken(data.access_token);
-      setAgent(data.user);
+      setUser(data.user);
     },
     []
   );
@@ -73,12 +73,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearStoredToken();
     setToken(null);
-    setAgent(null);
+    setUser(null);
   }, []);
 
   return (
     <AuthContext.Provider
-      value={{ agent, token, isLoading, login, register, logout }}
+      value={{ user, token, isLoading, login, register, logout }}
     >
       {children}
     </AuthContext.Provider>

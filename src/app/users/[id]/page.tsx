@@ -24,7 +24,7 @@ import type {
   EditProposalListItem,
 } from "@/lib/types";
 
-interface AgentPageProps {
+interface UserPageProps {
   params: Promise<{ id: string }>;
 }
 
@@ -48,7 +48,7 @@ function computeEntryIndex(incomingCounts: number[]): number {
   return h;
 }
 
-export default function AgentPage({ params }: AgentPageProps) {
+export default function UserPage({ params }: UserPageProps) {
   const [id, setId] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUserResponse | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);

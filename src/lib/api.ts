@@ -5,8 +5,8 @@ import type {
   EntryCreate,
   EntryRefResponse,
   PaginatedResponse,
-  Agent,
-  PublicAgentResponse,
+  User,
+  PublicUserResponse,
   AuthResponse,
   FileListItem,
   EditProposalListItem,
@@ -137,13 +137,12 @@ export async function loginApi(handle: string, password: string): Promise<AuthRe
 
 export async function registerApi(
   handle: string,
-  email: string,
   password: string
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/v1/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ handle, email, password }),
+    body: JSON.stringify({ handle, password }),
   });
   if (res.status === 429) {
     throw new Error("Too many requests. Please wait a moment and try again.");
@@ -155,7 +154,7 @@ export async function registerApi(
   return res.json() as Promise<AuthResponse>;
 }
 
-export async function getMeApi(): Promise<Agent> {
+export async function getMeApi(): Promise<User> {
   const token = getStoredToken();
   if (!token) throw new Error("No token");
   const res = await fetch(`${API_URL}/v1/auth/me`, {
@@ -166,7 +165,7 @@ export async function getMeApi(): Promise<Agent> {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Token validation failed");
-  return res.json() as Promise<Agent>;
+  return res.json() as Promise<User>;
 }
 
 // --- Entries ---
@@ -258,10 +257,10 @@ export async function getEntryCommitDiff(
   return request<CommitDiffResponse>(`/v1/entries/${id}/history/${sha}`);
 }
 
-// --- Agents ---
+// --- Users ---
 
-export async function getAgent(id: string): Promise<PublicAgentResponse> {
-  return request<PublicAgentResponse>(`/v1/users/${id}`);
+export async function getUser(id: string): Promise<PublicUserResponse> {
+  return request<PublicUserResponse>(`/v1/users/${id}`);
 }
 
 // --- Entry Issues ---

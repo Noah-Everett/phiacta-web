@@ -31,7 +31,7 @@ const FORMATS = [
 ] as const;
 
 export default function ContributePage() {
-  const { agent, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contentFormat, setContentFormat] = useState<string>("markdown");
@@ -341,7 +341,7 @@ export default function ContributePage() {
 
         <Separator />
 
-        {!agent && (
+        {!user && (
           <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/40 px-4 py-3">
             <p className="text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Sign in to publish.</span>{" "}
@@ -361,7 +361,7 @@ export default function ContributePage() {
           </div>
         )}
 
-        {agent && (
+        {user && (
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
               Entries are public by default.

@@ -1,19 +1,17 @@
 // User types — mirrors auth.py UserResponse
-export interface Agent {
+export interface User {
   id: string;
   handle: string;
-  agent_type?: string;
-  is_active?: boolean;
   created_at: string;
 }
 
 // Same shape — backend uses identical fields for public view
-export type PublicAgentResponse = Agent;
+export type PublicUserResponse = User;
 
 export interface AuthResponse {
   access_token: string;
   token_type: string;
-  user: Agent;
+  user: User;
 }
 
 // Entry types — mirrors entry.py
@@ -88,7 +86,6 @@ export interface FileWriteResponse {
 // Edit proposal types — mirrors entry_edit.py
 export interface EditProposalAuthor {
   handle: string;
-  agent_type: string;
 }
 
 export interface EditProposalListItem {

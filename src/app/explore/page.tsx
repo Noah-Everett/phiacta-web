@@ -10,8 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
-import { listEntries, getAgent } from "@/lib/api";
-import type { EntryListItem, PublicAgentResponse } from "@/lib/types";
+import { listEntries, getUser } from "@/lib/api";
+import type { EntryListItem, PublicUserResponse } from "@/lib/types";
 import {
   Search,
   SlidersHorizontal,
@@ -55,9 +55,9 @@ export default function ExplorePage() {
   const [search, setSearch] = useState("");
   const [selectedHint, setSelectedHint] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [authors, setAuthors] = useState<Record<string, PublicAgentResponse>>({});
+  const [authors, setAuthors] = useState<Record<string, PublicUserResponse>>({});
   const [allHints, setAllHints] = useState<Set<string>>(new Set());
-  const authorsRef = useRef<Record<string, PublicAgentResponse>>({});
+  const authorsRef = useRef<Record<string, PublicUserResponse>>({});
 
   const fetchEntries = useCallback(async (pageOffset: number) => {
     setLoading(true);
@@ -81,8 +81,8 @@ export default function ExplorePage() {
       const uniqueIds = Array.from(new Set(res.items.map((e) => e.created_by)));
       const newIds = uniqueIds.filter((id) => !authorsRef.current[id]);
       if (newIds.length > 0) {
-        const fetched = await Promise.allSettled(newIds.map((id) => getAgent(id)));
-        const resolved: Record<string, PublicAgentResponse> = {};
+        const fetched = await Promise.allSettled(newIds.map((id) => getUser(id)));
+        const resolved: Record<string, PublicUserResponse> = {};
         fetched.forEach((result, i) => {
           if (result.status === "fulfilled") {
             resolved[newIds[i]] = result.value;

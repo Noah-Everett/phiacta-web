@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 
 import type {
-  Agent,
+  User,
   AuthResponse,
   EntryListItem,
   EntryDetailResponse,
@@ -13,47 +13,43 @@ import type {
 } from "@/lib/types";
 
 describe("TypeScript types match backend contract", () => {
-  it("Agent has correct fields", () => {
-    const agent: Agent = {
+  it("User has correct fields", () => {
+    const user: User = {
       id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       handle: "drchen",
-      agent_type: "human",
-      is_active: true,
       created_at: "2026-01-15T10:30:00Z",
     };
 
-    expect(agent.id).toBe("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-    expect(agent.handle).toBe("drchen");
-    expect(agent.agent_type).toBe("human");
-    expect(agent.is_active).toBe(true);
-    expect(agent.created_at).toBe("2026-01-15T10:30:00Z");
+    expect(user.id).toBe("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+    expect(user.handle).toBe("drchen");
+    expect(user.created_at).toBe("2026-01-15T10:30:00Z");
 
-    expect("handle" in agent).toBe(true);
+    expect("handle" in user).toBe(true);
 
-    const agentKeys = Object.keys(agent);
-    expect(agentKeys).not.toContain("name");
-    expect(agentKeys).not.toContain("email");
-    expect(agentKeys).not.toContain("trust_score");
-    expect(agentKeys).not.toContain("bio");
+    const userKeys = Object.keys(user);
+    expect(userKeys).not.toContain("name");
+    expect(userKeys).not.toContain("email");
+    expect(userKeys).not.toContain("trust_score");
+    expect(userKeys).not.toContain("bio");
+    expect(userKeys).not.toContain("agent_type");
+    expect(userKeys).not.toContain("is_active");
   });
 
   it("AuthResponse has correct fields", () => {
     const auth: AuthResponse = {
       access_token: "eyJ...",
       token_type: "bearer",
-      agent: {
+      user: {
         id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
         handle: "drchen",
-        agent_type: "human",
-        is_active: true,
         created_at: "2026-01-15T10:30:00Z",
       },
     };
 
     expect(auth.access_token).toBe("eyJ...");
     expect(auth.token_type).toBe("bearer");
-    expect(auth.agent.handle).toBe("drchen");
-    expect("name" in auth.agent).toBe(false);
+    expect(auth.user.handle).toBe("drchen");
+    expect("name" in auth.user).toBe(false);
   });
 
   it("EntryListItem has all required fields with correct nullability", () => {

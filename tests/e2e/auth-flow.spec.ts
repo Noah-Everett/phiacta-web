@@ -6,9 +6,9 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Registration flow", () => {
-  // Scenario: User visits /auth/signup and sees a form with handle, email,
-  // and password fields (not a "name" field)
-  test("signup page has handle field, not name field", async ({ page }) => {
+  // Scenario: User visits /auth/signup and sees a form with handle and
+  // password fields (not a "name" or "email" field)
+  test("signup page has handle field, not name or email field", async ({ page }) => {
     await page.goto("/auth/signup");
 
     // Must have a handle input (not name)
@@ -21,10 +21,11 @@ test.describe("Registration flow", () => {
     const nameInput = page.locator('input[name="name"]');
     await expect(nameInput).toHaveCount(0);
 
-    // Must have email and password
+    // Must NOT have an email field (removed from registration)
     const emailInput = page.locator('input[type="email"], input[name="email"]');
-    await expect(emailInput.first()).toBeVisible();
+    await expect(emailInput).toHaveCount(0);
 
+    // Must have password
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
     );
@@ -32,8 +33,8 @@ test.describe("Registration flow", () => {
   });
 
   // Scenario: User submits the registration form and the request body contains
-  // "handle" not "name", and hits /v1/auth/register
-  test("registration POST sends handle, email, password to /v1/auth/register", async ({
+  // "handle" and "password" only, hitting /v1/auth/register
+  test("registration POST sends handle, password to /v1/auth/register", async ({
     page,
   }) => {
     let capturedRequest: { url: string; body: string } | null = null;
@@ -54,9 +55,6 @@ test.describe("Registration flow", () => {
       'input[name="handle"], input[placeholder*="handle" i], input[id*="handle" i]',
     );
     await handleInput.first().fill("testuser123");
-
-    const emailInput = page.locator('input[type="email"], input[name="email"]');
-    await emailInput.first().fill("test@example.com");
 
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
@@ -80,20 +78,22 @@ test.describe("Registration flow", () => {
     // Verify request body
     const body = JSON.parse(capturedRequest!.body);
     expect(body).toHaveProperty("handle", "testuser123");
-    expect(body).toHaveProperty("email", "test@example.com");
     expect(body).toHaveProperty("password", "securepassword123");
-    // Must NOT contain "name" — that was the old schema
+    // Must NOT contain "name" or "email" — those were the old schema
     expect(body).not.toHaveProperty("name");
+    expect(body).not.toHaveProperty("email");
   });
 });
 
 test.describe("Login flow", () => {
-  // Scenario: User visits /auth/login and sees email + password fields
-  test("login page has email and password fields", async ({ page }) => {
+  // Scenario: User visits /auth/login and sees handle + password fields
+  test("login page has handle and password fields", async ({ page }) => {
     await page.goto("/auth/login");
 
-    const emailInput = page.locator('input[type="email"], input[name="email"]');
-    await expect(emailInput.first()).toBeVisible();
+    const handleInput = page.locator(
+      'input[name="handle"], input[placeholder*="handle" i], input[placeholder*="username" i], input[id*="handle" i]',
+    );
+    await expect(handleInput.first()).toBeVisible();
 
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
@@ -101,8 +101,8 @@ test.describe("Login flow", () => {
     await expect(passwordInput.first()).toBeVisible();
   });
 
-  // Scenario: Login form POSTs to /v1/auth/login with email and password
-  test("login POST sends email, password to /v1/auth/login", async ({
+  // Scenario: Login form POSTs to /v1/auth/login with handle and password
+  test("login POST sends handle, password to /v1/auth/login", async ({
     page,
   }) => {
     let capturedRequest: { url: string; body: string } | null = null;
@@ -118,8 +118,10 @@ test.describe("Login flow", () => {
 
     await page.goto("/auth/login");
 
-    const emailInput = page.locator('input[type="email"], input[name="email"]');
-    await emailInput.first().fill("test@example.com");
+    const handleInput = page.locator(
+      'input[name="handle"], input[placeholder*="handle" i], input[placeholder*="username" i], input[id*="handle" i]',
+    );
+    await handleInput.first().fill("testuser");
 
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
@@ -137,7 +139,8 @@ test.describe("Login flow", () => {
     expect(capturedRequest!.url).toContain("/v1/auth/login");
 
     const body = JSON.parse(capturedRequest!.body);
-    expect(body).toHaveProperty("email", "test@example.com");
+    expect(body).toHaveProperty("handle", "testuser");
     expect(body).toHaveProperty("password", "securepassword123");
+    expect(body).not.toHaveProperty("email");
   });
 });

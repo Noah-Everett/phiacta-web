@@ -114,15 +114,15 @@ describe("No dead API references in source code", () => {
     expect(violations).toEqual([]);
   });
 
-  // Verifies no TypeScript type uses "name" field on agent (should be "handle")
-  it("no agent type uses name field instead of handle", () => {
+  // Verifies no TypeScript type uses "name" field on user (should be "handle")
+  it("no user type uses name field instead of handle", () => {
     const violations: string[] = [];
     for (const file of sourceFiles) {
       const content = readFileSync(file, "utf-8");
-      // Extract Agent interface/type blocks specifically and check for "name" field
-      const agentBlocks = content.match(/(?:interface|type)\s+\w*Agent\w*\s*(?:extends\s+\w+\s*)?\{[^}]*\}/g);
-      if (agentBlocks) {
-        for (const block of agentBlocks) {
+      // Extract User interface/type blocks specifically and check for "name" field
+      const userBlocks = content.match(/(?:interface|type)\s+\w*User\w*\s*(?:extends\s+\w+\s*)?\{[^}]*\}/g);
+      if (userBlocks) {
+        for (const block of userBlocks) {
           if (block.match(/\bname\s*[?:]?\s*:\s*string/)) {
             violations.push(file);
           }

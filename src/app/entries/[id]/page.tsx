@@ -29,7 +29,7 @@ import {
   MessageCircle,
   CircleDot,
 } from "lucide-react";
-import { getEntry, getAgent, getEntryFiles, getEntryEdits, getEntryEditDetail, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, ApiError } from "@/lib/api";
+import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryEditDetail, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, ApiError } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
@@ -38,7 +38,7 @@ import type {
   CommitDiffResponse,
   FileListItem,
   EntryRefResponse,
-  PublicAgentResponse,
+  PublicUserResponse,
   TagResponse,
   IssueListItem,
 } from "@/lib/types";
@@ -355,7 +355,7 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
 export default function EntryPage({ params }: EntryPageProps) {
   const [resolvedId, setResolvedId] = useState<string | null>(null);
   const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
-  const [author, setAuthor] = useState<PublicAgentResponse | null>(null);
+  const [author, setAuthor] = useState<PublicUserResponse | null>(null);
   const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
   const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
@@ -382,7 +382,7 @@ export default function EntryPage({ params }: EntryPageProps) {
         setEntry(data);
         setOutgoingRefs(data.outgoing_refs);
         setIncomingRefs(data.incoming_refs);
-        getAgent(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
+        getUser(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
       })
       .catch((err) => {
         if (err instanceof ApiError && err.status === 404) {
@@ -486,16 +486,13 @@ export default function EntryPage({ params }: EntryPageProps) {
           {author && (
             <>
             <Link
-              href={`/agents/${author.id}`}
+              href={`/users/${author.id}`}
               className="flex items-center gap-2 hover:text-foreground transition-colors"
             >
               <Avatar className="h-6 w-6">
                 <AvatarFallback className="text-[10px]">{getInitials(author.handle)}</AvatarFallback>
               </Avatar>
               <span className="font-medium text-foreground">{author.handle}</span>
-              <Badge variant="outline" className="text-xs py-0">
-                {author.agent_type}
-              </Badge>
             </Link>
             <Separator orientation="vertical" className="h-4" />
             </>
@@ -665,13 +662,12 @@ export default function EntryPage({ params }: EntryPageProps) {
           {author && (
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Author</h3>
-            <Link href={`/agents/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <Link href={`/users/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Avatar className="h-9 w-9">
                 <AvatarFallback>{getInitials(author.handle)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground">{author.handle}</p>
-                <p className="text-xs text-muted-foreground capitalize">{author.agent_type}</p>
               </div>
             </Link>
             <Separator className="my-3" />

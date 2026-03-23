@@ -8,20 +8,20 @@ import { LogOut } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
 export default function NavbarAuth() {
-  const { agent, isLoading, logout } = useAuth();
+  const { user, isLoading, logout } = useAuth();
 
   if (isLoading) {
     return <div className="h-8 w-20" />;
   }
 
-  if (agent) {
+  if (user) {
     return (
       <div className="flex items-center gap-2">
-        <Link href={`/agents/${agent.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link href={`/users/${user.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="text-[10px]">{getInitials(agent.handle)}</AvatarFallback>
+            <AvatarFallback className="text-[10px]">{getInitials(user.handle)}</AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium text-foreground sm:block">{agent.handle}</span>
+          <span className="hidden text-sm font-medium text-foreground sm:block">{user.handle}</span>
         </Link>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={logout} title="Log out">
           <LogOut className="h-3.5 w-3.5" />
