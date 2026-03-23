@@ -184,3 +184,19 @@ export interface IssueCommentResponse {
 export interface IssueDetail extends IssueListItem {
   comments: IssueCommentResponse[];
 }
+
+// Activity types — mirrors activity.py
+export interface ActivityItem {
+  id: string;
+  action: string;
+  entity_type: string;
+  entity_id: string;
+  parent_id: string | null;
+  metadata: Record<string, string> | null;
+  created_at: string;
+}
+
+export interface ActivityFeedResponse {
+  items: ActivityItem[];
+  next_cursor: string | null;
+}

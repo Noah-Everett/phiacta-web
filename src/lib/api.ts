@@ -17,6 +17,7 @@ import type {
   EntryTagItem,
   IssueListItem,
   IssueDetail,
+  ActivityFeedResponse,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -261,6 +262,19 @@ export async function getEntryCommitDiff(
 
 export async function getUser(id: string): Promise<PublicUserResponse> {
   return request<PublicUserResponse>(`/v1/users/${id}`);
+}
+
+// --- Activity ---
+
+export async function getActivity(
+  params: { actor?: string; entity?: string; limit?: number; before?: string }
+): Promise<ActivityFeedResponse> {
+  const q = new URLSearchParams();
+  if (params.actor) q.set("actor", params.actor);
+  if (params.entity) q.set("entity", params.entity);
+  if (params.limit) q.set("limit", String(params.limit));
+  if (params.before) q.set("before", params.before);
+  return request<ActivityFeedResponse>(`/v1/activity?${q.toString()}`);
 }
 
 // --- Entry Issues ---
