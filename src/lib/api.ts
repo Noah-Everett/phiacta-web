@@ -18,6 +18,7 @@ import type {
   IssueListItem,
   IssueDetail,
   ActivityFeedResponse,
+  SearchResponse,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -301,6 +302,20 @@ export async function closeIssue(
   return authFetch<{ detail: string }>(`/v1/entries/${id}/issues/${number}/close`, {
     method: "POST",
   });
+}
+
+// --- Search Tool ---
+
+export async function searchEntries(
+  q: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<SearchResponse> {
+  const params = new URLSearchParams();
+  params.set("q", q);
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  return request<SearchResponse>(`/v1/tools/search/?${params.toString()}`);
 }
 
 // --- Tags Extension ---

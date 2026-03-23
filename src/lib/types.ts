@@ -185,6 +185,24 @@ export interface IssueDetail extends IssueListItem {
   comments: IssueCommentResponse[];
 }
 
+// Search tool types — mirrors tools/search/schemas.py
+export interface SearchResultItem {
+  entry_id: string;
+  title: string;
+  summary: string | null;
+  layout_hint: string | null;
+  rank: number;
+}
+
+export interface SearchResponse {
+  items: SearchResultItem[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+  version_id: string | null;
+}
+
 // Activity types — mirrors activity.py
 export interface ActivityItem {
   id: string;
