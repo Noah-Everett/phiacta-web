@@ -13,8 +13,7 @@ test.describe("Entry detail page", () => {
     await page.route(`**/v1/entries/${ENTRY_ID}`, (route) => {
       if (route.request().url().includes("/files") ||
           route.request().url().includes("/edits") ||
-          route.request().url().includes("/history") ||
-          route.request().url().includes("/references")) {
+          route.request().url().includes("/history")) {
         // Let sub-resource routes pass through or return empty
         route.fulfill({
           status: 200,
@@ -29,10 +28,8 @@ test.describe("Entry detail page", () => {
         body: JSON.stringify({
           id: ENTRY_ID,
           title: "On the Riemann Hypothesis",
-          layout_hint: "research-paper",
           summary: "A detailed exploration of the Riemann Hypothesis.",
-          license: "CC-BY-4.0",
-          content_format: "markdown",
+          entry_type: "empirical",
           schema_version: 1,
           forgejo_repo_id: 42,
           repo_name: ENTRY_ID,
@@ -42,10 +39,6 @@ test.describe("Entry detail page", () => {
           created_by: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
           created_at: "2026-01-15T10:30:00Z",
           updated_at: "2026-02-20T14:00:00Z",
-          content_cache:
-            "# On the Riemann Hypothesis\n\nThe Riemann Hypothesis states that...",
-          outgoing_refs: [],
-          incoming_refs: [],
         }),
       });
     });

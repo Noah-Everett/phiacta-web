@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-const HINT_STYLES: Record<string, string> = {
+const TYPE_STYLES: Record<string, string> = {
   empirical: "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800",
   theorem: "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800",
   conjecture: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800",
@@ -17,15 +17,15 @@ const HINT_STYLES: Record<string, string> = {
 const DEFAULT_STYLE = "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700";
 
 /**
- * Renders a badge for any layout_hint value. Known hints get specific colors;
- * unknown hints render with a neutral style. Handles null gracefully.
+ * Renders a badge for any entry_type value. Known types get specific colors;
+ * unknown types render with a neutral style. Handles null gracefully.
  */
-export function LayoutHintBadge({ hint }: { hint: string | null }) {
-  const label = hint || "entry";
+export function EntryTypeBadge({ entryType }: { entryType: string | null }) {
+  const label = entryType || "entry";
   return (
     <Badge
       variant="outline"
-      className={cn("text-xs font-medium", HINT_STYLES[label] ?? DEFAULT_STYLE)}
+      className={cn("text-xs font-medium", TYPE_STYLES[label] ?? DEFAULT_STYLE)}
     >
       {label}
     </Badge>

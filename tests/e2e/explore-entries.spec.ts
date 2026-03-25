@@ -63,8 +63,8 @@ test.describe("Explore entries page", () => {
   });
 
   // Scenario: The explore page renders entries with backend-shaped data
-  // (layout_hint string, not ClaimType enum)
-  test("renders entries with layout_hint strings from backend", async ({
+  // (entry_type string, not ClaimType enum)
+  test("renders entries with entry_type strings from backend", async ({
     page,
   }) => {
     await page.route("**/v1/entries**", (route) => {
@@ -76,10 +76,8 @@ test.describe("Explore entries page", () => {
             {
               id: "11111111-2222-3333-4444-555555555555",
               title: "On the Riemann Hypothesis",
-              layout_hint: "research-paper",
               summary: "A detailed exploration of the hypothesis.",
-              license: "CC-BY-4.0",
-              content_format: "markdown",
+              entry_type: "empirical",
               schema_version: 1,
               forgejo_repo_id: 42,
               repo_name: "11111111-2222-3333-4444-555555555555",
@@ -93,10 +91,8 @@ test.describe("Explore entries page", () => {
             {
               id: "66666666-7777-8888-9999-aaaaaaaaaaaa",
               title: "CRISPR Gene Editing Techniques",
-              layout_hint: "methodology",
               summary: "An overview of CRISPR techniques.",
-              license: "CC-BY-SA-4.0",
-              content_format: "markdown",
+              entry_type: "definition",
               schema_version: 1,
               forgejo_repo_id: 43,
               repo_name: "66666666-7777-8888-9999-aaaaaaaaaaaa",

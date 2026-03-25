@@ -1,14 +1,14 @@
 // phiacta-web-repo/tests/e2e/entry-creation.spec.ts
 //
 // E2E tests for entry creation — verifies the form sends the correct
-// field names (content_format, layout_hint — NOT format, claim_type).
+// field names (content_format, entry_type — NOT format, claim_type, layout_hint).
 
 import { test, expect } from "@playwright/test";
 
 test.describe("Entry creation form", () => {
   // Scenario: User navigates to the contribute/create page and submits an
   // entry. The POST body uses correct field names from the backend schema.
-  test("entry creation POST sends content_format and layout_hint, not format and claim_type", async ({
+  test("entry creation POST sends content_format and entry_type, not format and claim_type", async ({
     page,
   }) => {
     let capturedRequest: { url: string; body: string } | null = null;
@@ -67,16 +67,19 @@ test.describe("Entry creation form", () => {
             expect(body).not.toHaveProperty("format");
           }
 
-          // If layout_hint is sent, it must use "layout_hint" not "claim_type"
-          if ("layout_hint" in body || "claim_type" in body) {
-            expect(body).toHaveProperty("layout_hint");
+          // If entry_type is sent, it must use "entry_type" not "claim_type" or "layout_hint"
+          if ("entry_type" in body || "claim_type" in body || "layout_hint" in body) {
+            expect(body).toHaveProperty("entry_type");
             expect(body).not.toHaveProperty("claim_type");
+            expect(body).not.toHaveProperty("layout_hint");
           }
 
           // Must NOT contain old field names
           expect(body).not.toHaveProperty("claim_type");
           expect(body).not.toHaveProperty("format");
           expect(body).not.toHaveProperty("type");
+          expect(body).not.toHaveProperty("layout_hint");
+          expect(body).not.toHaveProperty("license");
 
           // The endpoint must be /v1/entries, not /v1/claims
           expect(capturedRequest.url).toContain("/v1/entries");

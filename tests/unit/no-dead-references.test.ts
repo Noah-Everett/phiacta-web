@@ -147,4 +147,76 @@ describe("No dead API references in source code", () => {
       }
     }
   });
+
+  // Verifies no source file references /v1/entry-refs (removed endpoint)
+  it("no source file references /v1/entry-refs endpoint", () => {
+    const violations: string[] = [];
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      if (content.includes("/v1/entry-refs")) {
+        violations.push(file);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // Verifies no source file references /entries/{id}/references (removed endpoint)
+  it("no source file references /entries/{id}/references endpoint", () => {
+    const violations: string[] = [];
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      if (content.includes("/references?direction=")) {
+        violations.push(file);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // Verifies no source file uses the removed layout_hint field
+  it("no source file uses layout_hint field", () => {
+    const violations: string[] = [];
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      if (content.includes("layout_hint")) {
+        violations.push(file);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // Verifies no source file uses the removed content_cache field
+  it("no source file uses content_cache field", () => {
+    const violations: string[] = [];
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      if (content.includes("content_cache")) {
+        violations.push(file);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // Verifies no source file uses LayoutHintBadge (renamed to EntryTypeBadge)
+  it("no source file uses LayoutHintBadge", () => {
+    const violations: string[] = [];
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      if (content.includes("LayoutHintBadge")) {
+        violations.push(file);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  // Verifies no source file uses EntryRefResponse (removed type)
+  it("no source file uses EntryRefResponse", () => {
+    const violations: string[] = [];
+    for (const file of sourceFiles) {
+      const content = readFileSync(file, "utf-8");
+      if (content.includes("EntryRefResponse")) {
+        violations.push(file);
+      }
+    }
+    expect(violations).toEqual([]);
+  });
 });

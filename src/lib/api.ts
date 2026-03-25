@@ -3,7 +3,6 @@ import type {
   EntryDetailResponse,
   EntryResponse,
   EntryCreate,
-  EntryRefResponse,
   PaginatedResponse,
   User,
   PublicUserResponse,
@@ -175,12 +174,11 @@ export async function getMeApi(): Promise<User> {
 export async function listEntries(
   limit: number = 20,
   offset: number = 0,
-  filters?: { layout_hint?: string; status?: string }
+  filters?: { status?: string }
 ): Promise<PaginatedResponse<EntryListItem>> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("offset", String(offset));
-  if (filters?.layout_hint) params.set("layout_hint", filters.layout_hint);
   if (filters?.status) params.set("status", filters.status);
   return request<PaginatedResponse<EntryListItem>>(`/v1/entries?${params.toString()}`);
 }
@@ -194,15 +192,6 @@ export async function createEntry(data: EntryCreate): Promise<EntryResponse> {
     method: "POST",
     body: JSON.stringify(data),
   });
-}
-
-// --- Entry References ---
-
-export async function getEntryReferences(
-  id: string,
-  direction: "both" | "incoming" | "outgoing" = "both"
-): Promise<EntryRefResponse[]> {
-  return request<EntryRefResponse[]>(`/v1/entries/${id}/references?direction=${direction}`);
 }
 
 // --- Entry Files ---

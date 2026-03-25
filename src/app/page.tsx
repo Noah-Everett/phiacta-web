@@ -13,7 +13,7 @@ import {
   Cpu,
 } from "lucide-react";
 import { listEntries } from "@/lib/api";
-import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
+import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import type { EntryListItem } from "@/lib/types";
 
 const FEATURES = [
@@ -114,12 +114,12 @@ export default async function Home() {
               className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 transition hover:border-primary/30 hover:shadow-sm"
             >
               <div className="flex flex-wrap items-start gap-2">
-                <LayoutHintBadge hint={entry.layout_hint} />
+                <EntryTypeBadge entryType={entry.entry_type} />
                 <StatusBadge status={entry.status} />
               </div>
 
               <p className="text-sm font-medium leading-snug text-card-foreground group-hover:text-primary transition-colors">
-                {entry.title}
+                {entry.title || "Untitled"}
               </p>
 
               {entry.summary && (

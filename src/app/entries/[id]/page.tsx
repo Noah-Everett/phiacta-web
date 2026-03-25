@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
+import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
 import DiffBlock from "@/components/DiffBlock";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,29 +15,23 @@ import { getInitials } from "@/lib/utils";
 import {
   GitBranch,
   History,
-  Network,
-  ExternalLink,
-  GitMerge,
   ChevronRight,
   ChevronDown,
   FileCode2,
   File,
   Tag,
-  Copy,
-  Check,
   Loader2,
   MessageCircle,
   CircleDot,
+  GitMerge,
 } from "lucide-react";
-import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryEditDetail, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, ApiError } from "@/lib/api";
+import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, ApiError } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
-  EditProposalDetail,
   CommitListItem,
   CommitDiffResponse,
   FileListItem,
-  EntryRefResponse,
   PublicUserResponse,
   TagResponse,
   IssueListItem,
@@ -258,62 +252,6 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
   );
 }
 
-// Reference row — direction determines which entry ID to link to
-function RefRow({ entryRef: r, direction }: { entryRef: EntryRefResponse; direction: "outgoing" | "incoming" }) {
-  const targetId = direction === "outgoing" ? r.to_entry_id : r.from_entry_id;
-  const [title, setTitle] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-
-  useEffect(() => {
-    getEntry(targetId)
-      .then((e) => setTitle(e.title))
-      .catch(() => setTitle(null));
-  }, [targetId]);
-
-  const handleCopy = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    navigator.clipboard.writeText(targetId).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  };
-
-  return (
-    <Link
-      href={`/entries/${targetId}`}
-      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4 hover:border-primary/30 hover:shadow-sm transition-all"
-    >
-      <Badge
-        variant="outline"
-        className="shrink-0 bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800"
-      >
-        {r.rel}
-      </Badge>
-      <div className="min-w-0 flex-1">
-        <span className="text-sm text-foreground hover:text-primary truncate block transition-colors">
-          {title ?? targetId}
-        </span>
-        {r.note && (
-          <span className="text-xs text-muted-foreground">{r.note}</span>
-        )}
-      </div>
-      <button
-        onClick={handleCopy}
-        title="Copy entry ID"
-        className="shrink-0 p-1 rounded hover:bg-muted transition-colors"
-      >
-        {copied ? (
-          <Check className="h-3.5 w-3.5 text-green-500" />
-        ) : (
-          <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-        )}
-      </button>
-      <ExternalLink className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-    </Link>
-  );
-}
-
 // Issue row — links to full page
 function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string }) {
   return (
@@ -361,8 +299,7 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [history, setHistory] = useState<CommitListItem[]>([]);
   const [issues, setIssues] = useState<IssueListItem[]>([]);
   const [tags, setTags] = useState<TagResponse[]>([]);
-  const [outgoingRefs, setOutgoingRefs] = useState<EntryRefResponse[]>([]);
-  const [incomingRefs, setIncomingRefs] = useState<EntryRefResponse[]>([]);
+  const [contentText, setContentText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -380,8 +317,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntry(resolvedId)
       .then((data) => {
         setEntry(data);
-        setOutgoingRefs(data.outgoing_refs);
-        setIncomingRefs(data.incoming_refs);
         getUser(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
       })
       .catch((err) => {
@@ -397,6 +332,15 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
     getEntryIssues(resolvedId).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
     getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch((err) => console.warn("Failed to load tags:", err));
+
+    // Fetch content from .phiacta/content.md (or other extensions)
+    fetch(`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/content.md`, { cache: "no-store" })
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.text();
+      })
+      .then((text) => { if (text) setContentText(text); })
+      .catch(() => {});
   }, [resolvedId]);
 
   if (loading) {
@@ -464,18 +408,18 @@ export default function EntryPage({ params }: EntryPageProps) {
           Explore
         </Link>
         <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground truncate max-w-[300px]">{entry.title}</span>
+        <span className="text-foreground truncate max-w-[300px]">{entry.title || "Untitled"}</span>
       </nav>
 
       {/* Header */}
       <div className="mb-6">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <LayoutHintBadge hint={entry.layout_hint} />
+          <EntryTypeBadge entryType={entry.entry_type} />
           <StatusBadge status={entry.status} />
         </div>
 
         <h1 className="mb-4 text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-          {entry.title}
+          {entry.title || "Untitled"}
         </h1>
 
         {entry.summary && (
@@ -535,18 +479,14 @@ export default function EntryPage({ params }: EntryPageProps) {
                 <FileCode2 className="h-3.5 w-3.5" />
                 Files
               </TabsTrigger>
-              <TabsTrigger value="references" className="gap-1.5">
-                <Network className="h-3.5 w-3.5" />
-                References
-              </TabsTrigger>
             </TabsList>
 
             {/* Content */}
             <TabsContent value="content">
               <div className="rounded-xl border border-border bg-card p-6">
-                {entry.content_cache ? (
+                {contentText ? (
                   <MarkdownContent
-                    content={entry.content_cache}
+                    content={contentText}
                     className="text-sm leading-relaxed text-card-foreground"
                     entryId={entry.id}
                   />
@@ -623,37 +563,6 @@ export default function EntryPage({ params }: EntryPageProps) {
                 </div>
               </div>
             </TabsContent>
-
-            {/* References */}
-            <TabsContent value="references">
-              {outgoingRefs.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Outgoing references
-                  </h3>
-                  <div className="space-y-2">
-                    {outgoingRefs.map((r) => (
-                      <RefRow key={r.id} entryRef={r} direction="outgoing" />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {incomingRefs.length > 0 && (
-                <div className="mb-4">
-                  <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Incoming references
-                  </h3>
-                  <div className="space-y-2">
-                    {incomingRefs.map((r) => (
-                      <RefRow key={r.id} entryRef={r} direction="incoming" />
-                    ))}
-                  </div>
-                </div>
-              )}
-              {outgoingRefs.length === 0 && incomingRefs.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">No references yet.</p>
-              )}
-            </TabsContent>
           </Tabs>
         </div>
 
@@ -685,9 +594,7 @@ export default function EntryPage({ params }: EntryPageProps) {
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metadata</h3>
             <dl className="space-y-2.5 text-sm">
               {[
-                { label: "Layout hint", value: entry.layout_hint || "none" },
-                { label: "Format", value: entry.content_format },
-                { label: "License", value: entry.license || "not specified" },
+                { label: "Type", value: entry.entry_type || "not specified" },
                 { label: "Published", value: new Date(entry.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
                 { label: "Last updated", value: new Date(entry.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
               ].map(({ label, value }) => (

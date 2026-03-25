@@ -17,11 +17,9 @@ export interface AuthResponse {
 // Entry types — mirrors entry.py
 export interface EntryListItem {
   id: string;
-  title: string;
-  layout_hint: string | null;
+  title: string | null;
   summary: string | null;
-  license: string | null;
-  content_format: string;
+  entry_type: string | null;
   schema_version: number;
   forgejo_repo_id: number | null;
   repo_name: string;
@@ -33,33 +31,16 @@ export interface EntryListItem {
   updated_at: string;
 }
 
-export interface EntryResponse extends EntryListItem {
-  content_cache: string | null;
-}
+export type EntryResponse = EntryListItem;
 
-export interface EntryDetailResponse extends EntryResponse {
-  outgoing_refs: EntryRefResponse[];
-  incoming_refs: EntryRefResponse[];
-}
+export type EntryDetailResponse = EntryResponse;
 
 export interface EntryCreate {
   title: string;
-  content_format?: string;
-  layout_hint?: string | null;
   summary?: string | null;
-  license?: string | null;
   content?: string | null;
-}
-
-// Entry ref types — mirrors entry_ref.py
-export interface EntryRefResponse {
-  id: string;
-  from_entry_id: string;
-  to_entry_id: string;
-  rel: string;
-  version_sha: string | null;
-  note: string | null;
-  created_at: string;
+  content_format?: string;
+  entry_type?: string | null;
 }
 
 // Pagination — mirrors common.py
@@ -190,7 +171,7 @@ export interface SearchResultItem {
   entry_id: string;
   title: string;
   summary: string | null;
-  layout_hint: string | null;
+  entry_type: string | null;
   rank: number;
 }
 

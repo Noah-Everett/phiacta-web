@@ -56,10 +56,8 @@ describe("TypeScript types match backend contract", () => {
     const entry: EntryListItem = {
       id: "11111111-2222-3333-4444-555555555555",
       title: "On the Riemann Hypothesis",
-      layout_hint: null,
       summary: null,
-      license: null,
-      content_format: "markdown",
+      entry_type: null,
       schema_version: 1,
       forgejo_repo_id: null,
       repo_name: "11111111-2222-3333-4444-555555555555",
@@ -71,8 +69,7 @@ describe("TypeScript types match backend contract", () => {
       updated_at: "2026-02-20T14:00:00Z",
     };
 
-    expect(entry.layout_hint).toBeNull();
-    expect(entry.content_format).toBe("markdown");
+    expect(entry.entry_type).toBeNull();
     expect(entry.repo_status).toBe("provisioning");
     expect(entry.forgejo_repo_id).toBeNull();
     expect(entry.current_head_sha).toBeNull();
@@ -83,26 +80,31 @@ describe("TypeScript types match backend contract", () => {
     expect(keys).not.toContain("format");
     expect(keys).not.toContain("namespace");
     expect(keys).not.toContain("source");
+    expect(keys).not.toContain("layout_hint");
+    expect(keys).not.toContain("license");
+    expect(keys).not.toContain("content_format");
+    expect(keys).not.toContain("content_cache");
   });
 
   it("EntryCreate uses correct field names", () => {
     const request: EntryCreate = {
       title: "Test Entry",
       content_format: "markdown",
-      layout_hint: "research-paper",
+      entry_type: "empirical",
       summary: "A test entry",
-      license: "CC-BY-4.0",
       content: "# Content",
     };
 
     expect(request.title).toBe("Test Entry");
     expect(request.content_format).toBe("markdown");
-    expect(request.layout_hint).toBe("research-paper");
+    expect(request.entry_type).toBe("empirical");
 
     const keys = Object.keys(request);
     expect(keys).not.toContain("format");
     expect(keys).not.toContain("claim_type");
     expect(keys).not.toContain("type");
+    expect(keys).not.toContain("layout_hint");
+    expect(keys).not.toContain("license");
   });
 
   it("PaginatedResponse has pagination fields including has_more", () => {
@@ -121,14 +123,12 @@ describe("TypeScript types match backend contract", () => {
     expect(response.has_more).toBe(false);
   });
 
-  it("EntryDetailResponse includes content_cache and refs", () => {
+  it("EntryDetailResponse is same shape as EntryListItem (no content_cache or refs)", () => {
     const detail: EntryDetailResponse = {
       id: "11111111-2222-3333-4444-555555555555",
       title: "Test",
-      layout_hint: null,
       summary: null,
-      license: null,
-      content_format: "markdown",
+      entry_type: null,
       schema_version: 1,
       forgejo_repo_id: null,
       repo_name: "11111111-2222-3333-4444-555555555555",
@@ -138,13 +138,14 @@ describe("TypeScript types match backend contract", () => {
       created_by: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       created_at: "2026-01-15T10:30:00Z",
       updated_at: "2026-02-20T14:00:00Z",
-      content_cache: null,
-      outgoing_refs: [],
-      incoming_refs: [],
     };
 
-    expect(detail.content_cache).toBeNull();
-    expect(detail.outgoing_refs).toEqual([]);
-    expect(detail.incoming_refs).toEqual([]);
+    expect(detail.title).toBe("Test");
+    expect(detail.entry_type).toBeNull();
+
+    const keys = Object.keys(detail);
+    expect(keys).not.toContain("content_cache");
+    expect(keys).not.toContain("outgoing_refs");
+    expect(keys).not.toContain("incoming_refs");
   });
 });

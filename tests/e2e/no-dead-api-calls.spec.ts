@@ -11,6 +11,7 @@ const DEPRECATED_PATTERNS = [
   "/v1/sources",
   "/v1/search",
   "/layers/",
+  "/v1/entry-refs",
 ];
 
 const PAGES_TO_CHECK = [
@@ -65,10 +66,8 @@ test("no deprecated API calls when navigating to entry detail", async ({
           {
             id: "11111111-2222-3333-4444-555555555555",
             title: "Test Entry",
-            layout_hint: "research-paper",
             summary: "Test summary",
-            license: "CC-BY-4.0",
-            content_format: "markdown",
+            entry_type: "empirical",
             schema_version: 1,
             forgejo_repo_id: 42,
             repo_name: "11111111-2222-3333-4444-555555555555",
@@ -98,10 +97,8 @@ test("no deprecated API calls when navigating to entry detail", async ({
         body: JSON.stringify({
           id: "11111111-2222-3333-4444-555555555555",
           title: "Test Entry",
-          layout_hint: "research-paper",
           summary: "Test summary",
-          license: "CC-BY-4.0",
-          content_format: "markdown",
+          entry_type: "empirical",
           schema_version: 1,
           forgejo_repo_id: 42,
           repo_name: "11111111-2222-3333-4444-555555555555",
@@ -111,9 +108,6 @@ test("no deprecated API calls when navigating to entry detail", async ({
           created_by: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
           created_at: "2026-01-15T10:30:00Z",
           updated_at: "2026-02-20T14:00:00Z",
-          content_cache: "# Test Entry\n\nThis is the content.",
-          outgoing_refs: [],
-          incoming_refs: [],
         }),
       });
     },

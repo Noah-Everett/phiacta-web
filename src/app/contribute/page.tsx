@@ -14,7 +14,7 @@ import {
   X,
 } from "lucide-react";
 
-const LAYOUT_HINTS = [
+const ENTRY_TYPES = [
   { value: "empirical", label: "Empirical", description: "Based on observation or experiment" },
   { value: "theorem", label: "Theorem", description: "A formally provable mathematical result" },
   { value: "conjecture", label: "Conjecture", description: "An unproven mathematical claim" },
@@ -35,11 +35,10 @@ export default function ContributePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [contentFormat, setContentFormat] = useState<string>("markdown");
-  const [layoutHint, setLayoutHint] = useState<string>("empirical");
-  const [customHint, setCustomHint] = useState("");
-  const [useCustomHint, setUseCustomHint] = useState(false);
+  const [entryType, setEntryType] = useState<string>("empirical");
+  const [customType, setCustomType] = useState("");
+  const [useCustomType, setUseCustomType] = useState(false);
   const [summary, setSummary] = useState("");
-  const [license, setLicense] = useState("CC-BY-4.0");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [error, setError] = useState("");
@@ -71,7 +70,7 @@ export default function ContributePage() {
     }
   }
 
-  const effectiveHint = useCustomHint ? customHint.trim() : layoutHint;
+  const effectiveType = useCustomType ? customType.trim() : entryType;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -83,9 +82,8 @@ export default function ContributePage() {
         title,
         content: content || null,
         content_format: contentFormat,
-        layout_hint: effectiveHint || null,
+        entry_type: effectiveType || null,
         summary: summary || null,
-        license: license || null,
       });
       // Set tags if any were added
       if (tags.length > 0 && entry.id) {
@@ -100,11 +98,10 @@ export default function ContributePage() {
       setTitle("");
       setContent("");
       setSummary("");
-      setLayoutHint("empirical");
-      setCustomHint("");
-      setUseCustomHint(false);
+      setEntryType("empirical");
+      setCustomType("");
+      setUseCustomType(false);
       setContentFormat("markdown");
-      setLicense("CC-BY-4.0");
       setTags([]);
       setTagInput("");
     } catch (err) {
@@ -196,35 +193,35 @@ export default function ContributePage() {
           />
         </div>
 
-        {/* Layout hint */}
+        {/* Entry type */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Layout hint</p>
+            <p className="text-sm font-medium text-foreground">Entry type</p>
             <button
               type="button"
-              onClick={() => setUseCustomHint((v) => !v)}
+              onClick={() => setUseCustomType((v) => !v)}
               className="text-xs text-primary hover:underline"
             >
-              {useCustomHint ? "Use preset" : "Custom value"}
+              {useCustomType ? "Use preset" : "Custom value"}
             </button>
           </div>
-          {useCustomHint ? (
+          {useCustomType ? (
             <Input
               type="text"
-              value={customHint}
-              onChange={(e) => setCustomHint(e.target.value)}
-              placeholder="Enter a custom layout hint..."
+              value={customType}
+              onChange={(e) => setCustomType(e.target.value)}
+              placeholder="Enter a custom entry type..."
               maxLength={100}
             />
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
-              {LAYOUT_HINTS.map(({ value, label, description }) => (
+              {ENTRY_TYPES.map(({ value, label, description }) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setLayoutHint(value)}
+                  onClick={() => setEntryType(value)}
                   className={`rounded-lg border p-3 text-left transition-colors ${
-                    layoutHint === value
+                    entryType === value
                       ? "border-primary bg-primary/5"
                       : "border-border bg-background hover:border-muted-foreground/30"
                   }`}
@@ -270,20 +267,6 @@ export default function ContributePage() {
             onChange={(e) => setSummary(e.target.value)}
             maxLength={500}
             placeholder="A brief summary of the entry..."
-          />
-        </div>
-
-        {/* License */}
-        <div className="space-y-1.5">
-          <label htmlFor="license" className="text-sm font-medium text-foreground">
-            License <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <Input
-            id="license"
-            type="text"
-            value={license}
-            onChange={(e) => setLicense(e.target.value)}
-            placeholder="e.g. CC-BY-4.0"
           />
         </div>
 

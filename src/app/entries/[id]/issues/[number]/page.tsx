@@ -114,7 +114,7 @@ export default function IssuePage({ params }: IssuePageProps) {
         <Link href="/explore" className="hover:text-foreground transition-colors">Explore</Link>
         <ChevronRight className="h-3 w-3" />
         <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors truncate max-w-[200px]">
-          {entry.title}
+          {entry.title || "Untitled"}
         </Link>
         <ChevronRight className="h-3 w-3" />
         <span className="text-foreground">Issue #{issue.number}</span>

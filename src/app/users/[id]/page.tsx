@@ -5,11 +5,9 @@ import { useState, useEffect, useMemo } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { LayoutHintBadge, StatusBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
-import { getUser, listEntries, getEntryIssues, getEntryEdits, getEntryReferences, getEntryTags } from "@/lib/api";
+import { getUser, listEntries, getEntryIssues, getEntryEdits, getEntryTags } from "@/lib/api";
 import {
   FileText,
   CircleDot,
@@ -38,16 +36,6 @@ interface ActivityItem {
   edit?: EditProposalListItem & { entryId: string; entryTitle: string };
 }
 
-function computeEntryIndex(incomingCounts: number[]): number {
-  const sorted = [...incomingCounts].sort((a, b) => b - a);
-  let h = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    if (sorted[i] >= i + 1) h = i + 1;
-    else break;
-  }
-  return h;
-}
-
 export default function UserPage({ params }: UserPageProps) {
   const [id, setId] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUserResponse | null>(null);
@@ -57,7 +45,7 @@ export default function UserPage({ params }: UserPageProps) {
   const [error, setError] = useState(false);
   const [metrics, setMetrics] = useState({
     entries: 0, issues: 0, edits: 0, editsMerged: 0,
-    reach: 0, entryIndex: 0, topTags: [] as string[],
+    topTags: [] as string[],
   });
 
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
@@ -72,18 +60,14 @@ export default function UserPage({ params }: UserPageProps) {
         const userEntries = entriesRes.items.filter((e) => e.created_by === id);
         const items: ActivityItem[] = userEntries.map((e) => ({ type: "entry", date: e.created_at, entry: e }));
 
-        const [issueResults, editResults, refResults, tagResults] = await Promise.all([
+        const [issueResults, editResults, tagResults] = await Promise.all([
           Promise.allSettled(userEntries.map(async (e) => {
             const issues = await getEntryIssues(e.id);
-            return issues.map((i) => ({ ...i, entryId: e.id, entryTitle: e.title }));
+            return issues.map((i) => ({ ...i, entryId: e.id, entryTitle: e.title || "Untitled" }));
           })),
           Promise.allSettled(userEntries.map(async (e) => {
             const edits = await getEntryEdits(e.id);
-            return edits.map((d) => ({ ...d, entryId: e.id, entryTitle: e.title }));
-          })),
-          Promise.allSettled(userEntries.map(async (e) => {
-            const refs = await getEntryReferences(e.id, "both");
-            return refs.filter((r) => r.to_entry_id === e.id).length;
+            return edits.map((d) => ({ ...d, entryId: e.id, entryTitle: e.title || "Untitled" }));
           })),
           Promise.allSettled(userEntries.map(async (e) => {
             const res = await getEntryTags(e.id);
@@ -93,7 +77,6 @@ export default function UserPage({ params }: UserPageProps) {
 
         const allIssues = issueResults.filter((r): r is PromiseFulfilledResult<any[]> => r.status === "fulfilled").flatMap((r) => r.value);
         const allEdits = editResults.filter((r): r is PromiseFulfilledResult<any[]> => r.status === "fulfilled").flatMap((r) => r.value);
-        const incomingCounts = refResults.filter((r): r is PromiseFulfilledResult<number> => r.status === "fulfilled").map((r) => r.value);
         const allTags = tagResults.filter((r): r is PromiseFulfilledResult<string[]> => r.status === "fulfilled").flatMap((r) => r.value);
 
         const tagFreq: Record<string, number> = {};
@@ -109,8 +92,6 @@ export default function UserPage({ params }: UserPageProps) {
           issues: allIssues.length,
           edits: allEdits.length,
           editsMerged: allEdits.filter((e: any) => e.merged_at).length,
-          reach: incomingCounts.reduce((s, c) => s + c, 0),
-          entryIndex: computeEntryIndex(incomingCounts),
           topTags: Object.entries(tagFreq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => t),
         });
       })
@@ -174,8 +155,6 @@ export default function UserPage({ params }: UserPageProps) {
       {/* Metrics — horizontal row */}
       <div className="flex gap-8 mb-8 pb-6 border-b border-border">
         {[
-          { label: "Reach", value: metrics.reach },
-          { label: "Entry index", value: metrics.entryIndex },
           { label: "Entries", value: metrics.entries },
           { label: "Accepted", value: metrics.editsMerged },
         ].map(({ label, value }) => (
@@ -216,7 +195,7 @@ export default function UserPage({ params }: UserPageProps) {
                   className="group flex items-start gap-3 rounded-lg p-3 -mx-3 hover:bg-accent/40 transition">
                   <FileText className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{e.title}</p>
+                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{e.title || "Untitled"}</p>
                     {e.summary && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{e.summary}</p>}
                   </div>
                   <span className="shrink-0 text-xs text-muted-foreground mt-0.5">

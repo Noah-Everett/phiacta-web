@@ -123,7 +123,7 @@ describe("API Client — endpoint URLs", () => {
     await createEntry({
       title: "Test Entry",
       content_format: "markdown",
-      layout_hint: "research-paper",
+      entry_type: "empirical",
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -197,7 +197,7 @@ describe("API Client — request bodies", () => {
     expect(body).not.toHaveProperty("email");
   });
 
-  it("createEntry sends content_format and layout_hint, not format and claim_type", async () => {
+  it("createEntry sends entry_type and content_format, not layout_hint or license", async () => {
     setStoredToken("test-token");
 
     fetchMock.mockResolvedValueOnce({
@@ -208,9 +208,8 @@ describe("API Client — request bodies", () => {
     await createEntry({
       title: "My Research Paper",
       content_format: "markdown",
-      layout_hint: "research-paper",
+      entry_type: "empirical",
       summary: "A paper about things",
-      license: "CC-BY-4.0",
       content: "# Content\n\nBody text here.",
     });
 
@@ -219,15 +218,16 @@ describe("API Client — request bodies", () => {
 
     expect(body).toHaveProperty("title", "My Research Paper");
     expect(body).toHaveProperty("content_format", "markdown");
-    expect(body).toHaveProperty("layout_hint", "research-paper");
+    expect(body).toHaveProperty("entry_type", "empirical");
     expect(body).toHaveProperty("summary", "A paper about things");
-    expect(body).toHaveProperty("license", "CC-BY-4.0");
     expect(body).toHaveProperty("content", "# Content\n\nBody text here.");
 
     expect(body).not.toHaveProperty("format");
     expect(body).not.toHaveProperty("claim_type");
     expect(body).not.toHaveProperty("type");
     expect(body).not.toHaveProperty("claimType");
+    expect(body).not.toHaveProperty("layout_hint");
+    expect(body).not.toHaveProperty("license");
   });
 
   it("createEntry omits undefined optional fields", async () => {

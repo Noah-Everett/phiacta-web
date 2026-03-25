@@ -26,10 +26,8 @@ export function makeEntryListItem(
   return {
     id: "11111111-2222-3333-4444-555555555555",
     title: "On the Riemann Hypothesis",
-    layout_hint: "research-paper",
     summary: "A detailed exploration of the Riemann Hypothesis and its implications.",
-    license: "CC-BY-4.0",
-    content_format: "markdown",
+    entry_type: "empirical",
     schema_version: 1,
     forgejo_repo_id: null,
     repo_name: "11111111-2222-3333-4444-555555555555",
@@ -77,7 +75,7 @@ export function makeEntryCreate(
   return {
     title: "Test Entry",
     content_format: "markdown",
-    layout_hint: "research-paper",
+    entry_type: "empirical",
     ...overrides,
   };
 }

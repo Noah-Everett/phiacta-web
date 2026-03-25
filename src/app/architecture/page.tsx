@@ -243,9 +243,9 @@ export default function ArchitecturePage() {
             Entry repository structure
           </p>
           <pre className="text-xs text-gray-600 leading-relaxed dark:text-gray-400">{`{entry_uuid}/
-├── README.md             # entry content
 ├── .phiacta/
-│   ├── entry.yaml        # title, layout_hint, authors
+│   ├── content.md        # entry content (or .tex, .txt, etc.)
+│   ├── entry.yaml        # title, entry_type, authors
 │   └── manifest.yaml     # what kind of verification is present
 ├── verification/
 │   ├── proof.lean        # formal proof (if applicable)

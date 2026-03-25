@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
-import { getUser, getActivity, listEntries, getEntryReferences, getEntryTags } from "@/lib/api";
+import { getUser, getActivity, listEntries, getEntryTags } from "@/lib/api";
 import {
   FileText,
   CircleDot,
@@ -25,16 +25,6 @@ interface AgentPageProps {
 }
 
 type FilterType = "all" | "entry" | "issue" | "edit" | "comment";
-
-function computeEntryIndex(incomingCounts: number[]): number {
-  const sorted = [...incomingCounts].sort((a, b) => b - a);
-  let h = 0;
-  for (let i = 0; i < sorted.length; i++) {
-    if (sorted[i] >= i + 1) h = i + 1;
-    else break;
-  }
-  return h;
-}
 
 function actionIcon(item: ActivityItem) {
   switch (item.action) {
@@ -106,7 +96,7 @@ export default function AgentPage({ params }: AgentPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [metrics, setMetrics] = useState({
-    entries: 0, reach: 0, entryIndex: 0, topTags: [] as string[],
+    entries: 0, topTags: [] as string[],
   });
 
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
@@ -127,13 +117,7 @@ export default function AgentPage({ params }: AgentPageProps) {
         // Compute reach, entry index, and top tags from entries
         const userEntries = entriesRes.items.filter((e) => e.created_by === id);
 
-        const [refResults, tagResults] = await Promise.all([
-          Promise.allSettled(
-            userEntries.map(async (e) => {
-              const refs = await getEntryReferences(e.id, "both");
-              return refs.filter((r) => r.to_entry_id === e.id).length;
-            })
-          ),
+        const [tagResults] = await Promise.all([
           Promise.allSettled(
             userEntries.map(async (e) => {
               const res = await getEntryTags(e.id);
@@ -142,7 +126,6 @@ export default function AgentPage({ params }: AgentPageProps) {
           ),
         ]);
 
-        const incomingCounts = refResults.filter((r): r is PromiseFulfilledResult<number> => r.status === "fulfilled").map((r) => r.value);
         const allTags = tagResults.filter((r): r is PromiseFulfilledResult<string[]> => r.status === "fulfilled").flatMap((r) => r.value);
 
         const tagFreq: Record<string, number> = {};
@@ -150,8 +133,6 @@ export default function AgentPage({ params }: AgentPageProps) {
 
         setMetrics({
           entries: userEntries.length,
-          reach: incomingCounts.reduce((s, c) => s + c, 0),
-          entryIndex: computeEntryIndex(incomingCounts),
           topTags: Object.entries(tagFreq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => t),
         });
       })
@@ -223,8 +204,6 @@ export default function AgentPage({ params }: AgentPageProps) {
       {/* Metrics */}
       <div className="flex gap-8 mb-8 pb-6 border-b border-border">
         {[
-          { label: "Reach", value: metrics.reach },
-          { label: "Entry index", value: metrics.entryIndex },
           { label: "Entries", value: metrics.entries },
         ].map(({ label, value }) => (
           <div key={label}>
