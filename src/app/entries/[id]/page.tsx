@@ -169,12 +169,15 @@ function CommitRow({ commit, index, entryId }: { commit: CommitListItem; index: 
   );
 }
 
-// File row — expandable with content preview
+// File row — expandable with content preview (handles dirs and files)
 function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
   const [open, setOpen] = useState(false);
   const [content, setContent] = useState<string | null>(null);
+  const [children, setChildren] = useState<FileListItem[] | null>(null);
   const [loadingContent, setLoadingContent] = useState(false);
   const [isText, setIsText] = useState(true);
+
+  const isDir = file.type === "dir";
 
   const textExtensions = new Set([
     ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".csv", ".tex",
@@ -191,7 +194,21 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
   const handleToggle = () => {
     const next = !open;
     setOpen(next);
-    if (next && content === null && !loadingContent) {
+    if (!next) return;
+
+    if (isDir) {
+      if (children === null && !loadingContent) {
+        setLoadingContent(true);
+        fetch(`${API_URL}/v1/entries/${entryId}/files/${file.path}`, { cache: "no-store" })
+          .then((res) => res.ok ? res.json() : [])
+          .then((items) => setChildren(items))
+          .catch(() => setChildren([]))
+          .finally(() => setLoadingContent(false));
+      }
+      return;
+    }
+
+    if (content === null && !loadingContent) {
       if (!isTextFile(file.path)) {
         setIsText(false);
         return;
@@ -224,11 +241,17 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
         ) : (
           <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
         )}
-        <File className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <code className="flex-1 font-mono text-sm text-foreground">{file.path}</code>
-        <span className="shrink-0 font-mono text-xs text-muted-foreground">
-          {formatBytes(file.size)}
-        </span>
+        {isDir ? (
+          <FileCode2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+        ) : (
+          <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+        )}
+        <code className="flex-1 font-mono text-sm text-foreground">{file.name}</code>
+        {!isDir && (
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">
+            {formatBytes(file.size)}
+          </span>
+        )}
       </button>
       {open && (
         <div className="border-t border-border bg-background">
@@ -237,12 +260,22 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
               <Loader2 className="h-3.5 w-3.5 animate-spin" /> Loading&hellip;
             </div>
           )}
-          {!isText && (
+          {isDir && children !== null && (
+            <div className="pl-4">
+              {children.map((child: FileListItem) => (
+                <FileRow key={child.path} file={child} entryId={entryId} />
+              ))}
+              {children.length === 0 && (
+                <p className="px-4 py-3 text-xs text-muted-foreground">Empty directory.</p>
+              )}
+            </div>
+          )}
+          {!isDir && !isText && (
             <div className="px-4 py-3 text-xs text-muted-foreground">
               Binary file &mdash; preview not available.
             </div>
           )}
-          {content !== null && (
+          {!isDir && content !== null && (
             <pre className="overflow-x-auto px-4 py-3 text-xs font-mono text-foreground leading-5 max-h-[500px] overflow-y-auto">
               {content}
             </pre>
@@ -332,14 +365,19 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
     getEntryIssues(resolvedId).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
 
-    // Fetch content from .phiacta/content.md (or other extensions)
-    fetch(`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/content.md`, { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.text();
-      })
-      .then((text) => { if (text) setContentText(text); })
-      .catch(() => {});
+    // Fetch content from .phiacta/content.* (tries .md, .tex, .txt in order)
+    (async () => {
+      for (const ext of [".md", ".tex", ".txt"]) {
+        try {
+          const res = await fetch(`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/content${ext}`, { cache: "no-store" });
+          if (res.ok) {
+            const text = await res.text();
+            if (text) setContentText(text);
+            return;
+          }
+        } catch {}
+      }
+    })();
   }, [resolvedId]);
 
   if (loading) {
