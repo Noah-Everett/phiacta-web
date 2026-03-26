@@ -36,9 +36,9 @@ const ENTRY_TYPES = [
 ] as const;
 
 const FORMATS = [
-  { value: "markdown", label: "Markdown" },
-  { value: "latex", label: "LaTeX" },
-  { value: "plain", label: "Plain text" },
+  { value: "markdown", label: "Markdown", note: null },
+  { value: "plain", label: "Plain text", note: null },
+  { value: "latex", label: "LaTeX", note: "beta" },
 ] as const;
 
 const GUIDELINES = [
@@ -393,18 +393,25 @@ export default function PostPage() {
           <div className="mb-3 space-y-1.5">
             <label className="text-sm font-medium text-foreground">Format</label>
             <div className="flex gap-1.5">
-              {FORMATS.map(({ value, label }) => (
+              {FORMATS.map(({ value, label, note }) => (
                 <button
                   key={value}
                   type="button"
                   onClick={() => setContentFormat(value)}
-                  className={`inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors ${
+                  className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
                     contentFormat === value
                       ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
                   {label}
+                  {note && (
+                    <span className={`text-[10px] font-normal ${
+                      contentFormat === value ? "text-primary-foreground/70" : "text-muted-foreground/60"
+                    }`}>
+                      {note}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -421,9 +428,11 @@ export default function PostPage() {
               onChange={(e) => setContent(e.target.value)}
               rows={12}
               placeholder={
-                contentFormat === "latex"
-                  ? "State the entry formally. LaTeX math supported: $E = mc^2$"
-                  : "State the entry clearly and precisely. Include key evidence, conditions, and scope."
+                contentFormat === "markdown"
+                  ? "State the entry clearly and precisely. Markdown formatting supported — use $...$ for inline math and $$...$$ for display math."
+                  : contentFormat === "latex"
+                    ? "State the entry clearly and precisely. Full LaTeX document — this format is in beta."
+                    : "State the entry clearly and precisely. Include key evidence, conditions, and scope."
               }
               className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
             />
