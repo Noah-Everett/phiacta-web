@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
 import EntityLink from "@/components/EntityLink";
+import FileIcon from "@/components/FileIcon";
 import DiffBlock from "@/components/DiffBlock";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
@@ -18,8 +19,12 @@ import {
   History,
   ChevronRight,
   ChevronDown,
+  Folder,
   FileCode2,
   File,
+  FileText,
+  FileCode,
+  FileJson,
   Tag,
   Loader2,
   MessageCircle,
@@ -599,9 +604,21 @@ export default function EntryPage({ params }: EntryPageProps) {
                     {entry.id.slice(0, 8)}
                   </code>
                 </div>
-                <div className="divide-y-0">
+                <div>
                   {entryFiles.map((file) => (
-                    <FileRow key={file.path} file={file} entryId={entry.id} />
+                    <Link
+                      key={file.path}
+                      href={`/entries/${entry.id}/files/${file.path}`}
+                      className="flex items-center gap-2.5 px-4 py-2.5 border-b border-border last:border-0 hover:bg-accent/40 transition-colors"
+                    >
+                      <FileIcon name={file.name} type={file.type} />
+                      <code className="flex-1 font-mono text-sm text-foreground">{file.name}</code>
+                      {file.type !== "dir" && (
+                        <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                          {formatBytes(file.size)}
+                        </span>
+                      )}
+                    </Link>
                   ))}
                   {entryFiles.length === 0 && (
                     <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>
