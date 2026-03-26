@@ -9,6 +9,7 @@ import type {
   PublicUserResponse,
   AuthResponse,
   FileListItem,
+  FileWriteResponse,
   EditProposalListItem,
   EditProposalDetail,
   CommitListItem,
@@ -224,6 +225,37 @@ export async function resolveEntity(id: string): Promise<Record<string, unknown>
 
 export async function getEntryFiles(id: string): Promise<FileListItem[]> {
   return request<FileListItem[]>(`/v1/entries/${id}/files`);
+}
+
+export async function putEntryFile(
+  entryId: string,
+  path: string,
+  file: File,
+  message?: string,
+): Promise<FileWriteResponse> {
+  const form = new FormData();
+  form.append("content", file);
+  if (message) form.append("message", message);
+
+  const res = await fetch(
+    `${API_URL}/v1/entries/${entryId}/files/${encodeURIComponent(path)}`,
+    {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: form,
+    },
+  );
+
+  if (res.status === 401) {
+    clearStoredToken();
+    if (typeof window !== "undefined") window.location.href = "/auth/login";
+    throw new Error("Session expired. Please log in again.");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.detail || `Upload failed: ${res.status}`);
+  }
+  return res.json() as Promise<FileWriteResponse>;
 }
 
 // --- Entry Edits ---

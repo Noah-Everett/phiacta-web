@@ -1,34 +1,63 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createEntry, setEntryTags } from "@/lib/api";
+import { createEntry, setEntryTags, putEntryFile } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
+  Atom,
+  ShieldCheck,
+  Target,
   CheckCircle2,
   LogIn,
   X,
+  ArrowRight,
+  Plus,
+  Sparkles,
+  Upload,
+  FileIcon,
 } from "lucide-react";
 
 const ENTRY_TYPES = [
-  { value: "empirical", label: "Empirical", description: "Based on observation or experiment" },
-  { value: "theorem", label: "Theorem", description: "A formally provable mathematical result" },
-  { value: "conjecture", label: "Conjecture", description: "An unproven mathematical claim" },
-  { value: "definition", label: "Definition", description: "Introduces a concept or term" },
-  { value: "evidence", label: "Evidence", description: "A piece of supporting evidence" },
-  { value: "assertion", label: "Assertion", description: "A general claim without formal proof" },
-  { value: "refutation", label: "Refutation", description: "Challenges or contradicts another entry" },
-];
+  { value: "paper", label: "Paper" },
+  { value: "blog post", label: "Blog post" },
+  { value: "empirical", label: "Empirical" },
+  { value: "theorem", label: "Theorem" },
+  { value: "conjecture", label: "Conjecture" },
+  { value: "definition", label: "Definition" },
+  { value: "evidence", label: "Evidence" },
+  { value: "assertion", label: "Assertion" },
+  { value: "refutation", label: "Refutation" },
+  { value: "argument", label: "Argument" },
+] as const;
 
 const FORMATS = [
   { value: "markdown", label: "Markdown" },
   { value: "latex", label: "LaTeX" },
   { value: "plain", label: "Plain text" },
 ] as const;
+
+const GUIDELINES = [
+  {
+    icon: Atom,
+    title: "One idea per entry",
+    body: "An entry is atomic. State one assertion, one result, or one definition — not a paper.",
+  },
+  {
+    icon: Target,
+    title: "Be precise",
+    body: "Include scope, conditions, and limitations. A narrow claim with clear boundaries is more useful than a broad one.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Show your evidence",
+    body: "Attach data, proofs, or code. Unverified entries are accepted — but the absence of proof is visible.",
+  },
+];
 
 export default function ContributePage() {
   const { user, isLoading } = useAuth();
@@ -37,7 +66,7 @@ export default function ContributePage() {
   const [contentFormat, setContentFormat] = useState<string>("markdown");
   const [entryType, setEntryType] = useState<string>("empirical");
   const [customType, setCustomType] = useState("");
-  const [useCustomType, setUseCustomType] = useState(false);
+  const [isCustomType, setIsCustomType] = useState(false);
   const [summary, setSummary] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [tags, setTags] = useState<string[]>([]);
@@ -46,8 +75,15 @@ export default function ContributePage() {
   const [createdEntryId, setCreatedEntryId] = useState<string | null>(null);
   const [tagWarning, setTagWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [fileWarning, setFileWarning] = useState("");
+  const customInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_TAGS = 20;
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
+  const effectiveType = isCustomType ? customType.trim() : entryType;
 
   function addTag() {
     const tag = tagInput.trim().toLowerCase();
@@ -70,7 +106,43 @@ export default function ContributePage() {
     }
   }
 
-  const effectiveType = useCustomType ? customType.trim() : entryType;
+  function handlePresetClick(value: string) {
+    setIsCustomType(false);
+    setCustomType("");
+    setEntryType(value);
+  }
+
+  function handleCustomClick() {
+    setIsCustomType(true);
+    setTimeout(() => customInputRef.current?.focus(), 0);
+  }
+
+  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files;
+    if (!selected) return;
+    const newFiles: File[] = [];
+    for (let i = 0; i < selected.length; i++) {
+      const f = selected[i];
+      if (f.size > MAX_FILE_SIZE) continue; // silently skip oversized
+      // Deduplicate by name
+      if (!files.some((existing) => existing.name === f.name) && !newFiles.some((n) => n.name === f.name)) {
+        newFiles.push(f);
+      }
+    }
+    setFiles((prev) => [...prev, ...newFiles]);
+    // Reset input so the same file can be re-added after removal
+    e.target.value = "";
+  }
+
+  function removeFile(name: string) {
+    setFiles((prev) => prev.filter((f) => f.name !== name));
+  }
+
+  function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,12 +157,25 @@ export default function ContributePage() {
         entry_type: effectiveType || null,
         summary: summary || null,
       });
-      // Set tags if any were added
       if (tags.length > 0 && entry.id) {
         try {
           await setEntryTags(entry.id, tags);
         } catch {
           setTagWarning("Entry published, but tags could not be saved. You can add them from the entry page.");
+        }
+      }
+      // Upload files
+      if (files.length > 0 && entry.id) {
+        const failed: string[] = [];
+        for (const file of files) {
+          try {
+            await putEntryFile(entry.id, file.name, file);
+          } catch {
+            failed.push(file.name);
+          }
+        }
+        if (failed.length > 0) {
+          setFileWarning(`Entry published, but ${failed.length} file${failed.length > 1 ? "s" : ""} could not be uploaded: ${failed.join(", ")}`);
         }
       }
       setCreatedEntryId(entry.id);
@@ -100,10 +185,11 @@ export default function ContributePage() {
       setSummary("");
       setEntryType("empirical");
       setCustomType("");
-      setUseCustomType(false);
+      setIsCustomType(false);
       setContentFormat("markdown");
       setTags([]);
       setTagInput("");
+      setFiles([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit entry.");
     } finally {
@@ -122,235 +208,359 @@ export default function ContributePage() {
   // Post-success
   if (success) {
     return (
-      <div className="mx-auto max-w-2xl px-6 py-10">
-        <div className="mb-6 flex items-center gap-3">
-          <CheckCircle2 className="h-8 w-8 text-green-500" />
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Entry published</h1>
-            <p className="text-sm text-muted-foreground">Your entry is now live and citable.</p>
+      <div className="mx-auto max-w-2xl px-6 py-16">
+        <div className="flex flex-col items-center text-center">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
+            <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
           </div>
-        </div>
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Entry published</h1>
+          <p className="mb-1 text-sm text-muted-foreground">
+            Your entry is now live, versioned, and permanently citable.
+          </p>
+          <p className="mb-8 text-xs text-muted-foreground">
+            You can add files, manage references, and accept edit proposals from the entry page.
+          </p>
 
-        {tagWarning && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-            {tagWarning}
-          </div>
-        )}
-
-        <div className="flex gap-2">
-          {createdEntryId && (
-            <Button asChild>
-              <Link href={`/entries/${createdEntryId}`}>View your entry</Link>
-            </Button>
+          {(tagWarning || fileWarning) && (
+            <div className="mb-6 w-full space-y-2">
+              {tagWarning && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                  {tagWarning}
+                </div>
+              )}
+              {fileWarning && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                  {fileWarning}
+                </div>
+              )}
+            </div>
           )}
-          <Button asChild variant={createdEntryId ? "outline" : "default"}>
-            <Link href="/explore">Browse entries</Link>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setSuccess(false);
-              setCreatedEntryId(null);
-              setTagWarning("");
-            }}
-          >
-            Publish another
-          </Button>
+
+          <div className="flex flex-wrap justify-center gap-3">
+            {createdEntryId && (
+              <Button asChild size="lg">
+                <Link href={`/entries/${createdEntryId}`}>
+                  View your entry <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => {
+                setSuccess(false);
+                setCreatedEntryId(null);
+                setTagWarning("");
+                setFileWarning("");
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Publish another
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
-      <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-foreground">Publish an entry</h1>
-        <p className="text-sm text-muted-foreground">
-          Every entry gets its own versioned file store — permanent, citable, and open.
+    <div className="mx-auto max-w-3xl px-6 py-12">
+      {/* Hero */}
+      <div className="mb-10">
+        <h1 className="mb-2 text-3xl font-bold text-foreground">Contribute</h1>
+        <p className="text-lg text-muted-foreground">
+          Publish a new entry to the knowledge graph. Every entry is atomic, versioned,
+          and permanently citable.
         </p>
       </div>
 
+      {/* Guidelines */}
+      <div className="mb-10 grid gap-4 sm:grid-cols-3">
+        {GUIDELINES.map(({ icon: Icon, title, body }) => (
+          <div key={title} className="flex gap-3">
+            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
+              <Icon className="h-4 w-4 text-secondary-foreground" />
+            </div>
+            <div>
+              <p className="mb-0.5 text-sm font-semibold text-foreground">{title}</p>
+              <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <Separator className="mb-10" />
+
       {error && (
-        <div className="mb-5 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Title */}
-        <div className="space-y-1.5">
-          <label htmlFor="title" className="text-sm font-medium text-foreground">
-            Title
-          </label>
-          <Input
-            id="title"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            maxLength={500}
-            placeholder="A concise, precise statement..."
-          />
-        </div>
+      <form onSubmit={handleSubmit}>
+        {/* Section 1: The Essentials */}
+        <section className="mb-10">
+          <h2 className="mb-4 text-xl font-semibold text-foreground">The entry</h2>
 
-        {/* Entry type */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Entry type</p>
-            <button
-              type="button"
-              onClick={() => setUseCustomType((v) => !v)}
-              className="text-xs text-primary hover:underline"
-            >
-              {useCustomType ? "Use preset" : "Custom value"}
-            </button>
-          </div>
-          {useCustomType ? (
+          {/* Title */}
+          <div className="mb-5 space-y-1.5">
+            <label htmlFor="title" className="text-sm font-medium text-foreground">
+              Title
+            </label>
             <Input
+              id="title"
               type="text"
-              value={customType}
-              onChange={(e) => setCustomType(e.target.value)}
-              placeholder="Enter a custom entry type..."
-              maxLength={100}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              maxLength={500}
+              placeholder="A concise, precise statement of one idea..."
+              className="text-base"
             />
-          ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
-              {ENTRY_TYPES.map(({ value, label, description }) => (
+            <p className="text-xs text-muted-foreground">
+              The title should be a self-contained statement. Think of it as the entry&apos;s one-line abstract.
+            </p>
+          </div>
+
+          {/* Entry type — ghost chips */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-foreground">Type</label>
+            <div className="flex flex-wrap gap-1.5">
+              {ENTRY_TYPES.map(({ value, label }) => (
                 <button
                   key={value}
                   type="button"
-                  onClick={() => setEntryType(value)}
-                  className={`rounded-lg border p-3 text-left transition-colors ${
-                    entryType === value
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-background hover:border-muted-foreground/30"
+                  onClick={() => handlePresetClick(value)}
+                  className={`inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors ${
+                    !isCustomType && entryType === value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                   }`}
                 >
-                  <p className="text-sm font-medium text-foreground">{label}</p>
-                  <p className="text-xs text-muted-foreground">{description}</p>
+                  {label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={handleCustomClick}
+                className={`inline-flex h-8 items-center rounded-md border border-dashed px-3 text-sm font-medium transition-colors ${
+                  isCustomType
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                }`}
+              >
+                Custom...
+              </button>
+            </div>
+            {isCustomType && (
+              <Input
+                ref={customInputRef}
+                type="text"
+                value={customType}
+                onChange={(e) => setCustomType(e.target.value)}
+                placeholder="e.g. lecture-notes, dataset, survey..."
+                maxLength={100}
+              />
+            )}
+          </div>
+        </section>
+
+        <Separator className="mb-10" />
+
+        {/* Section 2: Content */}
+        <section className="mb-10">
+          <h2 className="mb-1 text-xl font-semibold text-foreground">Content</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Optional now — you can always add content and files from the entry page after publishing.
+          </p>
+
+          {/* Summary */}
+          <div className="mb-5 space-y-1.5">
+            <label htmlFor="summary" className="text-sm font-medium text-foreground">
+              Summary
+            </label>
+            <Input
+              id="summary"
+              type="text"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              maxLength={500}
+              placeholder="A brief summary expanding on the title..."
+            />
+          </div>
+
+          {/* Format selector */}
+          <div className="mb-3 space-y-1.5">
+            <label className="text-sm font-medium text-foreground">Format</label>
+            <div className="flex gap-1.5">
+              {FORMATS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setContentFormat(value)}
+                  className={`inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors ${
+                    contentFormat === value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  }`}
+                >
+                  {label}
                 </button>
               ))}
             </div>
-          )}
-        </div>
-
-        {/* Format */}
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Content format</label>
-          <div className="flex gap-2">
-            {FORMATS.map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => setContentFormat(value)}
-                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
-                  contentFormat === value
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border bg-background text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
           </div>
-        </div>
 
-        {/* Summary */}
-        <div className="space-y-1.5">
-          <label htmlFor="summary" className="text-sm font-medium text-foreground">
-            Summary <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <Input
-            id="summary"
-            type="text"
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            maxLength={500}
-            placeholder="A brief summary of the entry..."
-          />
-        </div>
-
-        {/* Tags */}
-        <div className="space-y-1.5">
-          <label htmlFor="tags" className="text-sm font-medium text-foreground">
-            Tags <span className="text-muted-foreground font-normal">(optional)</span>
-          </label>
-          <div className="flex gap-2">
-            <Input
-              id="tags"
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={handleTagKeyDown}
-              placeholder="Add a tag and press Enter..."
-              maxLength={50}
+          {/* Content textarea */}
+          <div className="space-y-1.5">
+            <label htmlFor="content" className="text-sm font-medium text-foreground">
+              Body
+            </label>
+            <textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={12}
+              placeholder={
+                contentFormat === "latex"
+                  ? "State the entry formally. LaTeX math supported: $E = mc^2$"
+                  : "State the entry clearly and precisely. Include key evidence, conditions, and scope."
+              }
+              className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
             />
-            <Button type="button" variant="outline" size="sm" onClick={addTag} disabled={!tagInput.trim()}>
-              Add
-            </Button>
           </div>
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {tags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="gap-1 text-xs">
-                  {tag}
-                  <button type="button" onClick={() => removeTag(tag)}>
-                    <X className="h-3 w-3" />
+        </section>
+
+        <Separator className="mb-10" />
+
+        {/* Section 3: Organization */}
+        <section className="mb-10">
+          <h2 className="mb-1 text-xl font-semibold text-foreground">Organization</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Tags help others discover your entry. You can also add references to other entries after publishing.
+          </p>
+
+          <div className="space-y-1.5">
+            <label htmlFor="tags" className="text-sm font-medium text-foreground">
+              Tags
+            </label>
+            <div className="flex gap-2">
+              <Input
+                id="tags"
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                placeholder="Add a tag and press Enter..."
+                maxLength={50}
+              />
+              <Button type="button" variant="outline" onClick={addTag} disabled={!tagInput.trim()}>
+                Add
+              </Button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {tags.map((tag) => (
+                  <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+                    {tag}
+                    <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            {tags.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                {tags.length} / {MAX_TAGS} tags
+              </p>
+            )}
+          </div>
+        </section>
+
+        <Separator className="mb-10" />
+
+        {/* Section 4: Files */}
+        <section className="mb-10">
+          <h2 className="mb-1 text-xl font-semibold text-foreground">Files</h2>
+          <p className="mb-4 text-sm text-muted-foreground">
+            Attach supporting materials — data, proofs, scripts, figures. Uploaded to the entry&apos;s versioned repository after publishing.
+          </p>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            onChange={handleFilesSelected}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/40 hover:text-foreground"
+          >
+            <Upload className="h-4 w-4" />
+            Choose files
+          </button>
+
+          {files.length > 0 && (
+            <div className="mt-3 space-y-1.5">
+              {files.map((file) => (
+                <div
+                  key={file.name}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                >
+                  <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-foreground">{file.name}</p>
+                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeFile(file.name)}
+                    className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
                   </button>
-                </Badge>
+                </div>
               ))}
             </div>
           )}
-        </div>
+        </section>
 
-        {/* Content */}
-        <div className="space-y-1.5">
-          <label htmlFor="content" className="text-sm font-medium text-foreground">
-            Content <span className="text-muted-foreground font-normal">(optional — can be added later via files)</span>
-          </label>
-          <textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={10}
-            placeholder={
-              contentFormat === "latex"
-                ? "State the entry formally. LaTeX math supported: $E = mc^2$"
-                : "State the entry clearly and precisely. Include key evidence, conditions, and scope."
-            }
-            className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
-          />
-        </div>
+        <Separator className="mb-10" />
 
-        <Separator />
-
-        {!user && (
-          <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-secondary/40 px-4 py-3">
-            <p className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">Sign in to publish.</span>{" "}
-              You need an account to submit entries.
+        {/* Auth gate / Submit */}
+        {!user ? (
+          <div className="rounded-xl border border-border bg-card p-6 text-center">
+            <Sparkles className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
+            <p className="mb-1 text-sm font-semibold text-foreground">
+              Sign in to publish
             </p>
-            <div className="flex shrink-0 gap-2">
-              <Button asChild variant="outline" size="sm">
+            <p className="mb-4 text-xs text-muted-foreground">
+              You need an account to contribute entries. It only takes a moment.
+            </p>
+            <div className="flex justify-center gap-3">
+              <Button asChild variant="outline">
                 <Link href="/auth/login">
                   <LogIn className="mr-1.5 h-3.5 w-3.5" />
                   Log in
                 </Link>
               </Button>
-              <Button asChild size="sm">
-                <Link href="/auth/signup">Sign up</Link>
+              <Button asChild>
+                <Link href="/auth/signup">
+                  Sign up <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Link>
               </Button>
             </div>
           </div>
-        )}
-
-        {user && (
+        ) : (
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Entries are public by default.
+              Entries are public and permanent. You can update content after publishing.
             </p>
-            <Button type="submit" disabled={submitting}>
+            <Button type="submit" size="lg" disabled={submitting}>
               {submitting ? "Publishing..." : "Publish entry"}
+              {!submitting && <ArrowRight className="ml-2 h-4 w-4" />}
             </Button>
           </div>
         )}
