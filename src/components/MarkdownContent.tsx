@@ -91,7 +91,7 @@ export default function MarkdownContent({
       ? {
           img: ({ src, alt, ...props }) => {
             const resolvedSrc =
-              src && isRelativeUrl(src)
+              typeof src === "string" && isRelativeUrl(src)
                 ? `${API_URL}/v1/entries/${entryId}/files/${src}`
                 : src;
             return (
