@@ -59,7 +59,7 @@ const GUIDELINES = [
   },
 ];
 
-export default function ContributePage() {
+export default function PostPage() {
   const { user, isLoading } = useAuth();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -267,7 +267,7 @@ export default function ContributePage() {
     <div className="mx-auto max-w-3xl px-6 py-12">
       {/* Hero */}
       <div className="mb-10">
-        <h1 className="mb-2 text-3xl font-bold text-foreground">Contribute</h1>
+        <h1 className="mb-2 text-3xl font-bold text-foreground">Post an entry</h1>
         <p className="text-lg text-muted-foreground">
           Publish a new entry to the knowledge graph. Every entry is atomic, versioned,
           and permanently citable.
@@ -537,7 +537,7 @@ export default function ContributePage() {
               Sign in to publish
             </p>
             <p className="mb-4 text-xs text-muted-foreground">
-              You need an account to contribute entries. It only takes a moment.
+              You need an account to post entries. It only takes a moment.
             </p>
             <div className="flex justify-center gap-3">
               <Button asChild variant="outline">

@@ -289,7 +289,7 @@ export default function ExplorePage() {
                 <p className="text-sm text-muted-foreground">
                   {isSearchMode
                     ? "No entries match your search."
-                    : "No entries yet. Create one from the Contribute page."}
+                    : "No entries yet. Create one from the Post page."}
                 </p>
                 {isSearchMode && (
                   <Button
