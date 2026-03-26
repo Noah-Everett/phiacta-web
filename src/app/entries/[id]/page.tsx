@@ -25,7 +25,7 @@ import {
   CircleDot,
   GitMerge,
 } from "lucide-react";
-import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryHistory, getEntryCommitDiff, getEntryTags, getEntryIssues, ApiError } from "@/lib/api";
+import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryHistory, getEntryCommitDiff, getEntryIssues, ApiError } from "@/lib/api";
 import type {
   EntryDetailResponse,
   EditProposalListItem,
@@ -33,7 +33,6 @@ import type {
   CommitDiffResponse,
   FileListItem,
   PublicUserResponse,
-  TagResponse,
   IssueListItem,
 } from "@/lib/types";
 
@@ -298,7 +297,6 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
   const [issues, setIssues] = useState<IssueListItem[]>([]);
-  const [tags, setTags] = useState<TagResponse[]>([]);
   const [contentText, setContentText] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -331,7 +329,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntryEdits(resolvedId).then(setEdits).catch((err) => console.warn("Failed to load edits:", err));
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
     getEntryIssues(resolvedId).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
-    getEntryTags(resolvedId).then((res) => setTags(Array.isArray(res.tags) ? res.tags : [])).catch((err) => console.warn("Failed to load tags:", err));
 
     // Fetch content from .phiacta/content.md (or other extensions)
     fetch(`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/content.md`, { cache: "no-store" })
@@ -606,16 +603,16 @@ export default function EntryPage({ params }: EntryPageProps) {
             </dl>
           </div>
 
-          {tags.length > 0 && (
+          {entry?.tags && entry.tags.length > 0 && (
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               <Tag className="mr-1.5 inline h-3 w-3" />
               Tags
             </h3>
             <div className="flex flex-wrap gap-1.5">
-              {tags.map((t) => (
-                <Badge key={t.tag} variant="secondary" className="text-xs">
-                  {t.tag}
+              {entry.tags.map((t) => (
+                <Badge key={t} variant="secondary" className="text-xs">
+                  {t}
                 </Badge>
               ))}
             </div>

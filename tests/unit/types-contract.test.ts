@@ -9,7 +9,9 @@ import type {
   EntryListItem,
   EntryDetailResponse,
   EntryCreate,
+  EntryUpdate,
   PaginatedResponse,
+  ReferenceItem,
 } from "@/lib/types";
 
 describe("TypeScript types match backend contract", () => {
@@ -52,7 +54,7 @@ describe("TypeScript types match backend contract", () => {
     expect("name" in auth.user).toBe(false);
   });
 
-  it("EntryListItem has all required fields with correct nullability", () => {
+  it("EntryListItem has core fields and auto-composed extension fields", () => {
     const entry: EntryListItem = {
       id: "11111111-2222-3333-4444-555555555555",
       title: "On the Riemann Hypothesis",
@@ -67,14 +69,17 @@ describe("TypeScript types match backend contract", () => {
       created_by: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       created_at: "2026-01-15T10:30:00Z",
       updated_at: "2026-02-20T14:00:00Z",
+      tags: ["mathematics", "number-theory"],
     };
 
     expect(entry.entry_type).toBeNull();
     expect(entry.repo_status).toBe("provisioning");
     expect(entry.forgejo_repo_id).toBeNull();
     expect(entry.current_head_sha).toBeNull();
+    expect(entry.tags).toEqual(["mathematics", "number-theory"]);
 
     const keys = Object.keys(entry);
+    // Removed fields should not appear:
     expect(keys).not.toContain("claim_type");
     expect(keys).not.toContain("claimType");
     expect(keys).not.toContain("format");
@@ -107,6 +112,18 @@ describe("TypeScript types match backend contract", () => {
     expect(keys).not.toContain("license");
   });
 
+  it("EntryUpdate accepts any writable extension field", () => {
+    const update: EntryUpdate = {
+      title: "Updated Title",
+      entry_type: "theorem",
+      tags: ["math", "proof"],
+    };
+
+    expect(update.title).toBe("Updated Title");
+    expect(update.entry_type).toBe("theorem");
+    expect(update.tags).toEqual(["math", "proof"]);
+  });
+
   it("PaginatedResponse has pagination fields including has_more", () => {
     const response: PaginatedResponse<EntryListItem> = {
       items: [],
@@ -123,7 +140,7 @@ describe("TypeScript types match backend contract", () => {
     expect(response.has_more).toBe(false);
   });
 
-  it("EntryDetailResponse is same shape as EntryListItem (no content_cache or refs)", () => {
+  it("EntryDetailResponse extends EntryListItem with references", () => {
     const detail: EntryDetailResponse = {
       id: "11111111-2222-3333-4444-555555555555",
       title: "Test",
@@ -138,14 +155,45 @@ describe("TypeScript types match backend contract", () => {
       created_by: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
       created_at: "2026-01-15T10:30:00Z",
       updated_at: "2026-02-20T14:00:00Z",
+      tags: ["test"],
+      references: [
+        {
+          id: "ref-1",
+          from_entity_id: "11111111-2222-3333-4444-555555555555",
+          to_entity_id: "22222222-3333-4444-5555-666666666666",
+          rel: "supports",
+          version_sha: null,
+          note: null,
+          created_by: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+          created_at: "2026-01-15T10:30:00Z",
+        },
+      ],
     };
 
     expect(detail.title).toBe("Test");
-    expect(detail.entry_type).toBeNull();
+    expect(detail.references).toHaveLength(1);
+    expect(detail.references![0].rel).toBe("supports");
+    expect(detail.tags).toEqual(["test"]);
 
     const keys = Object.keys(detail);
     expect(keys).not.toContain("content_cache");
     expect(keys).not.toContain("outgoing_refs");
     expect(keys).not.toContain("incoming_refs");
+  });
+
+  it("ReferenceItem has correct fields", () => {
+    const ref: ReferenceItem = {
+      id: "ref-id",
+      from_entity_id: "entry-1",
+      to_entity_id: "entry-2",
+      rel: "cites",
+      version_sha: "abc123",
+      note: "see section 3",
+      created_by: "user-id",
+      created_at: "2026-01-15T10:30:00Z",
+    };
+
+    expect(ref.rel).toBe("cites");
+    expect(ref.note).toBe("see section 3");
   });
 });

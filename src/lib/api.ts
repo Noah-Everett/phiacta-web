@@ -3,6 +3,7 @@ import type {
   EntryDetailResponse,
   EntryResponse,
   EntryCreate,
+  EntryUpdate,
   PaginatedResponse,
   User,
   PublicUserResponse,
@@ -174,17 +175,26 @@ export async function getMeApi(): Promise<User> {
 export async function listEntries(
   limit: number = 20,
   offset: number = 0,
-  filters?: { status?: string }
+  filters?: { status?: string; include?: string; exclude?: string }
 ): Promise<PaginatedResponse<EntryListItem>> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.include) params.set("include", filters.include);
+  if (filters?.exclude) params.set("exclude", filters.exclude);
   return request<PaginatedResponse<EntryListItem>>(`/v1/entries?${params.toString()}`);
 }
 
-export async function getEntry(id: string): Promise<EntryDetailResponse> {
-  return request<EntryDetailResponse>(`/v1/entries/${id}`);
+export async function getEntry(
+  id: string,
+  options?: { include?: string; exclude?: string }
+): Promise<EntryDetailResponse> {
+  const params = new URLSearchParams();
+  if (options?.include) params.set("include", options.include);
+  if (options?.exclude) params.set("exclude", options.exclude);
+  const qs = params.toString();
+  return request<EntryDetailResponse>(`/v1/entries/${id}${qs ? `?${qs}` : ""}`);
 }
 
 export async function createEntry(data: EntryCreate): Promise<EntryResponse> {
@@ -192,6 +202,20 @@ export async function createEntry(data: EntryCreate): Promise<EntryResponse> {
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function updateEntry(
+  id: string,
+  data: EntryUpdate
+): Promise<EntryResponse> {
+  return authFetch<EntryResponse>(`/v1/entries/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function resolveEntity(id: string): Promise<Record<string, unknown>> {
+  return request<Record<string, unknown>>(`/v1/entities/${id}`);
 }
 
 // --- Entry Files ---

@@ -15,11 +15,13 @@ export interface AuthResponse {
 }
 
 // Entry types — mirrors entry.py
+//
+// Core fields are the entries-table columns.  Extension fields (title,
+// summary, entry_type, tags, references) are composed dynamically by
+// the backend's auto-compose system and are always present when the
+// corresponding extensions are loaded.
 export interface EntryListItem {
   id: string;
-  title: string | null;
-  summary: string | null;
-  entry_type: string | null;
   schema_version: number;
   forgejo_repo_id: number | null;
   repo_name: string;
@@ -29,11 +31,31 @@ export interface EntryListItem {
   created_by: string;
   created_at: string;
   updated_at: string;
+  // Auto-composed extension fields (always present in practice):
+  title: string | null;
+  summary: string | null;
+  entry_type: string | null;
+  tags?: string[];
 }
 
 export type EntryResponse = EntryListItem;
 
-export type EntryDetailResponse = EntryResponse;
+// Reference item shape from auto-compose
+export interface ReferenceItem {
+  id: string;
+  from_entity_id: string;
+  to_entity_id: string;
+  rel: string;
+  version_sha: string | null;
+  note: string | null;
+  created_by: string;
+  created_at: string;
+}
+
+// Detail includes references (auto-composed, detail-only by default)
+export interface EntryDetailResponse extends EntryListItem {
+  references?: ReferenceItem[];
+}
 
 export interface EntryCreate {
   title: string;
@@ -41,6 +63,15 @@ export interface EntryCreate {
   content?: string | null;
   content_format?: string;
   entry_type?: string | null;
+}
+
+// Unified PATCH — accepts any writable extension field
+export interface EntryUpdate {
+  title?: string;
+  summary?: string | null;
+  entry_type?: string | null;
+  tags?: string[];
+  [key: string]: unknown;
 }
 
 // Pagination — mirrors common.py
