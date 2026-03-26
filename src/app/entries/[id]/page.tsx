@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
+import LatexContent from "@/components/LatexContent";
 import EntityLink from "@/components/EntityLink";
 import FileIcon from "@/components/FileIcon";
 import DiffBlock from "@/components/DiffBlock";
@@ -338,6 +339,7 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [history, setHistory] = useState<CommitListItem[]>([]);
   const [issues, setIssues] = useState<IssueListItem[]>([]);
   const [contentText, setContentText] = useState<string | null>(null);
+  const [contentFormat, setContentFormat] = useState<string>("md");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -377,7 +379,10 @@ export default function EntryPage({ params }: EntryPageProps) {
           const res = await fetch(`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/content${ext}`, { cache: "no-store" });
           if (res.ok) {
             const text = await res.text();
-            if (text) setContentText(text);
+            if (text) {
+              setContentText(text);
+              setContentFormat(ext.slice(1));
+            }
             return;
           }
         } catch {}
@@ -535,7 +540,13 @@ export default function EntryPage({ params }: EntryPageProps) {
             {/* Content */}
             <TabsContent value="content">
               <div className="rounded-xl border border-border bg-card p-6">
-                {contentText ? (
+                {contentText && contentFormat === "tex" ? (
+                  <LatexContent
+                    content={contentText}
+                    className="text-sm leading-relaxed text-card-foreground"
+                    entryId={entry.id}
+                  />
+                ) : contentText ? (
                   <MarkdownContent
                     content={contentText}
                     className="text-sm leading-relaxed text-card-foreground"
