@@ -272,14 +272,17 @@ export default function ExplorePage() {
                         <span>{author.handle}</span>
                       </div>
                     )}
-                    {entry.created_at && (
-                      <span>
-                        {new Date(entry.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </span>
-                    )}
+                    {entry.created_at && (() => {
+                      const created = new Date(entry.created_at);
+                      const daysAgo = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
+                      return (
+                        <span>
+                          {daysAgo < 7
+                            ? created.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+                            : created.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </Link>
               );
