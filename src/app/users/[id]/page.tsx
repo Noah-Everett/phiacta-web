@@ -44,7 +44,7 @@ export default function UserPage({ params }: UserPageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [metrics, setMetrics] = useState({
-    entries: 0, issues: 0, edits: 0, editsMerged: 0,
+    entries: 0, issues: 0, edits: 0,
     topTags: [] as string[],
   });
 
@@ -91,7 +91,6 @@ export default function UserPage({ params }: UserPageProps) {
           entries: userEntries.length,
           issues: allIssues.length,
           edits: allEdits.length,
-          editsMerged: allEdits.filter((e: any) => e.merged_at).length,
           topTags: Object.entries(tagFreq).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([t]) => t),
         });
       })
@@ -133,7 +132,7 @@ export default function UserPage({ params }: UserPageProps) {
     <div className="mx-auto max-w-3xl px-6 py-10">
 
       {/* Profile header */}
-      <div className="flex gap-4 mb-8">
+      <div className="flex gap-4 mb-8 pb-6 border-b border-border">
         <Avatar className="h-16 w-16 text-xl shrink-0">
           <AvatarFallback className="text-xl font-semibold">{getInitials(user.handle)}</AvatarFallback>
         </Avatar>
@@ -150,19 +149,6 @@ export default function UserPage({ params }: UserPageProps) {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Metrics — horizontal row */}
-      <div className="flex gap-8 mb-8 pb-6 border-b border-border">
-        {[
-          { label: "Entries", value: metrics.entries },
-          { label: "Accepted", value: metrics.editsMerged },
-        ].map(({ label, value }) => (
-          <div key={label}>
-            <div className="text-2xl font-bold tabular-nums text-foreground">{value}</div>
-            <div className="text-xs text-muted-foreground">{label}</div>
-          </div>
-        ))}
       </div>
 
       {/* Filter + feed */}
