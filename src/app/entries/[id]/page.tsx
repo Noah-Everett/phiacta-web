@@ -658,9 +658,9 @@ export default function EntryPage({ params }: EntryPageProps) {
                         className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
                       >
                         {isOutgoing ? (
-                          <ArrowUpRight className="h-4 w-4 shrink-0 text-blue-500" title="Outgoing" />
+                          <ArrowUpRight className="h-4 w-4 shrink-0 text-blue-500" aria-label="Outgoing" />
                         ) : (
-                          <ArrowDownLeft className="h-4 w-4 shrink-0 text-green-500" title="Incoming" />
+                          <ArrowDownLeft className="h-4 w-4 shrink-0 text-green-500" aria-label="Incoming" />
                         )}
                         <div className="min-w-0 flex-1">
                           <EntityLink id={targetId} className="text-sm text-primary hover:underline block truncate" />
