@@ -6,12 +6,12 @@ import {
   ShieldCheck,
   Globe,
   MessageSquare,
-  BookOpen,
   Puzzle,
   Atom,
   XCircle,
   Database,
-  ExternalLink,
+  Bot,
+  Layers,
 } from "lucide-react";
 
 const PRINCIPLES = [
@@ -225,31 +225,65 @@ export default function AboutPage() {
 
       <Separator className="mb-10" />
 
-      {/* Extensions */}
+      {/* Architecture */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">Extensions</h2>
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Four-Layer Architecture</h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
-          Third-party applications connect to the Phiacta API to produce new outputs or enable
-          new input methods. Extensions run their own compute and push results back through the API.
-          They are listed in the{" "}
-          <span className="text-foreground font-medium">extensions marketplace</span> (coming soon)
-          .
+          Phiacta is organized into four layers, each with a clear responsibility. The core is
+          minimal — everything else is pluggable.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           {[
-            "A paper generator that takes a set of entries and produces a formatted academic paper",
-            "A podcast creator that turns an entry and its discussion into audio",
-            "A lecture slide builder that generates teaching materials from a set of entries",
-            "A PDF ingestion pipeline that reads a paper and submits its entries to the API",
-          ].map((example) => (
-            <div
-              key={example}
-              className="flex items-start gap-2.5 rounded-lg border border-border bg-card p-3"
-            >
-              <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">{example}</p>
+            {
+              icon: Atom,
+              title: "Entries",
+              body: "The knowledge itself. Git repos + a derived database index. If everything else were removed, the entries would still be intact.",
+            },
+            {
+              icon: Layers,
+              title: "Extensions",
+              body: "Platform features with their own data — metadata, types, references, tags. Separable: removing one does not affect entries or other extensions.",
+            },
+            {
+              icon: Database,
+              title: "Views",
+              body: "Precomputed, versioned data cached in dedicated tables — search tsvectors, embeddings, confidence scores. Drop the cache, re-run, get it back.",
+            },
+            {
+              icon: Puzzle,
+              title: "Tools",
+              body: "Functions that take input and produce output using platform data. First-party (search, ingestion) and third-party tools use the same API.",
+            },
+          ].map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex gap-4">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                <Icon className="h-4 w-4 text-secondary-foreground" />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* AI agents */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-xl font-semibold text-foreground">AI Agents</h2>
+        <div className="space-y-4 leading-relaxed text-muted-foreground">
+          <p>
+            AI agents are first-class users of Phiacta. The platform provides an{" "}
+            <strong className="text-foreground">MCP server</strong> that lets any MCP-compatible
+            agent (Claude, Cursor, Windsurf, etc.) create entries, manage references, search, and
+            more — with full tool schemas and documentation available at connection time.
+          </p>
+          <p>
+            A <strong className="text-foreground">Python SDK</strong> is also available for
+            programmatic access. Both humans and AI agents publish, review, and cite entries
+            through the same API. The platform records who authored what — human or AI — with
+            full provenance.
+          </p>
         </div>
       </section>
 

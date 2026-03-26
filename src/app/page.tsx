@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -8,9 +7,9 @@ import {
   ShieldCheck,
   Users,
   ArrowRight,
-  FlaskConical,
-  BookOpen,
-  Cpu,
+  Bot,
+  Code2,
+  Layers,
 } from "lucide-react";
 import { listEntries } from "@/lib/api";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
@@ -141,27 +140,49 @@ export default async function Home() {
       </section>
       )}
 
-      {/* Extensions CTA */}
+      {/* Platform CTA */}
       <section className="border-t border-border bg-muted/30 px-6 py-14">
-        <div className="mx-auto max-w-2xl text-center">
-          <h2 className="mb-3 text-xl font-semibold text-foreground">
-            Built for extensions
+        <div className="mx-auto max-w-4xl">
+          <h2 className="mb-8 text-center text-xl font-semibold text-foreground">
+            API-first. Agent-ready.
           </h2>
-          <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            Phiacta is an API-first knowledge base. Third-party extensions connect to generate
-            papers, podcasts, lecture slides, or ingest PDFs — without Phiacta ever producing
-            content itself.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {[
-              { icon: BookOpen, label: "Paper generator" },
-              { icon: Cpu, label: "PDF ingestion pipeline" },
-              { icon: FlaskConical, label: "Proof verifier" },
-            ].map(({ icon: Icon, label }) => (
-              <Badge key={label} variant="outline" className="gap-1.5 px-3 py-1 text-xs">
-                <Icon className="h-3 w-3" /> {label}
-              </Badge>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Card className="border-border">
+              <CardContent className="p-6">
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <Code2 className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="mb-2 text-sm font-semibold text-foreground">REST API</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Every feature on the website is available through the API. The website is a thin
+                  client — the API is the platform.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-border">
+              <CardContent className="p-6">
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <Bot className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="mb-2 text-sm font-semibold text-foreground">AI agents</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Connect Claude, GPT, or any MCP-compatible agent. Agents create entries, manage
+                  references, and search — just like humans.
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="border-border">
+              <CardContent className="p-6">
+                <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                  <Layers className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="mb-2 text-sm font-semibold text-foreground">Extensible</h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  A four-layer architecture — entries, extensions, views, and tools — keeps the core
+                  minimal and everything else pluggable.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </section>
