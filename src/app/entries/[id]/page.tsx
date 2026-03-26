@@ -478,15 +478,15 @@ export default function EntryPage({ params }: EntryPageProps) {
                 <FileCode2 className="h-3.5 w-3.5" />
                 Files
               </TabsTrigger>
-              {entry?.references && entry.references.length > 0 && (
               <TabsTrigger value="references" className="gap-1.5">
                 <Link2 className="h-3.5 w-3.5" />
                 References
+                {entry?.references && entry.references.length > 0 && (
                 <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
                   {entry.references.length}
                 </Badge>
+                )}
               </TabsTrigger>
-              )}
             </TabsList>
 
             {/* Content */}
@@ -573,7 +573,6 @@ export default function EntryPage({ params }: EntryPageProps) {
             </TabsContent>
 
             {/* References */}
-            {entry?.references && entry.references.length > 0 && (
             <TabsContent value="references">
               <div className="mb-3">
                 <p className="text-sm text-muted-foreground">
@@ -581,35 +580,38 @@ export default function EntryPage({ params }: EntryPageProps) {
                 </p>
               </div>
               <div className="space-y-2">
-                {entry.references.map((ref) => {
-                  const isOutgoing = ref.from_entity_id === entry.id;
-                  const targetId = isOutgoing ? ref.to_entity_id : ref.from_entity_id;
-                  return (
-                    <div
-                      key={ref.id}
-                      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
-                    >
-                      <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <Badge variant="outline" className="text-xs">
-                            {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
-                          </Badge>
+                {entry?.references && entry.references.length > 0 ? (
+                  entry.references.map((ref) => {
+                    const isOutgoing = ref.from_entity_id === entry.id;
+                    const targetId = isOutgoing ? ref.to_entity_id : ref.from_entity_id;
+                    return (
+                      <div
+                        key={ref.id}
+                        className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
+                      >
+                        <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
+                            </Badge>
+                          </div>
+                          <EntityLink id={targetId} className="mt-1 text-sm text-primary hover:underline block truncate" />
+                          {ref.note && (
+                            <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
+                          )}
                         </div>
-                        <EntityLink id={targetId} className="mt-1 text-sm text-primary hover:underline block truncate" />
-                        {ref.note && (
-                          <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
-                        )}
+                        <span className="shrink-0 text-xs text-muted-foreground">
+                          {new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                        </span>
                       </div>
-                      <span className="shrink-0 text-xs text-muted-foreground">
-                        {new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </span>
-                    </div>
-                  );
-                })}
+                    );
+                  })
+                ) : (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No references yet.</p>
+                )}
               </div>
             </TabsContent>
-            )}
           </Tabs>
         </div>
 
