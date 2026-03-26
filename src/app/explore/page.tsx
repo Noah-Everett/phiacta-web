@@ -49,6 +49,7 @@ interface DisplayEntry {
   title: string | null;
   entry_type: string | null;
   summary: string | null;
+  tags?: string[];
   // Browse-only fields (absent when searching)
   status?: string;
   created_by?: string;
@@ -61,6 +62,7 @@ function toBrowseEntry(e: EntryListItem): DisplayEntry {
     title: e.title,
     entry_type: e.entry_type,
     summary: e.summary,
+    tags: e.tags,
     status: e.status,
     created_by: e.created_by,
     created_at: e.created_at,
@@ -244,6 +246,18 @@ export default function ExplorePage() {
                       <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                         {entry.summary}
                       </p>
+                    )}
+                    {entry.tags && entry.tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {entry.tags.slice(0, 4).map((t) => (
+                          <Badge key={t} variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {t}
+                          </Badge>
+                        ))}
+                        {entry.tags.length > 4 && (
+                          <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 4}</span>
+                        )}
+                      </div>
                     )}
                     {author && (
                       <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">

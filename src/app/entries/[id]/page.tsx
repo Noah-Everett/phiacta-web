@@ -618,6 +618,41 @@ export default function EntryPage({ params }: EntryPageProps) {
             </div>
           </div>
           )}
+
+          {entry?.references && entry.references.length > 0 && (
+          <div className="rounded-xl border border-border bg-card p-5">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              References
+            </h3>
+            <div className="space-y-2">
+              {entry.references.map((ref) => {
+                const isOutgoing = ref.from_entity_id === entry.id;
+                const targetId = isOutgoing ? ref.to_entity_id : ref.from_entity_id;
+                return (
+                  <Link
+                    key={ref.id}
+                    href={`/entries/${targetId}`}
+                    className="flex items-start gap-2 rounded-lg border border-border p-2.5 hover:border-primary/30 hover:bg-accent/30 transition-all"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground font-mono truncate">
+                        {targetId}
+                      </p>
+                      {ref.note && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+          )}
         </div>
       </div>
     </div>
