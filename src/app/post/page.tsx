@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createEntry, setEntryTags, putEntryFile } from "@/lib/api";
+import { createEntry, setEntryTags, putEntryFile, createReference, searchEntries } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,8 @@ import {
   Sparkles,
   Upload,
   FileIcon,
+  Link2,
+  Search,
 } from "lucide-react";
 
 const ENTRY_TYPES = [
@@ -59,6 +61,21 @@ const GUIDELINES = [
   },
 ];
 
+const REL_TYPES = [
+  { value: "cites", label: "Cites" },
+  { value: "supports", label: "Supports" },
+  { value: "refutes", label: "Refutes" },
+  { value: "extends", label: "Extends" },
+  { value: "derives-from", label: "Derives from" },
+  { value: "reviews", label: "Reviews" },
+] as const;
+
+interface PendingRef {
+  targetId: string;
+  targetTitle: string;
+  rel: string;
+}
+
 export default function PostPage() {
   const { user, isLoading } = useAuth();
   const [title, setTitle] = useState("");
@@ -77,8 +94,14 @@ export default function PostPage() {
   const [submitting, setSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [fileWarning, setFileWarning] = useState("");
+  const [refs, setRefs] = useState<PendingRef[]>([]);
+  const [refSearch, setRefSearch] = useState("");
+  const [refResults, setRefResults] = useState<{ id: string; title: string }[]>([]);
+  const [refSearching, setRefSearching] = useState(false);
+  const [refWarning, setRefWarning] = useState("");
   const customInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const refDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const MAX_TAGS = 20;
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
@@ -144,6 +167,44 @@ export default function PostPage() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
 
+  const handleRefSearch = useCallback((query: string) => {
+    setRefSearch(query);
+    if (refDebounceRef.current) clearTimeout(refDebounceRef.current);
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setRefResults([]);
+      return;
+    }
+    refDebounceRef.current = setTimeout(async () => {
+      setRefSearching(true);
+      try {
+        const res = await searchEntries(trimmed, 5, 0);
+        setRefResults(res.items.map((r) => ({ id: r.entry_id, title: r.title || "Untitled" })));
+      } catch {
+        setRefResults([]);
+      } finally {
+        setRefSearching(false);
+      }
+    }, 300);
+  }, []);
+
+  function addRef(targetId: string, targetTitle: string) {
+    if (refs.some((r) => r.targetId === targetId)) return;
+    setRefs((prev) => [...prev, { targetId, targetTitle, rel: "cites" }]);
+    setRefSearch("");
+    setRefResults([]);
+  }
+
+  function removeRef(targetId: string, rel: string) {
+    setRefs((prev) => prev.filter((r) => !(r.targetId === targetId && r.rel === rel)));
+  }
+
+  function updateRefRel(targetId: string, oldRel: string, newRel: string) {
+    setRefs((prev) => prev.map((r) =>
+      r.targetId === targetId && r.rel === oldRel ? { ...r, rel: newRel } : r
+    ));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -178,6 +239,20 @@ export default function PostPage() {
           setFileWarning(`Entry published, but ${failed.length} file${failed.length > 1 ? "s" : ""} could not be uploaded: ${failed.join(", ")}`);
         }
       }
+      // Create references
+      if (refs.length > 0 && entry.id) {
+        const failedRefs: string[] = [];
+        for (const ref of refs) {
+          try {
+            await createReference(entry.id, ref.targetId, ref.rel);
+          } catch {
+            failedRefs.push(`${ref.rel} → ${ref.targetTitle}`);
+          }
+        }
+        if (failedRefs.length > 0) {
+          setRefWarning(`Entry published, but ${failedRefs.length} reference${failedRefs.length > 1 ? "s" : ""} could not be created.`);
+        }
+      }
       setCreatedEntryId(entry.id);
       setSuccess(true);
       setTitle("");
@@ -190,6 +265,7 @@ export default function PostPage() {
       setTags([]);
       setTagInput("");
       setFiles([]);
+      setRefs([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit entry.");
     } finally {
@@ -221,7 +297,7 @@ export default function PostPage() {
             You can add files, manage references, and accept edit proposals from the entry page.
           </p>
 
-          {(tagWarning || fileWarning) && (
+          {(tagWarning || fileWarning || refWarning) && (
             <div className="mb-6 w-full space-y-2">
               {tagWarning && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
@@ -231,6 +307,11 @@ export default function PostPage() {
               {fileWarning && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
                   {fileWarning}
+                </div>
+              )}
+              {refWarning && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                  {refWarning}
                 </div>
               )}
             </div>
@@ -252,6 +333,7 @@ export default function PostPage() {
                 setCreatedEntryId(null);
                 setTagWarning("");
                 setFileWarning("");
+                setRefWarning("");
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -441,14 +523,12 @@ export default function PostPage() {
 
         <Separator className="mb-10" />
 
-        {/* Section 3: Organization */}
+        {/* Section 3: Tags & References */}
         <section className="mb-10">
-          <h2 className="mb-1 text-xl font-semibold text-foreground">Organization</h2>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Tags help others discover your entry. You can also add references to other entries after publishing.
-          </p>
+          <h2 className="mb-4 text-xl font-semibold text-foreground">Tags &amp; references</h2>
 
-          <div className="space-y-1.5">
+          {/* Tags */}
+          <div className="mb-6 space-y-1.5">
             <label htmlFor="tags" className="text-sm font-medium text-foreground">
               Tags
             </label>
@@ -482,6 +562,74 @@ export default function PostPage() {
               <p className="text-xs text-muted-foreground">
                 {tags.length} / {MAX_TAGS} tags
               </p>
+            )}
+          </div>
+
+          {/* References */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-foreground">
+              References
+            </label>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                value={refSearch}
+                onChange={(e) => handleRefSearch(e.target.value)}
+                placeholder="Search for an entry to reference..."
+                className="pl-9"
+              />
+              {refResults.length > 0 && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-lg">
+                  {refResults.map((result) => (
+                    <button
+                      key={result.id}
+                      type="button"
+                      onClick={() => addRef(result.id, result.title)}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="truncate text-foreground">{result.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {refSearching && refSearch.trim() && (
+                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
+                  <p className="text-xs text-muted-foreground">Searching...</p>
+                </div>
+              )}
+            </div>
+
+            {refs.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                {refs.map((ref) => (
+                  <div
+                    key={`${ref.targetId}-${ref.rel}`}
+                    className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2"
+                  >
+                    <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <select
+                      value={ref.rel}
+                      onChange={(e) => updateRefRel(ref.targetId, ref.rel, e.target.value)}
+                      className="h-5 cursor-pointer rounded bg-secondary px-1 text-[11px] font-medium text-secondary-foreground outline-none"
+                    >
+                      {REL_TYPES.map(({ value, label }) => (
+                        <option key={value} value={value}>{label}</option>
+                      ))}
+                    </select>
+                    <p className="min-w-0 truncate text-sm text-foreground">{ref.targetTitle}</p>
+                    <button
+                      type="button"
+                      onClick={() => removeRef(ref.targetId, ref.rel)}
+                      className="ml-auto shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </section>

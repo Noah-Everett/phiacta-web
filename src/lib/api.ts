@@ -10,6 +10,7 @@ import type {
   AuthResponse,
   FileListItem,
   FileWriteResponse,
+  ReferenceItem,
   EditProposalListItem,
   EditProposalDetail,
   CommitListItem,
@@ -256,6 +257,20 @@ export async function putEntryFile(
     throw new ApiError(res.status, body?.detail || `Upload failed: ${res.status}`);
   }
   return res.json() as Promise<FileWriteResponse>;
+}
+
+// --- References ---
+
+export async function createReference(
+  entryId: string,
+  targetEntryId: string,
+  rel: string,
+  note?: string,
+): Promise<ReferenceItem> {
+  return authFetch<ReferenceItem>(`/v1/extensions/references/${entryId}`, {
+    method: "POST",
+    body: JSON.stringify({ target_entry_id: targetEntryId, rel, note: note || null }),
+  });
 }
 
 // --- Entry Edits ---
