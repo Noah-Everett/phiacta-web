@@ -191,9 +191,18 @@ export default function FilePage({ params }: FilePageProps) {
               />
             </div>
           ) : (
-            <pre className="overflow-x-auto px-4 py-3 text-xs font-mono text-foreground leading-5 max-h-[80vh] overflow-y-auto">
-              {content}
-            </pre>
+            <div className="overflow-x-auto max-h-[80vh] overflow-y-auto">
+              <table className="w-full text-xs font-mono leading-5">
+                <tbody>
+                  {content.split("\n").map((line, i) => (
+                    <tr key={i} className="hover:bg-accent/30">
+                      <td className="select-none text-right pr-4 pl-4 py-0 text-muted-foreground/50 w-1 whitespace-nowrap">{i + 1}</td>
+                      <td className="pr-4 py-0 whitespace-pre text-foreground">{line || " "}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       )}
