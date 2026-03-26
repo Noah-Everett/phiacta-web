@@ -25,6 +25,7 @@ import {
   MessageCircle,
   CircleDot,
   GitMerge,
+  Link2,
 } from "lucide-react";
 import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryHistory, getEntryCommitDiff, getEntryIssues, ApiError } from "@/lib/api";
 import type {
@@ -477,6 +478,15 @@ export default function EntryPage({ params }: EntryPageProps) {
                 <FileCode2 className="h-3.5 w-3.5" />
                 Files
               </TabsTrigger>
+              {entry?.references && entry.references.length > 0 && (
+              <TabsTrigger value="references" className="gap-1.5">
+                <Link2 className="h-3.5 w-3.5" />
+                References
+                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
+                  {entry.references.length}
+                </Badge>
+              </TabsTrigger>
+              )}
             </TabsList>
 
             {/* Content */}
@@ -561,6 +571,45 @@ export default function EntryPage({ params }: EntryPageProps) {
                 </div>
               </div>
             </TabsContent>
+
+            {/* References */}
+            {entry?.references && entry.references.length > 0 && (
+            <TabsContent value="references">
+              <div className="mb-3">
+                <p className="text-sm text-muted-foreground">
+                  Typed links between this entry and other entries in the knowledge graph.
+                </p>
+              </div>
+              <div className="space-y-2">
+                {entry.references.map((ref) => {
+                  const isOutgoing = ref.from_entity_id === entry.id;
+                  const targetId = isOutgoing ? ref.to_entity_id : ref.from_entity_id;
+                  return (
+                    <div
+                      key={ref.id}
+                      className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
+                    >
+                      <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs">
+                            {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
+                          </Badge>
+                        </div>
+                        <EntityLink id={targetId} className="mt-1 text-sm text-primary hover:underline block truncate" />
+                        {ref.note && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
+                        )}
+                      </div>
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </TabsContent>
+            )}
           </Tabs>
         </div>
 
@@ -620,37 +669,6 @@ export default function EntryPage({ params }: EntryPageProps) {
           </div>
           )}
 
-          {entry?.references && entry.references.length > 0 && (
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              References
-            </h3>
-            <div className="space-y-2">
-              {entry.references.map((ref) => {
-                const isOutgoing = ref.from_entity_id === entry.id;
-                const targetId = isOutgoing ? ref.to_entity_id : ref.from_entity_id;
-                return (
-                  <div
-                    key={ref.id}
-                    className="flex items-start gap-2 rounded-lg border border-border p-2.5"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5">
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
-                        </Badge>
-                      </div>
-                      <EntityLink id={targetId} className="mt-1 text-xs text-primary hover:underline font-mono truncate block" />
-                      {ref.note && (
-                        <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          )}
         </div>
       </div>
     </div>
