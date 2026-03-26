@@ -13,11 +13,13 @@ import type { Components } from "react-markdown";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// Matches /entries/UUID in href
-const ENTRY_PATH_RE = /^\/entries\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
-// Extracts all /entries/UUID hrefs from markdown link syntax
-const ENTRY_LINK_SCAN_RE = /\]\(\/entries\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/gi;
+// Matches /entries/UUID or /users/UUID in href
+const ENTITY_PATH_RE = new RegExp(`^\\/(entries|users)\\/(${UUID_RE})$`, "i");
+
+// Extracts all entity UUIDs from markdown link syntax
+const ENTITY_LINK_SCAN_RE = new RegExp(`\\]\\(\\/(entries|users)\\/(${UUID_RE})\\)`, "gi");
 
 interface MarkdownContentProps {
   content: string;
@@ -40,9 +42,9 @@ export default function MarkdownContent({
   useEffect(() => {
     const ids = new Set<string>();
     let match;
-    const re = new RegExp(ENTRY_LINK_SCAN_RE.source, "gi");
+    const re = new RegExp(ENTITY_LINK_SCAN_RE.source, "gi");
     while ((match = re.exec(content)) !== null) {
-      ids.add(match[1]);
+      ids.add(match[2]);
     }
     if (ids.size === 0) return;
 
@@ -64,9 +66,9 @@ export default function MarkdownContent({
     a: ({ href, children, ...props }) => {
       if (!href) return <a {...props}>{children}</a>;
 
-      const entryMatch = href.match(ENTRY_PATH_RE);
-      if (entryMatch) {
-        const id = entryMatch[1];
+      const entityMatch = href.match(ENTITY_PATH_RE);
+      if (entityMatch) {
+        const id = entityMatch[2];
         if (brokenLinks.has(id)) {
           return (
             <span className="inline-flex items-center gap-1 text-destructive" title={`Entry ${id} not found`}>
