@@ -32,6 +32,8 @@ import {
   CircleDot,
   GitMerge,
   Link2,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from "lucide-react";
 import { getEntry, getUser, getEntryFiles, getEntryEdits, getEntryHistory, getEntryCommitDiff, getEntryIssues, ApiError } from "@/lib/api";
 import type {
@@ -655,21 +657,25 @@ export default function EntryPage({ params }: EntryPageProps) {
                         key={ref.id}
                         className="flex items-center gap-3 rounded-xl border border-border bg-card p-4"
                       >
-                        <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        {isOutgoing ? (
+                          <ArrowUpRight className="h-4 w-4 shrink-0 text-blue-500" title="Outgoing" />
+                        ) : (
+                          <ArrowDownLeft className="h-4 w-4 shrink-0 text-green-500" title="Incoming" />
+                        )}
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs">
-                              {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
-                            </Badge>
-                          </div>
-                          <EntityLink id={targetId} className="mt-1 text-sm text-primary hover:underline block truncate" />
+                          <EntityLink id={targetId} className="text-sm text-primary hover:underline block truncate" />
                           {ref.note && (
-                            <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
+                            <p className="text-xs text-muted-foreground truncate">{ref.note}</p>
                           )}
                         </div>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        </span>
+                        <div className="flex shrink-0 flex-col items-end gap-0.5">
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {ref.rel}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">
+                            {new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                          </span>
+                        </div>
                       </div>
                     );
                   })
