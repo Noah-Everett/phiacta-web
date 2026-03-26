@@ -14,6 +14,26 @@ export interface AuthResponse {
   user: User;
 }
 
+// Personal Access Token types — mirrors schemas/auth.py
+export interface TokenCreateResponse {
+  id: string;
+  name: string;
+  key_prefix: string;
+  token: string;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface TokenListItem {
+  id: string;
+  name: string;
+  key_prefix: string;
+  created_at: string;
+  last_used_at: string | null;
+  revoked_at: string | null;
+  expires_at: string | null;
+}
+
 // Entry types — mirrors entry.py
 //
 // Core fields are the entries-table columns.  Extension fields (title,

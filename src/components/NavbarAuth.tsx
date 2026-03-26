@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut } from "lucide-react";
+import { LogOut, Key } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
 export default function NavbarAuth() {
@@ -23,6 +23,11 @@ export default function NavbarAuth() {
           </Avatar>
           <span className="hidden text-sm font-medium text-foreground sm:block">{user.handle}</span>
         </Link>
+        <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="API tokens">
+          <Link href="/settings/tokens">
+            <Key className="h-3.5 w-3.5" />
+          </Link>
+        </Button>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={logout} title="Log out">
           <LogOut className="h-3.5 w-3.5" />
         </Button>

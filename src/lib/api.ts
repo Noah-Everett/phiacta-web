@@ -19,6 +19,8 @@ import type {
   IssueDetail,
   ActivityFeedResponse,
   SearchResponse,
+  TokenCreateResponse,
+  TokenListItem,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -359,4 +361,28 @@ export async function findEntriesByTags(
   params.set("limit", String(limit));
   params.set("offset", String(offset));
   return request<PaginatedResponse<EntryTagItem>>(`/v1/extensions/tags/entries?${params.toString()}`);
+}
+
+// --- Personal Access Tokens ---
+
+export async function createToken(
+  name: string,
+  expiresInDays?: number
+): Promise<TokenCreateResponse> {
+  const body: Record<string, unknown> = { name };
+  if (expiresInDays !== undefined) body.expires_in_days = expiresInDays;
+  return authFetch<TokenCreateResponse>("/v1/auth/tokens", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function listTokens(): Promise<TokenListItem[]> {
+  return authFetch<TokenListItem[]>("/v1/auth/tokens");
+}
+
+export async function revokeToken(tokenId: string): Promise<void> {
+  await authFetch<void>(`/v1/auth/tokens/${tokenId}`, {
+    method: "DELETE",
+  });
 }
