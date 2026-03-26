@@ -259,8 +259,11 @@ export default function ExplorePage() {
                         )}
                       </div>
                     )}
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1">
                     {author && (
-                      <div className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
                         <Avatar className="h-4 w-4">
                           <AvatarFallback className="text-[8px]">
                             {getInitials(author.handle)}
@@ -269,9 +272,6 @@ export default function ExplorePage() {
                         <span>{author.handle}</span>
                       </div>
                     )}
-                  </div>
-
-                  <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1">
                     {entry.created_at && (
                       <span>
                         {new Date(entry.created_at).toLocaleDateString("en-US", {
