@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
+import EntityLink from "@/components/EntityLink";
 import DiffBlock from "@/components/DiffBlock";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
@@ -629,10 +630,9 @@ export default function EntryPage({ params }: EntryPageProps) {
                 const isOutgoing = ref.from_entity_id === entry.id;
                 const targetId = isOutgoing ? ref.to_entity_id : ref.from_entity_id;
                 return (
-                  <Link
+                  <div
                     key={ref.id}
-                    href={`/entries/${targetId}`}
-                    className="flex items-start gap-2 rounded-lg border border-border p-2.5 hover:border-primary/30 hover:bg-accent/30 transition-all"
+                    className="flex items-start gap-2 rounded-lg border border-border p-2.5"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
@@ -640,14 +640,12 @@ export default function EntryPage({ params }: EntryPageProps) {
                           {isOutgoing ? ref.rel : `${ref.rel} (incoming)`}
                         </Badge>
                       </div>
-                      <p className="mt-1 text-xs text-muted-foreground font-mono truncate">
-                        {targetId}
-                      </p>
+                      <EntityLink id={targetId} className="mt-1 text-xs text-primary hover:underline font-mono truncate block" />
                       {ref.note && (
                         <p className="mt-0.5 text-xs text-muted-foreground">{ref.note}</p>
                       )}
                     </div>
-                  </Link>
+                  </div>
                 );
               })}
             </div>
