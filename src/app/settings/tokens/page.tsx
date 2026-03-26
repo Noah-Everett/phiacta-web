@@ -10,6 +10,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Key, Plus, Trash2, Copy, Check, Clock } from "lucide-react";
 
 function RelativeTime({ dateStr }: { dateStr: string }) {
@@ -118,7 +125,7 @@ export default function TokensPage() {
 
   // Create form
   const [name, setName] = useState("");
-  const [expiryDays, setExpiryDays] = useState("");
+  const [expiryDays, setExpiryDays] = useState("30");
   const [creating, setCreating] = useState(false);
 
   // Newly created token (shown once)
@@ -151,11 +158,11 @@ export default function TokensPage() {
     setNewToken(null);
     setCreating(true);
     try {
-      const days = expiryDays ? parseInt(expiryDays, 10) : undefined;
+      const days = expiryDays === "never" ? undefined : parseInt(expiryDays, 10);
       const result = await createToken(name, days);
       setNewToken(result.token);
       setName("");
-      setExpiryDays("");
+      setExpiryDays("30");
       await loadTokens();
     } catch (err) {
       setError(
@@ -265,19 +272,24 @@ export default function TokensPage() {
                 maxLength={100}
               />
             </div>
-            <div className="w-full sm:w-36 space-y-1.5">
-              <label htmlFor="token-expiry" className="text-sm font-medium text-foreground">
-                Expires in (days)
+            <div className="w-full sm:w-40 space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Expiration
               </label>
-              <Input
-                id="token-expiry"
-                type="number"
-                min={1}
-                max={365}
-                value={expiryDays}
-                onChange={(e) => setExpiryDays(e.target.value)}
-                placeholder="Never"
-              />
+              <Select value={expiryDays} onValueChange={setExpiryDays}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">7 days</SelectItem>
+                  <SelectItem value="30">30 days</SelectItem>
+                  <SelectItem value="60">60 days</SelectItem>
+                  <SelectItem value="90">90 days</SelectItem>
+                  <SelectItem value="180">180 days</SelectItem>
+                  <SelectItem value="365">1 year</SelectItem>
+                  <SelectItem value="never">Never</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <Button type="submit" disabled={creating || !name.trim()} className="sm:w-auto">
               {creating ? "Creating..." : "Create"}
