@@ -235,9 +235,16 @@ export default function ExplorePage() {
                   className="group flex flex-col gap-2.5 rounded-xl border border-border bg-card p-5 transition hover:border-primary/30 hover:shadow-sm sm:flex-row sm:items-start sm:gap-4"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <div className="mb-2 flex flex-wrap items-center gap-1.5">
                       <EntryTypeBadge entryType={entry.entry_type} />
-                      {entry.status && <StatusBadge status={entry.status} />}
+                      {entry.tags && entry.tags.slice(0, 4).map((t) => (
+                        <Badge key={t} variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {t}
+                        </Badge>
+                      ))}
+                      {entry.tags && entry.tags.length > 4 && (
+                        <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 4}</span>
+                      )}
                     </div>
                     <p className="text-sm font-semibold leading-snug text-foreground group-hover:text-primary transition-colors">
                       {entry.title || "Untitled"}
@@ -247,21 +254,9 @@ export default function ExplorePage() {
                         {entry.summary}
                       </p>
                     )}
-                    {entry.tags && entry.tags.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {entry.tags.slice(0, 4).map((t) => (
-                          <Badge key={t} variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {t}
-                          </Badge>
-                        ))}
-                        {entry.tags.length > 4 && (
-                          <span className="text-[10px] text-muted-foreground">+{entry.tags.length - 4}</span>
-                        )}
-                      </div>
-                    )}
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1">
+                  <div className="flex shrink-0 items-center gap-3 text-xs text-muted-foreground sm:flex-col sm:items-end sm:gap-1.5">
                     {author && (
                       <div className="flex items-center gap-1.5">
                         <Avatar className="h-4 w-4">
@@ -272,6 +267,7 @@ export default function ExplorePage() {
                         <span>{author.handle}</span>
                       </div>
                     )}
+                    {entry.status && <StatusBadge status={entry.status} />}
                     {entry.created_at && (() => {
                       const created = new Date(entry.created_at);
                       const daysAgo = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);
