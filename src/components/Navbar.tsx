@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/post", label: "Post" },
   { href: "/docs", label: "Docs" },
+  { href: "/guides", label: "Guides" },
   { href: "/about", label: "About" },
 ];
 

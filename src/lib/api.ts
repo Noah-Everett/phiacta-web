@@ -23,6 +23,8 @@ import type {
   SearchResponse,
   TokenCreateResponse,
   TokenListItem,
+  DocListItem,
+  DocDetail,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -434,4 +436,14 @@ export async function revokeToken(tokenId: string): Promise<void> {
   await authFetch<void>(`/v1/auth/tokens/${tokenId}`, {
     method: "DELETE",
   });
+}
+
+// --- Docs ---
+
+export async function listDocs(): Promise<DocListItem[]> {
+  return request<DocListItem[]>("/v1/docs");
+}
+
+export async function getDoc(slug: string): Promise<DocDetail> {
+  return request<DocDetail>(`/v1/docs/${slug}`);
 }

@@ -235,6 +235,16 @@ export interface SearchResponse {
   version_id: string | null;
 }
 
+// Doc types — mirrors docs router
+export interface DocListItem {
+  name: string;
+  slug: string;
+  description: string;
+  content?: string;
+}
+
+export type DocDetail = DocListItem & { content: string };
+
 // Activity types — mirrors activity.py
 export interface ActivityItem {
   id: string;
