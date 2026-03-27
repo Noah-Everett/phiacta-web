@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemeToggle from "./ThemeToggle";
 import NavbarAuth from "./NavbarAuth";
 import { cn } from "@/lib/utils";
 
@@ -49,8 +48,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
+        <div className="ml-auto">
           <NavbarAuth />
         </div>
       </div>

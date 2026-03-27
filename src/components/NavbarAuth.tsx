@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { LogOut, Key, LayoutDashboard } from "lucide-react";
+import { Settings } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 
 export default function NavbarAuth() {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
 
   if (isLoading) {
     return <div className="h-8 w-20" />;
@@ -17,24 +17,29 @@ export default function NavbarAuth() {
   if (user) {
     return (
       <div className="flex items-center gap-2">
-        <Link href={`/users/${user.id}`} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+        <Link
+          href={`/users/${user.id}`}
+          className="flex items-center gap-2 transition-opacity hover:opacity-80"
+        >
           <Avatar className="h-7 w-7">
-            <AvatarFallback className="text-[10px]">{getInitials(user.handle)}</AvatarFallback>
+            <AvatarFallback className="text-[10px]">
+              {getInitials(user.handle)}
+            </AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium text-foreground sm:block">{user.handle}</span>
+          <span className="hidden text-sm font-medium text-foreground sm:block">
+            {user.handle}
+          </span>
         </Link>
-        <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="Dashboard">
-          <Link href="/dashboard">
-            <LayoutDashboard className="h-3.5 w-3.5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7"
+          asChild
+          title="Settings"
+        >
+          <Link href="/settings">
+            <Settings className="h-3.5 w-3.5" />
           </Link>
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" asChild title="API tokens">
-          <Link href="/settings/tokens">
-            <Key className="h-3.5 w-3.5" />
-          </Link>
-        </Button>
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={logout} title="Log out">
-          <LogOut className="h-3.5 w-3.5" />
         </Button>
       </div>
     );
