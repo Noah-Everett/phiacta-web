@@ -179,7 +179,7 @@ export async function getMeApi(): Promise<User> {
 export async function listEntries(
   limit: number = 20,
   offset: number = 0,
-  filters?: { status?: string; include?: string; exclude?: string }
+  filters?: { status?: string; include?: string; exclude?: string; sort?: string; order?: string }
 ): Promise<PaginatedResponse<EntryListItem>> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
@@ -187,6 +187,8 @@ export async function listEntries(
   if (filters?.status) params.set("status", filters.status);
   if (filters?.include) params.set("include", filters.include);
   if (filters?.exclude) params.set("exclude", filters.exclude);
+  if (filters?.sort) params.set("sort", filters.sort);
+  if (filters?.order) params.set("order", filters.order);
   return request<PaginatedResponse<EntryListItem>>(`/v1/entries?${params.toString()}`);
 }
 

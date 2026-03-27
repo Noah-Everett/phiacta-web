@@ -7,6 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
 import { listEntries, searchEntries, getUser } from "@/lib/api";
@@ -15,10 +22,18 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  ArrowUpDown,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
+
+const SORT_OPTIONS = [
+  { value: "created_at:desc", label: "Newest first" },
+  { value: "created_at:asc", label: "Oldest first" },
+  { value: "updated_at:desc", label: "Recently updated" },
+  { value: "updated_at:asc", label: "Least recently updated" },
+] as const;
 
 function EntryCardSkeleton() {
   return (
@@ -86,6 +101,7 @@ export default function ExplorePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [sortKey, setSortKey] = useState("created_at:desc");
   const [authors, setAuthors] = useState<Record<string, PublicUserResponse>>({});
   const [isSearchMode, setIsSearchMode] = useState(false);
   const authorsRef = useRef<Record<string, PublicUserResponse>>({});
@@ -109,7 +125,8 @@ export default function ExplorePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await listEntries(PAGE_SIZE, pageOffset);
+      const [field, dir] = sortKey.split(":");
+      const res = await listEntries(PAGE_SIZE, pageOffset, { sort: field, order: dir });
       setEntries(res.items.map(toBrowseEntry));
       setTotal(res.total);
       setHasMore(res.has_more);
@@ -123,7 +140,7 @@ export default function ExplorePage() {
     } finally {
       setLoading(false);
     }
-  }, [resolveAuthors]);
+  }, [resolveAuthors, sortKey]);
 
   const fetchSearch = useCallback(async (query: string, pageOffset: number) => {
     setLoading(true);
@@ -142,10 +159,11 @@ export default function ExplorePage() {
     }
   }, []);
 
-  // Initial load
+  // Initial load + re-fetch on sort change
   useEffect(() => {
-    fetchBrowse(0);
-  }, [fetchBrowse]);
+    const trimmed = search.trim();
+    if (!trimmed) fetchBrowse(0);
+  }, [fetchBrowse]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced search
   useEffect(() => {
@@ -189,8 +207,8 @@ export default function ExplorePage() {
       </div>
 
       {/* Search */}
-      <div className="mb-4 flex gap-2">
-        <div className="relative flex-1">
+      <div className="mb-4">
+        <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search entries..."
@@ -220,11 +238,30 @@ export default function ExplorePage() {
       {/* Results */}
       {!loading && !error && (
         <>
-          <p className="mb-3 text-sm text-muted-foreground">
-            {isSearchMode
-              ? `${total} result${total !== 1 ? "s" : ""} for "${search.trim()}"`
-              : `${total} entr${total !== 1 ? "ies" : "y"}`}
-          </p>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {isSearchMode
+                ? `${total} result${total !== 1 ? "s" : ""} for "${search.trim()}"`
+                : `${total} entr${total !== 1 ? "ies" : "y"}`}
+            </p>
+            <Select
+              value={sortKey}
+              onValueChange={setSortKey}
+              disabled={isSearchMode}
+            >
+              <SelectTrigger size="sm" className="gap-1.5">
+                <ArrowUpDown className="h-3.5 w-3.5" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-2">
             {entries.map((entry) => {
               const author = entry.created_by ? authors[entry.created_by] : undefined;
