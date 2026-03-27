@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createEntry, setEntryTags, putEntryFile, createReference, searchEntries } from "@/lib/api";
+import { createEntry, getEntry, setEntryTags, putEntryFile, createReference, searchEntries } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -92,8 +92,9 @@ export default function PostPage() {
   const [createdEntryId, setCreatedEntryId] = useState<string | null>(null);
   const [tagWarning, setTagWarning] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
+  const [files, setFiles] = useState<{ file: File; path: string }[]>([]);
   const [fileWarning, setFileWarning] = useState("");
+  const [dragOver, setDragOver] = useState(false);
   const [refs, setRefs] = useState<PendingRef[]>([]);
   const [refSearch, setRefSearch] = useState("");
   const [refResults, setRefResults] = useState<{ id: string; title: string }[]>([]);
@@ -143,13 +144,13 @@ export default function PostPage() {
   function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files;
     if (!selected) return;
-    const newFiles: File[] = [];
+    const newFiles: { file: File; path: string }[] = [];
     for (let i = 0; i < selected.length; i++) {
       const f = selected[i];
       if (f.size > MAX_FILE_SIZE) continue; // silently skip oversized
       // Deduplicate by name
-      if (!files.some((existing) => existing.name === f.name) && !newFiles.some((n) => n.name === f.name)) {
-        newFiles.push(f);
+      if (!files.some((existing) => existing.file.name === f.name) && !newFiles.some((n) => n.file.name === f.name)) {
+        newFiles.push({ file: f, path: f.name });
       }
     }
     setFiles((prev) => [...prev, ...newFiles]);
@@ -157,8 +158,28 @@ export default function PostPage() {
     e.target.value = "";
   }
 
+  function handleFilesDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const dropped = e.dataTransfer.files;
+    if (!dropped) return;
+    const newFiles: { file: File; path: string }[] = [];
+    for (let i = 0; i < dropped.length; i++) {
+      const f = dropped[i];
+      if (f.size > MAX_FILE_SIZE) continue;
+      if (!files.some((existing) => existing.file.name === f.name) && !newFiles.some((n) => n.file.name === f.name)) {
+        newFiles.push({ file: f, path: f.name });
+      }
+    }
+    setFiles((prev) => [...prev, ...newFiles]);
+  }
+
   function removeFile(name: string) {
-    setFiles((prev) => prev.filter((f) => f.name !== name));
+    setFiles((prev) => prev.filter((f) => f.file.name !== name));
+  }
+
+  function updateFilePath(name: string, path: string) {
+    setFiles((prev) => prev.map((f) => f.file.name === name ? { ...f, path } : f));
   }
 
   function formatFileSize(bytes: number): string {
@@ -225,18 +246,31 @@ export default function PostPage() {
           setTagWarning("Entry published, but tags could not be saved. You can add them from the entry page.");
         }
       }
-      // Upload files
+      // Upload files — wait for repo to be ready first
       if (files.length > 0 && entry.id) {
-        const failed: string[] = [];
-        for (const file of files) {
+        // Poll until repo_status is "ready" (max ~15 seconds)
+        let repoReady = false;
+        for (let attempt = 0; attempt < 15; attempt++) {
           try {
-            await putEntryFile(entry.id, file.name, file);
-          } catch {
-            failed.push(file.name);
-          }
+            const check = await getEntry(entry.id);
+            if (check.repo_status === "ready") { repoReady = true; break; }
+          } catch {}
+          await new Promise((r) => setTimeout(r, 1000));
         }
-        if (failed.length > 0) {
-          setFileWarning(`Entry published, but ${failed.length} file${failed.length > 1 ? "s" : ""} could not be uploaded: ${failed.join(", ")}`);
+        if (!repoReady) {
+          setFileWarning("Entry published, but the repository wasn't ready in time. Upload files from the entry's Files tab.");
+        } else {
+          const failed: string[] = [];
+          for (const { file, path } of files) {
+            try {
+              await putEntryFile(entry.id, path, file);
+            } catch {
+              failed.push(path);
+            }
+          }
+          if (failed.length > 0) {
+            setFileWarning(`Entry published, but ${failed.length} file${failed.length > 1 ? "s" : ""} could not be uploaded: ${failed.join(", ")}`);
+          }
         }
       }
       // Create references
@@ -653,23 +687,40 @@ export default function PostPage() {
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-8 text-sm text-muted-foreground transition-colors hover:border-muted-foreground/40 hover:text-foreground"
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleFilesDrop}
+            className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-sm transition-colors ${
+              dragOver
+                ? "border-primary bg-primary/5 text-foreground"
+                : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+            }`}
           >
             <Upload className="h-4 w-4" />
-            Choose files
+            Choose files or drag and drop
           </button>
 
           {files.length > 0 && (
             <div className="mt-3 space-y-1.5">
-              {files.map((file) => (
+              {files.map(({ file, path }) => (
                 <div
                   key={file.name}
                   className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
                 >
                   <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-foreground">{file.name}</p>
-                    <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">Path:</span>
+                      <input
+                        type="text"
+                        value={path}
+                        onChange={(e) => updateFilePath(file.name, e.target.value)}
+                        placeholder="e.g., figures/image.png"
+                        className="w-full rounded px-1.5 py-0.5 text-sm text-foreground font-mono outline-none border border-transparent bg-transparent focus:border-border focus:bg-muted/50 transition-colors"
+                        title="File path in the entry repository"
+                      />
+                    </div>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
                   </div>
                   <button
                     type="button"
@@ -680,6 +731,9 @@ export default function PostPage() {
                   </button>
                 </div>
               ))}
+              <p className="text-xs text-muted-foreground">
+                Edit the path to organize files into directories (e.g., figures/plot.png, src/code.py)
+              </p>
             </div>
           )}
         </section>
