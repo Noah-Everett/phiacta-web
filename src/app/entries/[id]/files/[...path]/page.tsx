@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { ChevronRight, Download, FileIcon as FileIconLucide, Pencil, Loader2, X, Check } from "lucide-react";
+import { useTheme } from "next-themes";
 import FileIcon from "@/components/FileIcon";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
 import { useAuth } from "@/lib/auth-context";
 import { getEntry, putEntryFile } from "@/lib/api";
+import { highlightCode, getLanguageFromPath, type HighlightToken } from "@/lib/highlighter";
 import type { FileListItem } from "@/lib/types";
 
 const API_URL =
@@ -107,6 +109,10 @@ export default function FilePage({ params }: FilePageProps) {
   const lastClickedLine = useRef<number | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
+  // Syntax highlighting state for PHI-131
+  const { resolvedTheme } = useTheme();
+  const [tokens, setTokens] = useState<HighlightToken[][] | null>(null);
+
   useEffect(() => {
     params.then((p) => {
       setEntryId(p.id);
@@ -204,6 +210,25 @@ export default function FilePage({ params }: FilePageProps) {
     if (!entryId || !user) { setIsOwner(false); return; }
     getEntry(entryId).then((e) => setIsOwner(e.created_by === user.id)).catch(() => setIsOwner(false));
   }, [entryId, user]);
+
+  // Syntax highlighting (PHI-131)
+  useEffect(() => {
+    if (!content || !filePath || filePath.endsWith(".md")) {
+      setTokens(null);
+      return;
+    }
+    const lang = getLanguageFromPath(filePath);
+    if (!lang) {
+      setTokens(null);
+      return;
+    }
+    let cancelled = false;
+    const theme = resolvedTheme === "dark" ? "github-dark" : "github-light";
+    highlightCode(content, lang, theme).then((result) => {
+      if (!cancelled) setTokens(result);
+    });
+    return () => { cancelled = true; };
+  }, [content, filePath, resolvedTheme]);
 
   const handleSave = async () => {
     if (!entryId || !filePath) return;
@@ -452,7 +477,15 @@ export default function FilePage({ params }: FilePageProps) {
                             {lineNum}
                           </a>
                         </td>
-                        <td className="pr-4 py-0 whitespace-pre text-foreground">{line || " "}</td>
+                        <td className="pr-4 py-0 whitespace-pre text-foreground">
+                          {tokens?.[i]?.length
+                            ? tokens[i].map((token, j) => (
+                                <span key={j} style={token.color ? { color: token.color } : undefined}>
+                                  {token.content}
+                                </span>
+                              ))
+                            : (line || " ")}
+                        </td>
                       </tr>
                     );
                   })}
