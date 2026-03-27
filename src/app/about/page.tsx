@@ -79,7 +79,7 @@ export default function AboutPage() {
       <div className="mb-10">
         <h1 className="mb-2 text-3xl font-bold text-foreground">About Phiacta</h1>
         <p className="text-lg text-muted-foreground">
-          A permanent, structured home for human knowledge.
+          A permanent, structured home for knowledge.
         </p>
       </div>
 
