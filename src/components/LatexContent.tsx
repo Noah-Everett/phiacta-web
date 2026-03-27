@@ -105,10 +105,27 @@ function latexToMarkdown(tex: string): string {
   md = md.replace(/\\autoref\{([^}]*)\}/g, "[$1]");
   md = md.replace(/\\cref\{([^}]*)\}/g, "[$1]");
 
-  // Step 7: Figures, tables, and floats — extract caption, strip the rest
-  md = md.replace(/\\begin\{(figure|table|float)\*?\}[\s\S]*?\\caption\{([^}]*)\}[\s\S]*?\\end\{\1\*?\}/g, "\n*$2*\n");
-  md = md.replace(/\\begin\{(figure|table|float)\*?\}[\s\S]*?\\end\{\1\*?\}/g, "");
-  md = md.replace(/\\includegraphics(\[[^\]]*\])?\{([^}]*)\}/g, "*[Figure: $2]*");
+  // Step 7: Figures, tables, and floats — extract image + caption
+  // Figure environments with both \includegraphics and \caption
+  md = md.replace(
+    /\\begin\{(figure|float)\*?\}[\s\S]*?\\includegraphics(\[[^\]]*\])?\{([^}]*)\}[\s\S]*?\\caption\{([^}]*)\}[\s\S]*?\\end\{\1\*?\}/g,
+    "\n![$4]($3)\n",
+  );
+  // Figure environments with \caption before \includegraphics
+  md = md.replace(
+    /\\begin\{(figure|float)\*?\}[\s\S]*?\\caption\{([^}]*)\}[\s\S]*?\\includegraphics(\[[^\]]*\])?\{([^}]*)\}[\s\S]*?\\end\{\1\*?\}/g,
+    "\n![$2]($4)\n",
+  );
+  // Figure environments with \includegraphics but no \caption
+  md = md.replace(
+    /\\begin\{(figure|float)\*?\}[\s\S]*?\\includegraphics(\[[^\]]*\])?\{([^}]*)\}[\s\S]*?\\end\{\1\*?\}/g,
+    "\n![]($3)\n",
+  );
+  // Table/float environments without images — extract caption or strip
+  md = md.replace(/\\begin\{(table|figure|float)\*?\}[\s\S]*?\\caption\{([^}]*)\}[\s\S]*?\\end\{\1\*?\}/g, "\n*$2*\n");
+  md = md.replace(/\\begin\{(table|figure|float)\*?\}[\s\S]*?\\end\{\1\*?\}/g, "");
+  // Standalone \includegraphics (outside figure environments)
+  md = md.replace(/\\includegraphics(\[[^\]]*\])?\{([^}]*)\}/g, "\n![]($2)\n");
   md = md.replace(/\\caption\{([^}]*)\}/g, "*$1*");
 
   // Step 8: Theorem-like environments

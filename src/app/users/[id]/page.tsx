@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
+import { useAuth } from "@/lib/auth-context";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { StatusBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
 import { getUser, listEntries, getEntryIssues, getEntryEdits, getEntryTags } from "@/lib/api";
 import {
@@ -45,6 +47,7 @@ interface ActivityItem {
 }
 
 export default function UserPage({ params }: UserPageProps) {
+  const { user: authUser } = useAuth();
   const [id, setId] = useState<string | null>(null);
   const [user, setUser] = useState<PublicUserResponse | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -56,6 +59,8 @@ export default function UserPage({ params }: UserPageProps) {
     entries: 0, issues: 0, edits: 0,
     topTags: [] as string[],
   });
+
+  const isOwnProfile = authUser?.id === id;
 
   useEffect(() => { params.then((p) => setId(p.id)); }, [params]);
 
@@ -116,9 +121,9 @@ export default function UserPage({ params }: UserPageProps) {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
-        <div className="flex gap-4 mb-8">
-          <Skeleton className="h-16 w-16 rounded-full shrink-0" />
-          <div className="space-y-2 flex-1">
+        <div className="mb-8 flex gap-4">
+          <Skeleton className="h-16 w-16 shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2">
             <Skeleton className="h-6 w-40" />
             <Skeleton className="h-4 w-24" />
           </div>
@@ -142,19 +147,19 @@ export default function UserPage({ params }: UserPageProps) {
     <div className="mx-auto max-w-3xl px-6 py-10">
 
       {/* Profile header */}
-      <div className="flex gap-4 mb-8 pb-6 border-b border-border">
-        <Avatar className="h-16 w-16 text-xl shrink-0">
+      <div className="mb-8 flex gap-4 border-b border-border pb-6">
+        <Avatar className="h-16 w-16 shrink-0 text-xl">
           <AvatarFallback className="text-xl font-semibold">{getInitials(user.handle)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
           <h1 className="text-xl font-bold tracking-tight text-foreground">{user.handle}</h1>
-          <p className="text-sm text-muted-foreground mb-2">
+          <p className="mt-0.5 text-sm text-muted-foreground">
             Joined {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </p>
           {metrics.topTags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
+            <div className="mt-2 flex flex-wrap gap-1">
               {metrics.topTags.map((tag) => (
-                <Badge key={tag} variant="secondary" className="text-[11px] font-normal px-2 py-0">{tag}</Badge>
+                <Badge key={tag} variant="secondary" className="px-2 py-0 text-[11px] font-normal">{tag}</Badge>
               ))}
             </div>
           )}
@@ -162,7 +167,7 @@ export default function UserPage({ params }: UserPageProps) {
       </div>
 
       {/* Filter + sort */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-1.5">
           {([
             ["all", "All", activity.length],
@@ -175,9 +180,9 @@ export default function UserPage({ params }: UserPageProps) {
               variant={filter === val ? "secondary" : "ghost"}
               size="sm"
               onClick={() => setFilter(val)}
-              className="text-xs gap-1"
+              className="gap-1 text-xs"
             >
-              {label} <span className="text-muted-foreground tabular-nums">{count}</span>
+              {label} <span className="tabular-nums text-muted-foreground">{count}</span>
             </Button>
           ))}
         </div>
@@ -200,13 +205,18 @@ export default function UserPage({ params }: UserPageProps) {
               const e = item.entry;
               return (
                 <Link key={`e-${e.id}`} href={`/entries/${e.id}`}
-                  className="group flex items-start gap-3 rounded-lg p-3 -mx-3 hover:bg-accent/40 transition">
+                  className="group -mx-3 flex items-start gap-3 rounded-lg p-3 transition hover:bg-accent/40">
                   <FileText className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{e.title || "Untitled"}</p>
-                    {e.summary && <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{e.summary}</p>}
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-foreground transition-colors group-hover:text-primary">{e.title || "Untitled"}</p>
+                      {isOwnProfile && e.status !== "active" && (
+                        <StatusBadge status={e.status} />
+                      )}
+                    </div>
+                    {e.summary && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{e.summary}</p>}
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground mt-0.5">
+                  <span className="mt-0.5 shrink-0 text-xs text-muted-foreground">
                     {new Date(e.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 </Link>
@@ -216,16 +226,16 @@ export default function UserPage({ params }: UserPageProps) {
               const iss = item.issue;
               return (
                 <Link key={`i-${iss.entryId}-${iss.number}`} href={`/entries/${iss.entryId}/issues/${iss.number}`}
-                  className="group flex items-start gap-3 rounded-lg p-3 -mx-3 hover:bg-accent/40 transition">
+                  className="group -mx-3 flex items-start gap-3 rounded-lg p-3 transition hover:bg-accent/40">
                   <CircleDot className={`mt-0.5 h-4 w-4 shrink-0 ${iss.state === "open" ? "text-green-500" : "text-muted-foreground"}`} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{iss.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-sm font-medium text-foreground transition-colors group-hover:text-primary">{iss.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       on {iss.entryTitle}
-                      {iss.comments_count > 0 && <span className="inline-flex items-center gap-0.5 ml-2"><MessageCircle className="h-3 w-3" /> {iss.comments_count}</span>}
+                      {iss.comments_count > 0 && <span className="ml-2 inline-flex items-center gap-0.5"><MessageCircle className="h-3 w-3" /> {iss.comments_count}</span>}
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground mt-0.5">
+                  <span className="mt-0.5 shrink-0 text-xs text-muted-foreground">
                     {new Date(iss.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 </Link>
@@ -235,22 +245,22 @@ export default function UserPage({ params }: UserPageProps) {
               const ed = item.edit;
               return (
                 <Link key={`d-${ed.entryId}-${ed.number}`} href={`/entries/${ed.entryId}/edits/${ed.number}`}
-                  className="group flex items-start gap-3 rounded-lg p-3 -mx-3 hover:bg-accent/40 transition">
+                  className="group -mx-3 flex items-start gap-3 rounded-lg p-3 transition hover:bg-accent/40">
                   {ed.merged_at
                     ? <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
                     : <GitBranch className={`mt-0.5 h-4 w-4 shrink-0 ${ed.state === "open" ? "text-violet-500" : "text-muted-foreground"}`} />}
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{ed.title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-sm font-medium text-foreground transition-colors group-hover:text-primary">{ed.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
                       on {ed.entryTitle}
-                      <Badge variant="outline" className={`ml-2 text-[10px] py-0 ${
-                        ed.merged_at ? "text-emerald-700 border-emerald-200 dark:text-emerald-300 dark:border-emerald-800"
-                        : ed.state === "open" ? "text-violet-700 border-violet-200 dark:text-violet-300 dark:border-violet-800"
-                        : "text-muted-foreground border-border"
+                      <Badge variant="outline" className={`ml-2 py-0 text-[10px] ${
+                        ed.merged_at ? "border-emerald-200 text-emerald-700 dark:border-emerald-800 dark:text-emerald-300"
+                        : ed.state === "open" ? "border-violet-200 text-violet-700 dark:border-violet-800 dark:text-violet-300"
+                        : "border-border text-muted-foreground"
                       }`}>{ed.merged_at ? "accepted" : ed.state}</Badge>
                     </p>
                   </div>
-                  <span className="shrink-0 text-xs text-muted-foreground mt-0.5">
+                  <span className="mt-0.5 shrink-0 text-xs text-muted-foreground">
                     {new Date(ed.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                   </span>
                 </Link>

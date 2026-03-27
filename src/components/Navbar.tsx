@@ -3,15 +3,15 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import ThemeToggle from "./ThemeToggle";
 import NavbarAuth from "./NavbarAuth";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/explore", label: "Explore" },
   { href: "/post", label: "Post" },
-  { href: "/agents", label: "Agents" },
   { href: "/docs", label: "Docs" },
+  { href: "/guides", label: "Guides" },
+  { href: "/contributing", label: "Contributing" },
   { href: "/about", label: "About" },
 ];
 
@@ -48,8 +48,7 @@ export default function Navbar() {
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
-          <ThemeToggle />
+        <div className="ml-auto">
           <NavbarAuth />
         </div>
       </div>

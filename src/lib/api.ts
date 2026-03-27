@@ -19,10 +19,14 @@ import type {
   EntryTagItem,
   IssueListItem,
   IssueDetail,
+  IssueCommentResponse,
   ActivityFeedResponse,
   SearchResponse,
   TokenCreateResponse,
   TokenListItem,
+  PluginInfo,
+  DocListItem,
+  DocDetail,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -434,4 +438,98 @@ export async function revokeToken(tokenId: string): Promise<void> {
   await authFetch<void>(`/v1/auth/tokens/${tokenId}`, {
     method: "DELETE",
   });
+}
+
+// --- Entry Status Actions ---
+
+export async function archiveEntry(id: string): Promise<EntryResponse> {
+  return authFetch<EntryResponse>(`/v1/entries/${id}/archive`, { method: "POST" });
+}
+
+export async function unarchiveEntry(id: string): Promise<EntryResponse> {
+  return authFetch<EntryResponse>(`/v1/entries/${id}/unarchive`, { method: "POST" });
+}
+
+export async function hideEntry(id: string): Promise<EntryResponse> {
+  return authFetch<EntryResponse>(`/v1/entries/${id}/hide`, { method: "POST" });
+}
+
+export async function unhideEntry(id: string): Promise<EntryResponse> {
+  return authFetch<EntryResponse>(`/v1/entries/${id}/unhide`, { method: "POST" });
+}
+
+// --- Entry File Deletion ---
+
+export async function deleteEntryFile(
+  entryId: string,
+  path: string,
+  message?: string,
+): Promise<FileWriteResponse> {
+  const params = message ? `?message=${encodeURIComponent(message)}` : "";
+  return authFetch<FileWriteResponse>(
+    `/v1/entries/${entryId}/files/${encodeURIComponent(path)}${params}`,
+    { method: "DELETE" },
+  );
+}
+
+// --- Reference Deletion ---
+
+export async function deleteReference(referenceId: string): Promise<void> {
+  await authFetch<void>(`/v1/extensions/references/${referenceId}`, {
+    method: "DELETE",
+  });
+}
+
+// --- Issue Creation & Comments ---
+
+export async function createIssue(
+  entryId: string,
+  title: string,
+  body?: string,
+): Promise<IssueListItem> {
+  return authFetch<IssueListItem>(`/v1/entries/${entryId}/issues`, {
+    method: "POST",
+    body: JSON.stringify({ title, body: body || null }),
+  });
+}
+
+export async function addIssueComment(
+  entryId: string,
+  issueNumber: number,
+  body: string,
+): Promise<IssueCommentResponse> {
+  return authFetch<IssueCommentResponse>(
+    `/v1/entries/${entryId}/issues/${issueNumber}/comments`,
+    { method: "POST", body: JSON.stringify({ body }) },
+  );
+}
+
+// --- Edit Proposal Creation ---
+
+export async function createEditProposal(
+  entryId: string,
+  title: string,
+  body?: string,
+  files?: { path: string; content: string }[],
+): Promise<EditProposalListItem> {
+  return authFetch<EditProposalListItem>(`/v1/entries/${entryId}/edits`, {
+    method: "POST",
+    body: JSON.stringify({ title, body: body || null, files: files || [] }),
+  });
+}
+
+// --- Plugins ---
+
+export async function listPlugins(): Promise<PluginInfo[]> {
+  return request<PluginInfo[]>("/v1/plugins");
+}
+
+// --- Docs ---
+
+export async function listDocs(): Promise<DocListItem[]> {
+  return request<DocListItem[]>("/v1/docs");
+}
+
+export async function getDoc(slug: string): Promise<DocDetail> {
+  return request<DocDetail>(`/v1/docs/${slug}`);
 }

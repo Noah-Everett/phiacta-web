@@ -235,6 +235,34 @@ export interface SearchResponse {
   version_id: string | null;
 }
 
+// Plugin types — mirrors plugins router
+export interface PluginProviderInfo {
+  fields: string[];
+  writable_fields: string[];
+  required_on_create: string[];
+  include_in_list: boolean;
+  include_in_detail: boolean;
+}
+
+export interface PluginInfo {
+  name: string;
+  type: string;
+  version: string;
+  description: string;
+  depends_on: string[];
+  provider: PluginProviderInfo | null;
+}
+
+// Doc types — mirrors docs router
+export interface DocListItem {
+  name: string;
+  slug: string;
+  description: string;
+  content?: string;
+}
+
+export type DocDetail = DocListItem & { content: string };
+
 // Activity types — mirrors activity.py
 export interface ActivityItem {
   id: string;

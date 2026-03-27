@@ -1,13 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { createToken, listTokens, revokeToken } from "@/lib/api";
 import type { TokenListItem } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -62,26 +60,32 @@ function TokenRow({
 
   return (
     <div className="flex items-center justify-between gap-4 py-3">
-      <div className="flex items-center gap-3 min-w-0">
+      <div className="flex min-w-0 items-center gap-3">
         <Key className="h-4 w-4 shrink-0 text-muted-foreground" />
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-sm truncate">{token.name}</span>
+            <span className="truncate text-sm font-medium">{token.name}</span>
             <code className="text-xs text-muted-foreground">
               pat_{token.key_prefix}...
             </code>
             {isRevoked && (
-              <Badge variant="outline" className="text-destructive border-destructive/30">
+              <Badge
+                variant="outline"
+                className="border-destructive/30 text-destructive"
+              >
                 Revoked
               </Badge>
             )}
             {isExpired && !isRevoked && (
-              <Badge variant="outline" className="text-orange-500 border-orange-500/30">
+              <Badge
+                variant="outline"
+                className="border-orange-500/30 text-orange-500"
+              >
                 Expired
               </Badge>
             )}
           </div>
-          <div className="flex gap-3 text-xs text-muted-foreground mt-0.5">
+          <div className="mt-0.5 flex gap-3 text-xs text-muted-foreground">
             <span>
               Created <RelativeTime dateStr={token.created_at} />
             </span>
@@ -116,8 +120,7 @@ function TokenRow({
 }
 
 export default function TokensPage() {
-  const { user, isLoading: authLoading } = useAuth();
-  const router = useRouter();
+  const { user } = useAuth();
 
   const [tokens, setTokens] = useState<TokenListItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -143,14 +146,11 @@ export default function TokensPage() {
     }
   }, []);
 
+  // Layout handles auth redirect; load tokens once user is available
   useEffect(() => {
-    if (authLoading) return;
-    if (!user) {
-      router.push("/auth/login");
-      return;
-    }
+    if (!user) return;
     loadTokens();
-  }, [user, authLoading, router, loadTokens]);
+  }, [user, loadTokens]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -158,7 +158,8 @@ export default function TokensPage() {
     setNewToken(null);
     setCreating(true);
     try {
-      const days = expiryDays === "never" ? undefined : parseInt(expiryDays, 10);
+      const days =
+        expiryDays === "never" ? undefined : parseInt(expiryDays, 10);
       const result = await createToken(name, days);
       setNewToken(result.token);
       setName("");
@@ -192,28 +193,20 @@ export default function TokensPage() {
     setTimeout(() => setCopied(false), 2000);
   }
 
-  if (authLoading || !user) {
-    return (
-      <div className="mx-auto max-w-2xl px-6 py-12">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-      </div>
-    );
-  }
+  if (!user) return null;
 
   const activeTokens = tokens.filter((t) => t.revoked_at === null);
   const revokedTokens = tokens.filter((t) => t.revoked_at !== null);
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-foreground">
-          Personal Access Tokens
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Tokens authenticate API requests from scripts, the SDK, and the MCP
-          server. Treat them like passwords.
-        </p>
-      </div>
+    <div>
+      <h2 className="text-lg font-semibold text-foreground">
+        Personal Access Tokens
+      </h2>
+      <p className="mb-4 mt-1 text-sm text-muted-foreground">
+        Tokens authenticate API requests from scripts, the SDK, and the MCP
+        server. Treat them like passwords.
+      </p>
 
       {error && (
         <div className="mb-4 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
@@ -224,11 +217,11 @@ export default function TokensPage() {
       {/* Show-once banner for newly created token */}
       {newToken && (
         <div className="mb-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4">
-          <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400 mb-2">
+          <p className="mb-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
             Token created. Copy it now — you won&apos;t see it again.
           </p>
           <div className="flex items-center gap-2">
-            <code className="flex-1 rounded bg-background px-3 py-2 text-sm font-mono break-all border">
+            <code className="flex-1 break-all rounded border bg-background px-3 py-2 font-mono text-sm">
               {newToken}
             </code>
             <Button
@@ -249,60 +242,66 @@ export default function TokensPage() {
       )}
 
       {/* Create token form */}
-      <Card className="mb-8">
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create token
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleCreate} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-1.5">
-              <label htmlFor="token-name" className="text-sm font-medium text-foreground">
-                Name
-              </label>
-              <Input
-                id="token-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                placeholder="e.g. mcp-server, ci-pipeline"
-                maxLength={100}
-              />
-            </div>
-            <div className="w-full sm:w-40 space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Expiration
-              </label>
-              <Select value={expiryDays} onValueChange={setExpiryDays}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">7 days</SelectItem>
-                  <SelectItem value="30">30 days</SelectItem>
-                  <SelectItem value="60">60 days</SelectItem>
-                  <SelectItem value="90">90 days</SelectItem>
-                  <SelectItem value="180">180 days</SelectItem>
-                  <SelectItem value="365">1 year</SelectItem>
-                  <SelectItem value="never">Never</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" disabled={creating || !name.trim()} className="sm:w-auto">
-              {creating ? "Creating..." : "Create"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+      <div className="mb-6 rounded-xl border border-border p-5">
+        <p className="mb-3 flex items-center gap-2 text-sm font-medium text-foreground">
+          <Plus className="h-4 w-4" />
+          Create token
+        </p>
+        <form
+          onSubmit={handleCreate}
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+        >
+          <div className="flex-1 space-y-1.5">
+            <label
+              htmlFor="token-name"
+              className="text-sm font-medium text-foreground"
+            >
+              Name
+            </label>
+            <Input
+              id="token-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              placeholder="e.g. mcp-server, ci-pipeline"
+              maxLength={100}
+            />
+          </div>
+          <div className="w-full space-y-1.5 sm:w-40">
+            <label className="text-sm font-medium text-foreground">
+              Expiration
+            </label>
+            <Select value={expiryDays} onValueChange={setExpiryDays}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 days</SelectItem>
+                <SelectItem value="30">30 days</SelectItem>
+                <SelectItem value="60">60 days</SelectItem>
+                <SelectItem value="90">90 days</SelectItem>
+                <SelectItem value="180">180 days</SelectItem>
+                <SelectItem value="365">1 year</SelectItem>
+                <SelectItem value="never">Never</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            type="submit"
+            disabled={creating || !name.trim()}
+            className="sm:w-auto"
+          >
+            {creating ? "Creating..." : "Create"}
+          </Button>
+        </form>
+      </div>
 
       {/* Active tokens */}
       <div className="mb-2">
-        <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+        <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
           Active tokens ({activeTokens.length})
-        </h2>
+        </h3>
       </div>
       {loading ? (
         <div className="space-y-3">
@@ -311,7 +310,7 @@ export default function TokensPage() {
           ))}
         </div>
       ) : activeTokens.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-4">No active tokens.</p>
+        <p className="py-4 text-sm text-muted-foreground">No active tokens.</p>
       ) : (
         <div className="divide-y">
           {activeTokens.map((t) => (
@@ -325,9 +324,9 @@ export default function TokensPage() {
         <>
           <Separator className="my-6" />
           <div className="mb-2">
-            <h2 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+            <h3 className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
               Revoked tokens ({revokedTokens.length})
-            </h2>
+            </h3>
           </div>
           <div className="divide-y opacity-60">
             {revokedTokens.map((t) => (
