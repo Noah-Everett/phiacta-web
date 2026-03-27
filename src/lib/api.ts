@@ -24,6 +24,7 @@ import type {
   SearchResponse,
   TokenCreateResponse,
   TokenListItem,
+  PluginInfo,
   DocListItem,
   DocDetail,
 } from "./types";
@@ -439,16 +440,6 @@ export async function revokeToken(tokenId: string): Promise<void> {
   });
 }
 
-// --- Docs ---
-
-export async function listDocs(): Promise<DocListItem[]> {
-  return request<DocListItem[]>("/v1/docs");
-}
-
-export async function getDoc(slug: string): Promise<DocDetail> {
-  return request<DocDetail>(`/v1/docs/${slug}`);
-}
-
 // --- Entry Status Actions ---
 
 export async function archiveEntry(id: string): Promise<EntryResponse> {
@@ -525,4 +516,20 @@ export async function createEditProposal(
     method: "POST",
     body: JSON.stringify({ title, body: body || null, files: files || [] }),
   });
+}
+
+// --- Plugins ---
+
+export async function listPlugins(): Promise<PluginInfo[]> {
+  return request<PluginInfo[]>("/v1/plugins");
+}
+
+// --- Docs ---
+
+export async function listDocs(): Promise<DocListItem[]> {
+  return request<DocListItem[]>("/v1/docs");
+}
+
+export async function getDoc(slug: string): Promise<DocDetail> {
+  return request<DocDetail>(`/v1/docs/${slug}`);
 }
