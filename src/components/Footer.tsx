@@ -24,6 +24,9 @@ export default function Footer() {
                 {label}
               </Link>
             ))}
+            <a href="mailto:contact@phiacta.com" className="hover:text-foreground transition-colors">
+              Contact
+            </a>
           </div>
         </div>
       </div>
