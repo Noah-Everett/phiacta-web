@@ -15,15 +15,17 @@ import {
   Loader2,
   X,
   GitMerge,
+  RotateCcw,
 } from "lucide-react";
 import {
   getEntry,
   getEntryIssueDetail,
   getEntryEdits,
   closeIssue,
-  getStoredToken,
+  addIssueComment,
   ApiError,
 } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import type {
   EntryDetailResponse,
   IssueDetail,
@@ -45,7 +47,11 @@ export default function IssuePage({ params }: IssuePageProps) {
   const [error, setError] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const isLoggedIn = typeof window !== "undefined" && !!getStoredToken();
+  const [commentBody, setCommentBody] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
 
   useEffect(() => {
     params.then((p) => {
@@ -85,6 +91,21 @@ export default function IssuePage({ params }: IssuePageProps) {
       .then(() => loadData())
       .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
       .finally(() => setClosing(false));
+  };
+
+  const handleComment = () => {
+    if (!entryId || !issueNumber || !commentBody.trim()) return;
+    setSubmittingComment(true);
+    setCommentError(null);
+    addIssueComment(entryId, issueNumber, commentBody.trim())
+      .then(() => {
+        setCommentBody("");
+        loadData();
+      })
+      .catch((err) =>
+        setCommentError(err instanceof Error ? err.message : "Failed to add comment"),
+      )
+      .finally(() => setSubmittingComment(false));
   };
 
   if (loading) {
@@ -194,21 +215,64 @@ export default function IssuePage({ params }: IssuePageProps) {
         </div>
       )}
 
+      {/* Comment Form */}
+      {isLoggedIn && (
+        <div className="rounded-xl border border-border bg-card p-5 mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Add a comment
+          </h2>
+          <textarea
+            value={commentBody}
+            onChange={(e) => setCommentBody(e.target.value)}
+            placeholder="Leave a comment..."
+            rows={4}
+            className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Markdown supported</span>
+            <Button
+              onClick={handleComment}
+              disabled={submittingComment || !commentBody.trim()}
+              className="gap-1.5"
+            >
+              {submittingComment && <Loader2 className="h-4 w-4 animate-spin" />}
+              Comment
+            </Button>
+          </div>
+          {commentError && (
+            <p className="mt-2 text-xs text-red-600 dark:text-red-400">{commentError}</p>
+          )}
+        </div>
+      )}
+
       {/* Actions */}
       {actionError && (
         <p className="mb-3 text-xs text-red-600 dark:text-red-400">{actionError}</p>
       )}
-      {issue.state === "open" && isLoggedIn && (
+      {isLoggedIn && (
         <div className="flex items-center gap-2 pt-4 border-t border-border">
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={closing}
-            className="gap-1.5"
-          >
-            {closing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
-            Close issue
-          </Button>
+          {issue.state === "open" && (
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={closing}
+              className="gap-1.5"
+            >
+              {closing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
+              Close issue
+            </Button>
+          )}
+          {issue.state === "closed" && (
+            <Button
+              variant="outline"
+              disabled
+              title="Reopening not yet supported"
+              className="gap-1.5"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reopen issue
+            </Button>
+          )}
         </div>
       )}
     </div>
