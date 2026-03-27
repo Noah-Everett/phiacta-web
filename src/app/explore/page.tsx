@@ -16,13 +16,15 @@ import {
 } from "@/components/ui/select";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
-import { listEntries, searchEntries, getUser } from "@/lib/api";
-import type { EntryListItem, PublicUserResponse, SearchResultItem } from "@/lib/types";
+import { listEntries, searchEntries, findEntriesByTags, getUser } from "@/lib/api";
+import type { EntryListItem, PublicUserResponse, SearchResultItem, EntryTagItem } from "@/lib/types";
 import {
   Search,
   ChevronLeft,
   ChevronRight,
   ArrowUpDown,
+  X,
+  Filter,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -93,6 +95,22 @@ function toSearchEntry(r: SearchResultItem): DisplayEntry {
   };
 }
 
+function toTagEntry(r: EntryTagItem): DisplayEntry {
+  return {
+    id: r.entry_id,
+    title: r.title,
+    entry_type: null,
+    summary: null,
+  };
+}
+
+const STATUS_OPTIONS = [
+  { value: "all", label: "All statuses" },
+  { value: "active", label: "Active" },
+  { value: "archived", label: "Archived" },
+  { value: "hidden", label: "Hidden" },
+] as const;
+
 export default function ExplorePage() {
   const [entries, setEntries] = useState<DisplayEntry[]>([]);
   const [total, setTotal] = useState(0);
@@ -104,6 +122,11 @@ export default function ExplorePage() {
   const [sortKey, setSortKey] = useState("created_at:desc");
   const [authors, setAuthors] = useState<Record<string, PublicUserResponse>>({});
   const [isSearchMode, setIsSearchMode] = useState(false);
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [tagMode, setTagMode] = useState<"and" | "or">("or");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [tagInput, setTagInput] = useState("");
+  const [isTagFilterMode, setIsTagFilterMode] = useState(false);
   const authorsRef = useRef<Record<string, PublicUserResponse>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -126,12 +149,15 @@ export default function ExplorePage() {
     setError(null);
     try {
       const [field, dir] = sortKey.split(":");
-      const res = await listEntries(PAGE_SIZE, pageOffset, { sort: field, order: dir });
+      const filters: { status?: string; sort?: string; order?: string } = { sort: field, order: dir };
+      if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
+      const res = await listEntries(PAGE_SIZE, pageOffset, filters);
       setEntries(res.items.map(toBrowseEntry));
       setTotal(res.total);
       setHasMore(res.has_more);
       setOffset(pageOffset);
       setIsSearchMode(false);
+      setIsTagFilterMode(false);
 
       const uniqueIds = Array.from(new Set(res.items.map((e) => e.created_by)));
       await resolveAuthors(uniqueIds);
@@ -140,7 +166,7 @@ export default function ExplorePage() {
     } finally {
       setLoading(false);
     }
-  }, [resolveAuthors, sortKey]);
+  }, [resolveAuthors, sortKey, statusFilter]);
 
   const fetchSearch = useCallback(async (query: string, pageOffset: number) => {
     setLoading(true);
@@ -159,11 +185,47 @@ export default function ExplorePage() {
     }
   }, []);
 
-  // Initial load + re-fetch on sort change
+  const fetchByTags = useCallback(async (tags: string[], mode: "and" | "or", pageOffset: number) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await findEntriesByTags(tags, mode, PAGE_SIZE, pageOffset);
+      setEntries(res.items.map(toTagEntry));
+      setTotal(res.total);
+      setHasMore(res.has_more);
+      setOffset(pageOffset);
+      setIsSearchMode(false);
+      setIsTagFilterMode(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to filter by tags");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Determine the active fetch strategy based on current filters
+  const fetchActive = useCallback((pageOffset: number) => {
+    const trimmed = search.trim();
+    if (trimmed) {
+      fetchSearch(trimmed, pageOffset);
+    } else if (filterTags.length > 0) {
+      fetchByTags(filterTags, tagMode, pageOffset);
+    } else {
+      fetchBrowse(pageOffset);
+    }
+  }, [search, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]);
+
+  // Initial load + re-fetch on sort/status/tag changes
   useEffect(() => {
     const trimmed = search.trim();
-    if (!trimmed) fetchBrowse(0);
-  }, [fetchBrowse]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!trimmed) {
+      if (filterTags.length > 0) {
+        fetchByTags(filterTags, tagMode, 0);
+      } else {
+        fetchBrowse(0);
+      }
+    }
+  }, [fetchBrowse, filterTags, tagMode, fetchByTags]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Debounced search
   useEffect(() => {
@@ -171,8 +233,14 @@ export default function ExplorePage() {
 
     const trimmed = search.trim();
     if (!trimmed) {
-      // Switch back to browse mode
-      if (isSearchMode) fetchBrowse(0);
+      // Switch back to browse/tag mode
+      if (isSearchMode) {
+        if (filterTags.length > 0) {
+          fetchByTags(filterTags, tagMode, 0);
+        } else {
+          fetchBrowse(0);
+        }
+      }
       return;
     }
 
@@ -189,11 +257,25 @@ export default function ExplorePage() {
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
   const handlePageChange = (newOffset: number) => {
-    const trimmed = search.trim();
-    if (trimmed) {
-      fetchSearch(trimmed, newOffset);
-    } else {
-      fetchBrowse(newOffset);
+    fetchActive(newOffset);
+  };
+
+  const addFilterTag = (tag: string) => {
+    const normalized = tag.trim().toLowerCase();
+    if (normalized && !filterTags.includes(normalized)) {
+      setFilterTags((prev) => [...prev, normalized]);
+    }
+  };
+
+  const removeFilterTag = (tag: string) => {
+    setFilterTags((prev) => prev.filter((t) => t !== tag));
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addFilterTag(tagInput);
+      setTagInput("");
     }
   };
 
@@ -207,7 +289,7 @@ export default function ExplorePage() {
       </div>
 
       {/* Search */}
-      <div className="mb-4">
+      <div className="mb-3">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -217,6 +299,66 @@ export default function ExplorePage() {
             className="pl-9"
           />
         </div>
+      </div>
+
+      {/* Filters bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+        <div className="flex flex-wrap items-center gap-1.5">
+          {filterTags.map((tag) => (
+            <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
+              {tag}
+              <button
+                type="button"
+                onClick={() => removeFilterTag(tag)}
+                className="ml-0.5 rounded-sm hover:bg-muted-foreground/20"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          <Input
+            placeholder="Add tag..."
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={handleTagInputKeyDown}
+            className="h-7 w-28 text-xs"
+          />
+        </div>
+        {filterTags.length > 0 && (
+          <Button
+            variant={tagMode === "and" ? "default" : "outline"}
+            size="sm"
+            className="h-7 px-2 text-[10px]"
+            onClick={() => setTagMode((m) => (m === "and" ? "or" : "and"))}
+          >
+            {tagMode.toUpperCase()}
+          </Button>
+        )}
+        <div className="ml-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger size="sm" className="h-7 gap-1 text-xs">
+              <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {filterTags.length > 0 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs text-muted-foreground"
+            onClick={() => setFilterTags([])}
+          >
+            Clear tags
+          </Button>
+        )}
       </div>
 
       {/* Loading skeletons */}
@@ -242,12 +384,14 @@ export default function ExplorePage() {
             <p className="text-sm text-muted-foreground">
               {isSearchMode
                 ? `${total} result${total !== 1 ? "s" : ""} for "${search.trim()}"`
-                : `${total} entr${total !== 1 ? "ies" : "y"}`}
+                : isTagFilterMode
+                  ? `${total} entr${total !== 1 ? "ies" : "y"} tagged ${filterTags.map((t) => `"${t}"`).join(tagMode === "and" ? " & " : " | ")}`
+                  : `${total} entr${total !== 1 ? "ies" : "y"}`}
             </p>
             <Select
               value={sortKey}
               onValueChange={setSortKey}
-              disabled={isSearchMode}
+              disabled={isSearchMode || isTagFilterMode}
             >
               <SelectTrigger size="sm" className="gap-1.5">
                 <ArrowUpDown className="h-3.5 w-3.5" />
@@ -275,7 +419,16 @@ export default function ExplorePage() {
                     <div className="mb-2 flex flex-wrap items-center gap-1.5">
                       <EntryTypeBadge entryType={entry.entry_type} />
                       {entry.tags && entry.tags.slice(0, 4).map((t) => (
-                        <Badge key={t} variant="secondary" className="text-[10px] px-1.5 py-0">
+                        <Badge
+                          key={t}
+                          variant="secondary"
+                          className="cursor-pointer text-[10px] px-1.5 py-0 hover:bg-primary/20"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addFilterTag(t);
+                          }}
+                        >
                           {t}
                         </Badge>
                       ))}
@@ -326,16 +479,21 @@ export default function ExplorePage() {
                 <p className="text-sm text-muted-foreground">
                   {isSearchMode
                     ? "No entries match your search."
-                    : "No entries yet. Create one from the Post page."}
+                    : isTagFilterMode
+                      ? "No entries match those tags."
+                      : "No entries yet. Create one from the Post page."}
                 </p>
-                {isSearchMode && (
+                {(isSearchMode || isTagFilterMode) && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="mt-2"
-                    onClick={() => setSearch("")}
+                    onClick={() => {
+                      setSearch("");
+                      setFilterTags([]);
+                    }}
                   >
-                    Clear search
+                    Clear filters
                   </Button>
                 )}
               </div>
