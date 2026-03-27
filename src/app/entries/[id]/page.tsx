@@ -98,7 +98,7 @@ function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: strin
 }
 
 // Inline expandable commit
-function CommitRow({ commit, index, entryId }: { commit: CommitListItem; index: number; entryId: string }) {
+function CommitRow({ commit, index, total, entryId }: { commit: CommitListItem; index: number; total: number; entryId: string }) {
   const [open, setOpen] = useState(false);
   const [diff, setDiff] = useState<CommitDiffResponse | null>(null);
   const [loadingDiff, setLoadingDiff] = useState(false);
@@ -122,7 +122,7 @@ function CommitRow({ commit, index, entryId }: { commit: CommitListItem; index: 
         className="flex w-full items-start gap-3 bg-card p-4 text-left hover:bg-accent/40 transition-colors"
       >
         <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-secondary text-[10px] font-mono text-muted-foreground">
-          {index + 1}
+          {total - index}
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-sm font-medium text-foreground">{commit.message}</p>
@@ -598,7 +598,7 @@ export default function EntryPage({ params }: EntryPageProps) {
             <TabsContent value="history">
               <div className="space-y-2">
                 {history.map((commit, i) => (
-                  <CommitRow key={commit.sha} commit={commit} index={i} entryId={entry.id} />
+                  <CommitRow key={commit.sha} commit={commit} index={i} total={history.length} entryId={entry.id} />
                 ))}
                 {history.length === 0 && (
                   <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
