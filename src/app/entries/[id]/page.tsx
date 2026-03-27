@@ -425,29 +425,23 @@ export default function EntryPage({ params }: EntryPageProps) {
   const isOwner = user?.id != null && entry?.created_by != null && user.id === entry.created_by;
   const isAuthenticated = user != null;
 
-  // --- Edit mode states ---
+  // --- Unified edit mode ---
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Metadata editing
-  const [editingMetadata, setEditingMetadata] = useState(false);
+  // Metadata form state
   const [metaTitle, setMetaTitle] = useState("");
   const [metaSummary, setMetaSummary] = useState("");
   const [metaType, setMetaType] = useState("");
-  const [metaSaving, setMetaSaving] = useState(false);
-  const [metaError, setMetaError] = useState<string | null>(null);
 
-  // Content editing
-  const [editingContent, setEditingContent] = useState(false);
+  // Content form state
   const [editContentText, setEditContentText] = useState("");
   const [editContentMessage, setEditContentMessage] = useState("");
-  const [contentSaving, setContentSaving] = useState(false);
-  const [contentError, setContentError] = useState<string | null>(null);
 
-  // Tags editing
-  const [editingTags, setEditingTags] = useState(false);
+  // Tags form state
   const [editTags, setEditTags] = useState<string[]>([]);
   const [newTagInput, setNewTagInput] = useState("");
-  const [tagsSaving, setTagsSaving] = useState(false);
-  const [tagsError, setTagsError] = useState<string | null>(null);
 
   // Reference adding
   const [addingReference, setAddingReference] = useState(false);
@@ -568,100 +562,101 @@ export default function EntryPage({ params }: EntryPageProps) {
 
   // --- Action handlers ---
 
-  const handleMetadataSave = async () => {
-    if (!entry || !resolvedId) return;
-    setMetaSaving(true);
-    setMetaError(null);
-    try {
-      await updateEntry(resolvedId, {
-        title: metaTitle,
-        summary: metaSummary || null,
-        entry_type: metaType || null,
-      });
-      await fetchEntry(resolvedId);
-      setEditingMetadata(false);
-    } catch (err) {
-      setMetaError(err instanceof Error ? err.message : "Failed to update metadata");
-    } finally {
-      setMetaSaving(false);
-    }
-  };
-
-  const handleMetadataCancel = () => {
-    setEditingMetadata(false);
-    setMetaError(null);
-    if (entry) {
-      setMetaTitle(entry.title || "");
-      setMetaSummary(entry.summary || "");
-      setMetaType(entry.entry_type || "");
-    }
-  };
-
-  const startMetadataEdit = () => {
-    if (entry) {
-      setMetaTitle(entry.title || "");
-      setMetaSummary(entry.summary || "");
-      setMetaType(entry.entry_type || "");
-    }
-    setMetaError(null);
-    setEditingMetadata(true);
-  };
-
-  const handleContentSave = async () => {
-    if (!resolvedId) return;
-    setContentSaving(true);
-    setContentError(null);
-    try {
-      const blob = new Blob([editContentText], { type: "text/plain" });
-      const file = new window.File([blob], `content.${contentFormat}`, { type: "text/plain" });
-      await putEntryFile(resolvedId, `.phiacta/content.${contentFormat}`, file, editContentMessage || undefined);
-      await fetchContent(resolvedId);
-      setEditingContent(false);
-      setEditContentMessage("");
-    } catch (err) {
-      setContentError(err instanceof Error ? err.message : "Failed to save content");
-    } finally {
-      setContentSaving(false);
-    }
-  };
-
-  const handleContentCancel = () => {
-    setEditingContent(false);
-    setContentError(null);
-    setEditContentMessage("");
-  };
-
-  const startContentEdit = () => {
+  const enterEditMode = () => {
+    if (!entry) return;
+    setMetaTitle(entry.title || "");
+    setMetaSummary(entry.summary || "");
+    setMetaType(entry.entry_type || "");
     setEditContentText(contentText || "");
-    setContentError(null);
-    setEditingContent(true);
-  };
-
-  const handleTagsSave = async () => {
-    if (!resolvedId) return;
-    setTagsSaving(true);
-    setTagsError(null);
-    try {
-      await setEntryTags(resolvedId, editTags);
-      await fetchEntry(resolvedId);
-      setEditingTags(false);
-    } catch (err) {
-      setTagsError(err instanceof Error ? err.message : "Failed to update tags");
-    } finally {
-      setTagsSaving(false);
-    }
-  };
-
-  const handleTagsCancel = () => {
-    setEditingTags(false);
-    setTagsError(null);
-  };
-
-  const startTagsEdit = () => {
-    setEditTags(entry?.tags ? [...entry.tags] : []);
+    setEditContentMessage("");
+    setEditTags(entry.tags ? [...entry.tags] : []);
     setNewTagInput("");
-    setTagsError(null);
-    setEditingTags(true);
+    setSaveError(null);
+    setEditing(true);
+  };
+
+  const exitEditMode = () => {
+    setEditing(false);
+    setSaveError(null);
+    setEditContentMessage("");
+    setAddingReference(false);
+    setRefSearchQuery("");
+    setRefSearchResults([]);
+    setRefSelectedEntry(null);
+    setRefRel("cites");
+    setRefNote("");
+    setRefError(null);
+    setUploadingFile(false);
+    setUploadFiles([]);
+    setUploadMessage("");
+    setFileError(null);
+    setDragOver(false);
+  };
+
+  const handleSaveAll = async () => {
+    if (!resolvedId || !entry) return;
+    setSaving(true);
+    setSaveError(null);
+
+    const metadataChanged =
+      metaTitle !== (entry.title || "") ||
+      metaSummary !== (entry.summary || "") ||
+      metaType !== (entry.entry_type || "");
+    const contentChanged = editContentText !== (contentText || "");
+    const tagsChanged =
+      JSON.stringify([...editTags].sort()) !== JSON.stringify([...(entry.tags || [])].sort());
+
+    const errors: string[] = [];
+    const promises: Promise<void>[] = [];
+
+    if (metadataChanged) {
+      promises.push(
+        updateEntry(resolvedId, {
+          title: metaTitle,
+          summary: metaSummary || null,
+          entry_type: metaType || null,
+        }).then(() => {}).catch((err) => {
+          errors.push(`Metadata: ${err instanceof Error ? err.message : "failed"}`);
+        })
+      );
+    }
+
+    if (contentChanged) {
+      promises.push(
+        (async () => {
+          const blob = new Blob([editContentText], { type: "text/plain" });
+          const file = new window.File([blob], `content.${contentFormat}`, { type: "text/plain" });
+          await putEntryFile(resolvedId, `.phiacta/content.${contentFormat}`, file, editContentMessage || undefined);
+        })().catch((err) => {
+          errors.push(`Content: ${err instanceof Error ? err.message : "failed"}`);
+        })
+      );
+    }
+
+    if (tagsChanged) {
+      promises.push(
+        setEntryTags(resolvedId, editTags).then(() => {}).catch((err) => {
+          errors.push(`Tags: ${err instanceof Error ? err.message : "failed"}`);
+        })
+      );
+    }
+
+    await Promise.all(promises);
+
+    if (errors.length > 0) {
+      setSaveError(errors.join("; "));
+      setSaving(false);
+      return;
+    }
+
+    await Promise.all([
+      fetchEntry(resolvedId),
+      contentChanged ? fetchContent(resolvedId) : Promise.resolve(),
+    ]);
+
+    setEditing(false);
+    setEditContentMessage("");
+    setSaving(false);
   };
 
   const addTag = () => {
@@ -928,49 +923,53 @@ export default function EntryPage({ params }: EntryPageProps) {
       {/* Header */}
       <div className="mb-6">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          {editingMetadata ? (
-            <>
-              <Input
-                value={metaType}
-                onChange={(e) => setMetaType(e.target.value)}
-                placeholder="Entry type (e.g. paper, note)"
-                className="h-7 w-40 text-xs"
-              />
-            </>
-          ) : (
-            <EntryTypeBadge entryType={entry.entry_type} />
-          )}
+          <EntryTypeBadge entryType={entry.entry_type} />
           <StatusBadge status={entry.status} />
 
-          {/* Owner status actions */}
-          {isOwner && !editingMetadata && (
+          {isOwner && (
             <div className="flex items-center gap-1 ml-auto">
-              {statusSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-              {entry.status === "active" && (
+              {editing ? (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs gap-1"
-                    onClick={() => handleStatusAction("archive")}
-                    disabled={statusSaving}
-                  >
-                    <Archive className="h-3.5 w-3.5" />
-                    Archive
+                  <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Save
+                  </Button>
+                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
+                    Cancel
                   </Button>
                 </>
-              )}
-              {entry.status === "archived" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => handleStatusAction("unarchive")}
-                  disabled={statusSaving}
-                >
-                  <ArchiveRestore className="h-3.5 w-3.5" />
-                  Unarchive
-                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Edit
+                  </Button>
+                  {statusSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                  {entry.status === "active" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => handleStatusAction("archive")}
+                      disabled={statusSaving}
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                      Archive
+                    </Button>
+                  )}
+                  {entry.status === "archived" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-xs gap-1"
+                      onClick={() => handleStatusAction("unarchive")}
+                      disabled={statusSaving}
+                    >
+                      <ArchiveRestore className="h-3.5 w-3.5" />
+                      Unarchive
+                    </Button>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -978,8 +977,11 @@ export default function EntryPage({ params }: EntryPageProps) {
         {statusError && (
           <p className="mb-2 text-xs text-destructive">{statusError}</p>
         )}
+        {saveError && (
+          <p className="mb-2 text-xs text-destructive">{saveError}</p>
+        )}
 
-        {editingMetadata ? (
+        {editing ? (
           <div className="space-y-3 mb-4">
             <Input
               value={metaTitle}
@@ -994,16 +996,6 @@ export default function EntryPage({ params }: EntryPageProps) {
               rows={3}
               className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
             />
-            {metaError && <p className="text-xs text-destructive">{metaError}</p>}
-            <div className="flex items-center gap-2">
-              <Button size="sm" onClick={handleMetadataSave} disabled={metaSaving}>
-                {metaSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" onClick={handleMetadataCancel} disabled={metaSaving}>
-                Cancel
-              </Button>
-            </div>
           </div>
         ) : (
           <>
@@ -1011,11 +1003,6 @@ export default function EntryPage({ params }: EntryPageProps) {
               <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
                 {entry.title || "Untitled"}
               </h1>
-              {isOwner && (
-                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={startMetadataEdit}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-              )}
             </div>
 
             {entry.summary && (
@@ -1094,15 +1081,7 @@ export default function EntryPage({ params }: EntryPageProps) {
 
             {/* Content */}
             <TabsContent value="content">
-              {isOwner && !editingContent && (
-                <div className="mb-3 flex justify-end">
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={startContentEdit}>
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </Button>
-                </div>
-              )}
-              {editingContent ? (
+              {editing ? (
                 <div className="rounded-xl border border-border bg-card p-6 space-y-3">
                   <textarea
                     value={editContentText}
@@ -1117,16 +1096,6 @@ export default function EntryPage({ params }: EntryPageProps) {
                     placeholder="Commit message (optional)"
                     className="text-sm"
                   />
-                  {contentError && <p className="text-xs text-destructive">{contentError}</p>}
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleContentSave} disabled={contentSaving}>
-                      {contentSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Check className="h-3.5 w-3.5 mr-1" />}
-                      Save
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={handleContentCancel} disabled={contentSaving}>
-                      Cancel
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 <div className="rounded-xl border border-border bg-card p-6">
@@ -1279,7 +1248,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                     Files
                   </p>
                   <div className="flex items-center gap-2">
-                    {isOwner && !uploadingFile && (
+                    {editing && !uploadingFile && (
                       <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setUploadingFile(true)}>
                         <Upload className="h-3.5 w-3.5" />
                         Upload File
@@ -1383,7 +1352,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                           </span>
                         )}
                       </Link>
-                      {isOwner && file.path !== ".phiacta/entry.yaml" && file.name !== "entry.yaml" && (
+                      {editing && file.path !== ".phiacta/entry.yaml" && file.name !== "entry.yaml" && (
                         <button
                           onClick={() => handleFileDelete(file.path)}
                           disabled={fileDeleting === file.path}
@@ -1412,7 +1381,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                 <p className="text-sm text-muted-foreground">
                   Typed links between this entry and other entries in the knowledge graph.
                 </p>
-                {isOwner && !addingReference && (
+                {editing && !addingReference && (
                   <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setAddingReference(true)}>
                     <Plus className="h-3.5 w-3.5" />
                     Add Reference
@@ -1516,7 +1485,7 @@ export default function EntryPage({ params }: EntryPageProps) {
                               {new Date(ref.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                             </span>
                           </div>
-                          {isOwner && isOutgoing && (
+                          {editing && isOutgoing && (
                             <button
                               onClick={() => handleRefDelete(ref.id)}
                               disabled={refDeleting === ref.id}
@@ -1634,8 +1603,22 @@ export default function EntryPage({ params }: EntryPageProps) {
           <div className="rounded-xl border border-border bg-card p-5">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metadata</h3>
             <dl className="space-y-2.5 text-sm">
+              <div className="flex items-center justify-between">
+                <dt className="text-muted-foreground">Type</dt>
+                {editing ? (
+                  <dd>
+                    <Input
+                      value={metaType}
+                      onChange={(e) => setMetaType(e.target.value)}
+                      placeholder="e.g. paper, note"
+                      className="h-7 w-32 text-xs text-right"
+                    />
+                  </dd>
+                ) : (
+                  <dd className="font-medium text-foreground capitalize">{entry.entry_type || "not specified"}</dd>
+                )}
+              </div>
               {[
-                { label: "Type", value: entry.entry_type || "not specified" },
                 { label: "Published", value: new Date(entry.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
                 { label: "Last updated", value: new Date(entry.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
               ].map(({ label, value }) => (
@@ -1650,18 +1633,11 @@ export default function EntryPage({ params }: EntryPageProps) {
           {/* Tags — show when there are tags OR when owner can edit */}
           {((entry?.tags && entry.tags.length > 0) || isOwner) && (
           <div className="rounded-xl border border-border bg-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                <Tag className="mr-1.5 inline h-3 w-3" />
-                Tags
-              </h3>
-              {isOwner && !editingTags && (
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={startTagsEdit}>
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              )}
-            </div>
-            {editingTags ? (
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <Tag className="mr-1.5 inline h-3 w-3" />
+              Tags
+            </h3>
+            {editing ? (
               <div className="space-y-2">
                 <div className="flex flex-wrap gap-1.5">
                   {editTags.map((t) => (
@@ -1683,16 +1659,6 @@ export default function EntryPage({ params }: EntryPageProps) {
                   />
                   <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={addTag}>
                     <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-                {tagsError && <p className="text-xs text-destructive">{tagsError}</p>}
-                <div className="flex items-center gap-1.5">
-                  <Button size="sm" className="h-7 text-xs" onClick={handleTagsSave} disabled={tagsSaving}>
-                    {tagsSaving ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Check className="h-3 w-3 mr-1" />}
-                    Save
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={handleTagsCancel} disabled={tagsSaving}>
-                    Cancel
                   </Button>
                 </div>
               </div>
