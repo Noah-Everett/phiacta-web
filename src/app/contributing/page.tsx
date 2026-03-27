@@ -56,8 +56,8 @@ const REPOS = [
     url: "https://github.com/Noah-Everett/phiacta-deploy",
     icon: Layers,
     description:
-      "Docker Compose configs for dev and production environments.",
-    tech: "Docker, Docker Compose, Cloudflare Tunnel",
+      "Docker Compose stacks and deploy script. Clone this alongside the other repos to spin up a full dev environment.",
+    tech: "Docker, Docker Compose",
     note: null,
   },
   {
@@ -74,23 +74,18 @@ const REPOS = [
 const DEV_STEPS = [
   {
     step: "1",
-    title: "Clone the deploy repo",
-    code: "git clone https://github.com/Noah-Everett/phiacta-deploy\ncd phiacta-deploy",
+    title: "Clone the repos side by side",
+    code: "git clone https://github.com/Noah-Everett/phiacta.git\ngit clone https://github.com/Noah-Everett/phiacta-web.git\ngit clone https://github.com/Noah-Everett/phiacta-deploy.git\ncd phiacta-deploy",
   },
   {
     step: "2",
-    title: "Copy the env template and fill in secrets",
-    code: "cp .env.template .env\n# Edit .env with your Forgejo admin password and webhook secret",
+    title: "Start the dev stack",
+    code: "./deploy.sh",
   },
   {
     step: "3",
-    title: "Start the dev stack",
-    code: "docker compose up -d",
-  },
-  {
-    step: "4",
     title: "Verify everything is running",
-    code: "# API:     http://localhost:8000/health\n# Web:     http://localhost:3003\n# Forgejo: http://localhost:3002",
+    code: "# API:     http://localhost:8000/health\n# Web:     http://localhost:3001\n# Forgejo: http://localhost:3000",
   },
 ];
 
@@ -171,8 +166,8 @@ export default function ContributingPage() {
         <div className="mt-4 rounded-lg border border-border bg-card px-4 py-3">
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Stack:</strong> PostgreSQL 16 + Forgejo (git backend) + FastAPI (API) + Next.js (web).
-            Ports: API on <code className="font-mono text-xs">8000</code>, web on <code className="font-mono text-xs">3003</code>,
-            Forgejo on <code className="font-mono text-xs">3002</code>, Postgres on <code className="font-mono text-xs">5433</code>.
+            Ports: API on <code className="font-mono text-xs">8000</code>, web on <code className="font-mono text-xs">3001</code>,
+            Forgejo on <code className="font-mono text-xs">3000</code>, Postgres on <code className="font-mono text-xs">5433</code>.
           </p>
         </div>
       </section>
