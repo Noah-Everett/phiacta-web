@@ -15,7 +15,7 @@ import {
   Github,
 } from "lucide-react";
 import { listEntries } from "@/lib/api";
-import { EntryTypeBadge } from "@/components/EntryBadges";
+import { EntryCarousel } from "@/components/EntryCarousel";
 import type { EntryListItem } from "@/lib/types";
 
 const FEATURES = [
@@ -61,7 +61,7 @@ export default async function Home() {
   let featuredEntries: EntryListItem[] = [];
   let totalEntries = 0;
   try {
-    const res = await listEntries(4, 0, { sort: "updated_at", order: "desc" });
+    const res = await listEntries(8, 0, { sort: "updated_at", order: "desc" });
     featuredEntries = res.items;
     totalEntries = res.total;
   } catch {
@@ -143,8 +143,15 @@ export default async function Home() {
         */}
       </section>
 
+      {/* Recent entries — auto-scrolling carousel */}
+      {featuredEntries.length > 0 && (
+      <section className="pt-12 pb-4">
+        <EntryCarousel entries={featuredEntries} />
+      </section>
+      )}
+
       {/* What makes it different */}
-      <section className="mt-8 border-t border-border bg-muted/20 px-6 py-14">
+      <section className="bg-muted/20 px-6 py-10">
         <div className="mx-auto max-w-5xl">
           <h2 className="mb-8 text-center text-xl font-semibold text-foreground">
             What makes Phiacta different
@@ -164,49 +171,6 @@ export default async function Home() {
           </div>
         </div>
       </section>
-
-      {/* Recent entries */}
-      {featuredEntries.length > 0 && (
-      <section className="mx-auto w-full max-w-5xl px-6 py-14">
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-foreground">Recent entries</h2>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/explore">
-              View all <ArrowRight className="ml-1 h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          {featuredEntries.map((entry) => (
-            <Link
-              key={entry.id}
-              href={`/entries/${entry.id}`}
-              className="group flex flex-col gap-3 rounded-xl border border-border bg-card p-5 transition hover:border-primary/30 hover:shadow-sm"
-            >
-              <div className="flex flex-wrap items-start gap-2">
-                <EntryTypeBadge entryType={entry.entry_type} />
-              </div>
-              <p className="text-sm font-medium leading-snug text-card-foreground group-hover:text-primary transition-colors">
-                {entry.title || "Untitled"}
-              </p>
-              {entry.summary && (
-                <p className="text-xs text-muted-foreground line-clamp-2">
-                  {entry.summary}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {new Date(entry.created_at).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </section>
-      )}
 
     </div>
   );
