@@ -6,6 +6,13 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getInitials } from "@/lib/utils";
 import { getUser, listEntries, getEntryIssues, getEntryEdits, getEntryTags } from "@/lib/api";
 import {
@@ -14,6 +21,7 @@ import {
   GitBranch,
   MessageCircle,
   CheckCircle2,
+  ArrowUpDown,
 } from "lucide-react";
 import type {
   PublicUserResponse,
@@ -41,6 +49,7 @@ export default function UserPage({ params }: UserPageProps) {
   const [user, setUser] = useState<PublicUserResponse | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [metrics, setMetrics] = useState({
@@ -98,10 +107,11 @@ export default function UserPage({ params }: UserPageProps) {
       .finally(() => setLoading(false));
   }, [id]);
 
-  const filtered = useMemo(
-    () => filter === "all" ? activity : activity.filter((a) => a.type === filter),
-    [activity, filter]
-  );
+  const filtered = useMemo(() => {
+    const items = filter === "all" ? activity : activity.filter((a) => a.type === filter);
+    if (sortOrder === "oldest") return [...items].reverse();
+    return items;
+  }, [activity, filter, sortOrder]);
 
   if (loading) {
     return (
@@ -151,24 +161,36 @@ export default function UserPage({ params }: UserPageProps) {
         </div>
       </div>
 
-      {/* Filter + feed */}
-      <div className="flex flex-wrap items-center gap-1.5 mb-4">
-        {([
-          ["all", "All", activity.length],
-          ["entry", "Entries", metrics.entries],
-          ["issue", "Issues", metrics.issues],
-          ["edit", "Changes", metrics.edits],
-        ] as [FilterType, string, number][]).map(([val, label, count]) => (
-          <Button
-            key={val}
-            variant={filter === val ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setFilter(val)}
-            className="text-xs gap-1"
-          >
-            {label} <span className="text-muted-foreground tabular-nums">{count}</span>
-          </Button>
-        ))}
+      {/* Filter + sort */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {([
+            ["all", "All", activity.length],
+            ["entry", "Entries", metrics.entries],
+            ["issue", "Issues", metrics.issues],
+            ["edit", "Changes", metrics.edits],
+          ] as [FilterType, string, number][]).map(([val, label, count]) => (
+            <Button
+              key={val}
+              variant={filter === val ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setFilter(val)}
+              className="text-xs gap-1"
+            >
+              {label} <span className="text-muted-foreground tabular-nums">{count}</span>
+            </Button>
+          ))}
+        </div>
+        <Select value={sortOrder} onValueChange={(val) => setSortOrder(val as "newest" | "oldest")}>
+          <SelectTrigger size="sm" className="gap-1.5">
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            <SelectItem value="newest">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {filtered.length > 0 ? (

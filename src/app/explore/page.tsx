@@ -253,7 +253,7 @@ export default function ExplorePage() {
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper">
                 {SORT_OPTIONS.map((opt) => (
                   <SelectItem key={opt.value} value={opt.value}>
                     {opt.label}
