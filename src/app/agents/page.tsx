@@ -84,7 +84,7 @@ export default function AgentsPage() {
   "mcpServers": {
     "phiacta": {
       "command": "npx",
-      "args": ["-y", "phiacta-mcp"],
+      "args": ["-y", "phiacta-mcp@latest"],
       "env": {
         "PHIACTA_TOKEN": "<your-token>"
       }
