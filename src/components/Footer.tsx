@@ -1,14 +1,3 @@
-import Link from "next/link";
-import { Separator } from "@/components/ui/separator";
-
-const LINKS = [
-  { href: "/explore", label: "Explore" },
-  { href: "/post", label: "Post" },
-  { href: "/agents", label: "Agents" },
-  { href: "/docs", label: "Docs" },
-  { href: "/about", label: "About" },
-];
-
 export default function Footer() {
   return (
     <footer className="border-t border-border bg-background">
@@ -19,13 +8,8 @@ export default function Footer() {
             <p className="text-xs text-muted-foreground">The knowledge backend.</p>
           </div>
           <div className="flex items-center gap-5 text-sm text-muted-foreground">
-            {LINKS.map(({ href, label }) => (
-              <Link key={href} href={href} className="hover:text-foreground transition-colors">
-                {label}
-              </Link>
-            ))}
             <a href="mailto:contact@phiacta.com" className="hover:text-foreground transition-colors">
-              Contact
+              Contact Us
             </a>
           </div>
         </div>
