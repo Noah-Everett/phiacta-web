@@ -31,6 +31,37 @@ function isRelativeUrl(src: string): boolean {
   return !src.startsWith("http://") && !src.startsWith("https://") && !src.startsWith("data:");
 }
 
+/**
+ * Resolve a relative image path to the entry file API.
+ *
+ * Strips leading `./` and `/` so the path is clean for the API, and
+ * encodes each path segment to handle spaces and special characters.
+ */
+function resolveEntryImageUrl(src: string, entryId: string): string {
+  let path = src;
+  // Strip leading "./" — markdown relative paths
+  while (path.startsWith("./")) path = path.slice(2);
+  // Strip leading "/" — treat as repo-root-relative
+  while (path.startsWith("/")) path = path.slice(1);
+  // Encode each segment individually so slashes are preserved
+  const encoded = path
+    .split("/")
+    .map((seg) => encodeURIComponent(seg))
+    .join("/");
+  return `${API_URL}/v1/entries/${entryId}/files/${encoded}`;
+}
+
+/**
+ * Markdown parsers (micromark) don't handle spaces in link/image URLs.
+ * Wrap paths containing spaces in angle brackets so the parser
+ * recognises them: `[text](<path with spaces>)`
+ */
+function preprocessLinkPaths(md: string): string {
+  return md
+    .replace(/!\[([^\]]*)\]\(([^)<>]+\s[^)<>]+)\)/g, (_, alt, url) => `![${alt}](<${url}>)`)
+    .replace(/(?<!!)\[([^\]]*)\]\(([^)<>]+\s[^)<>]+)\)/g, (_, text, url) => `[${text}](<${url}>)`);
+}
+
 export default function MarkdownContent({
   content,
   className,
@@ -84,6 +115,19 @@ export default function MarkdownContent({
         );
       }
 
+      // Relative file links — link to the website's file viewer page
+      if (entryId && isRelativeUrl(href)) {
+        let path = href;
+        while (path.startsWith("./")) path = path.slice(2);
+        while (path.startsWith("/")) path = path.slice(1);
+        const encoded = path.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+        return (
+          <Link href={`/entries/${entryId}/files/${encoded}`} className="text-primary hover:underline">
+            {children}
+          </Link>
+        );
+      }
+
       // Regular external/internal links
       return <a href={href} {...props}>{children}</a>;
     },
@@ -92,7 +136,7 @@ export default function MarkdownContent({
           img: ({ src, alt, ...props }) => {
             const resolvedSrc =
               typeof src === "string" && isRelativeUrl(src)
-                ? `${API_URL}/v1/entries/${entryId}/files/${src}`
+                ? resolveEntryImageUrl(src, entryId)
                 : src;
             return (
               // eslint-disable-next-line @next/next/no-img-element
@@ -124,7 +168,7 @@ export default function MarkdownContent({
         rehypePlugins={[rehypeKatex]}
         components={components}
       >
-        {content}
+        {preprocessLinkPaths(content)}
       </ReactMarkdown>
     </div>
   );
