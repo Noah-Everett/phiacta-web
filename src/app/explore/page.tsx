@@ -184,9 +184,11 @@ function ExploreContent() {
   const graphAbortRef = useRef<AbortController | null>(null);
 
   // Fetch graph data from entry IDs (seeds)
+  const EMPTY_GRAPH: GraphResponse = { nodes: [], edges: [], truncated: false, seed_ids: [], mode: "ref" };
   const fetchGraphData = useCallback(async (seedIds: string[]) => {
     if (seedIds.length === 0) {
-      setGraphData(null);
+      setGraphData(EMPTY_GRAPH);
+      setGraphLoading(false);
       return;
     }
     // Cancel previous request
@@ -220,9 +222,10 @@ function ExploreContent() {
   // When view mode switches to graph or entries change, fetch graph
   useEffect(() => {
     if (viewMode !== "graph") return;
+    if (loading) return; // still fetching entries, wait
     const ids = entries.map((e) => e.id);
-    fetchGraphData(ids);
-  }, [viewMode, entries, fetchGraphData]);
+    fetchGraphData(ids); // handles empty ids by setting graphData=null
+  }, [viewMode, entries, loading, fetchGraphData]);
 
   const handleGraphRecenter = useCallback((entryId: string) => {
     fetchGraphData([entryId]);
@@ -567,12 +570,14 @@ function ExploreContent() {
         <>
           <div className="mb-3">
             <p className="text-sm text-muted-foreground">
-              {graphData
-                ? `${graphData.nodes.length} node${graphData.nodes.length !== 1 ? "s" : ""}, ${graphData.edges.length} edge${graphData.edges.length !== 1 ? "s" : ""}`
-                : "Loading graph..."}
+              {graphLoading || loading
+                ? "Loading graph..."
+                : graphData
+                  ? `${graphData.nodes.length} node${graphData.nodes.length !== 1 ? "s" : ""}, ${graphData.edges.length} edge${graphData.edges.length !== 1 ? "s" : ""}`
+                  : "0 nodes, 0 edges"}
             </p>
           </div>
-          {graphLoading && (
+          {(graphLoading || loading) && !graphData && (
             <div className="flex h-[500px] items-center justify-center rounded-xl border border-border bg-card">
               <p className="text-sm text-muted-foreground">Loading graph...</p>
             </div>
@@ -582,7 +587,7 @@ function ExploreContent() {
               {graphError}
             </div>
           )}
-          {!graphLoading && !graphError && graphData && graphData.nodes.length > 0 && (
+          {!graphLoading && !graphError && graphData && (
             <GraphView
               data={graphData}
               onRecenter={handleGraphRecenter}
@@ -594,11 +599,6 @@ function ExploreContent() {
               scaleByConnections={graphConfig.scaleByConnections}
               configPanel={<GraphConfigPanel config={graphConfig} onChange={setGraphConfig} />}
             />
-          )}
-          {!graphLoading && !graphError && graphData && graphData.nodes.length === 0 && (
-            <div className="flex h-[500px] items-center justify-center rounded-xl border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">No references found. Try a different search or add references between entries.</p>
-            </div>
           )}
         </>
       )}
