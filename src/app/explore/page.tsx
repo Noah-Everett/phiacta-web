@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { Suspense, useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,9 +16,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
+import GraphView from "@/components/GraphView";
+import GraphConfigPanel from "@/components/GraphConfigPanel";
+import type { GraphConfig } from "@/components/GraphConfigPanel";
 import { getInitials } from "@/lib/utils";
-import { listEntries, searchEntries, findEntriesByTags, getUser } from "@/lib/api";
-import type { EntryListItem, PublicUserResponse, SearchResultItem, EntryTagItem } from "@/lib/types";
+import { listEntries, searchEntries, findEntriesByTags, fetchGraph, getUser } from "@/lib/api";
+import type { EntryListItem, PublicUserResponse, SearchResultItem, EntryTagItem, GraphResponse } from "@/lib/types";
 import {
   Search,
   ChevronLeft,
@@ -25,6 +29,8 @@ import {
   ArrowUpDown,
   X,
   Filter,
+  List,
+  GitFork,
 } from "lucide-react";
 
 const PAGE_SIZE = 20;
@@ -111,14 +117,21 @@ const STATUS_OPTIONS = [
   { value: "hidden", label: "Hidden" },
 ] as const;
 
-export default function ExplorePage() {
+function ExploreContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initialize from URL params
+  const initialView = searchParams.get("view") === "graph" ? "graph" : "list";
+  const initialQ = searchParams.get("q") ?? "";
+
   const [entries, setEntries] = useState<DisplayEntry[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(initialQ);
   const [sortKey, setSortKey] = useState("created_at:desc");
   const [authors, setAuthors] = useState<Record<string, PublicUserResponse>>({});
   const [isSearchMode, setIsSearchMode] = useState(false);
@@ -129,6 +142,88 @@ export default function ExplorePage() {
   const [isTagFilterMode, setIsTagFilterMode] = useState(false);
   const authorsRef = useRef<Record<string, PublicUserResponse>>({});
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Graph view state
+  const [viewMode, setViewMode] = useState<"list" | "graph">(initialView);
+
+  // Sync view mode and search to URL
+  const updateUrl = useCallback((view: string, q: string) => {
+    const params = new URLSearchParams();
+    if (view === "graph") params.set("view", "graph");
+    if (q.trim()) params.set("q", q.trim());
+    const qs = params.toString();
+    router.replace(`/explore${qs ? `?${qs}` : ""}`, { scroll: false });
+  }, [router]);
+
+  const handleViewChange = useCallback((view: "list" | "graph") => {
+    setViewMode(view);
+    updateUrl(view, search);
+  }, [search, updateUrl]);
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    updateUrl(viewMode, value);
+  }, [viewMode, updateUrl]);
+  const [graphData, setGraphData] = useState<GraphResponse | null>(null);
+  const [graphLoading, setGraphLoading] = useState(false);
+  const [graphError, setGraphError] = useState<string | null>(null);
+  const [graphConfig, setGraphConfig] = useState<GraphConfig>({
+    depth: 2,
+    direction: "both",
+    limit: 50,
+    showLabels: true,
+    scaleByConnections: true,
+    centerForce: 0.3,
+    repulsion: -350,
+    linkForce: 0.3,
+    linkDistance: 60,
+  });
+  const graphAbortRef = useRef<AbortController | null>(null);
+
+  // Fetch graph data from entry IDs (seeds)
+  const fetchGraphData = useCallback(async (seedIds: string[]) => {
+    if (seedIds.length === 0) {
+      setGraphData(null);
+      return;
+    }
+    // Cancel previous request
+    graphAbortRef.current?.abort();
+    const controller = new AbortController();
+    graphAbortRef.current = controller;
+
+    setGraphLoading(true);
+    setGraphError(null);
+    try {
+      const res = await fetchGraph({
+        entry_ids: seedIds,
+        depth: graphConfig.depth,
+        direction: graphConfig.direction,
+        limit: graphConfig.limit,
+      });
+      if (!controller.signal.aborted) {
+        setGraphData(res);
+      }
+    } catch (err) {
+      if (!controller.signal.aborted) {
+        setGraphError(err instanceof Error ? err.message : "Failed to load graph");
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setGraphLoading(false);
+      }
+    }
+  }, [graphConfig.depth, graphConfig.direction, graphConfig.limit]);
+
+  // When view mode switches to graph or entries change, fetch graph
+  useEffect(() => {
+    if (viewMode !== "graph") return;
+    const ids = entries.map((e) => e.id);
+    fetchGraphData(ids);
+  }, [viewMode, entries, fetchGraphData]);
+
+  const handleGraphRecenter = useCallback((entryId: string) => {
+    fetchGraphData([entryId]);
+  }, [fetchGraphData]);
 
   const resolveAuthors = useCallback(async (ids: string[]) => {
     const newIds = ids.filter((id) => !authorsRef.current[id]);
@@ -281,11 +376,33 @@ export default function ExplorePage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
-      <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-foreground">Explore</h1>
-        <p className="text-sm text-muted-foreground">
-          Browse and search entries across all disciplines.
-        </p>
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <h1 className="mb-1 text-2xl font-bold text-foreground">Explore</h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and search entries across all disciplines.
+          </p>
+        </div>
+        <div className="flex items-center gap-1 rounded-lg border border-border p-0.5">
+          <Button
+            variant={viewMode === "list" ? "default" : "ghost"}
+            size="sm"
+            className="h-7 gap-1.5 px-2.5 text-xs"
+            onClick={() => handleViewChange("list")}
+          >
+            <List className="h-3.5 w-3.5" />
+            List
+          </Button>
+          <Button
+            variant={viewMode === "graph" ? "default" : "ghost"}
+            size="sm"
+            className="h-7 gap-1.5 px-2.5 text-xs"
+            onClick={() => handleViewChange("graph")}
+          >
+            <GitFork className="h-3.5 w-3.5" />
+            Graph
+          </Button>
+        </div>
       </div>
 
       {/* Search */}
@@ -295,7 +412,7 @@ export default function ExplorePage() {
           <Input
             placeholder="Search entries..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-9"
           />
         </div>
@@ -361,8 +478,49 @@ export default function ExplorePage() {
         )}
       </div>
 
-      {/* Loading skeletons */}
-      {loading && (
+      {/* Graph view */}
+      {viewMode === "graph" && (
+        <>
+          <div className="mb-3 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              {graphData
+                ? `${graphData.nodes.length} node${graphData.nodes.length !== 1 ? "s" : ""}, ${graphData.edges.length} edge${graphData.edges.length !== 1 ? "s" : ""}`
+                : "Loading graph..."}
+            </p>
+            <GraphConfigPanel config={graphConfig} onChange={setGraphConfig} />
+          </div>
+          {graphLoading && (
+            <div className="flex h-[500px] items-center justify-center rounded-xl border border-border bg-card">
+              <p className="text-sm text-muted-foreground">Loading graph...</p>
+            </div>
+          )}
+          {graphError && (
+            <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {graphError}
+            </div>
+          )}
+          {!graphLoading && !graphError && graphData && graphData.nodes.length > 0 && (
+            <GraphView
+              data={graphData}
+              onRecenter={handleGraphRecenter}
+              centerForce={graphConfig.centerForce}
+              repulsion={graphConfig.repulsion}
+              linkForce={graphConfig.linkForce}
+              linkDistance={graphConfig.linkDistance}
+              showLabels={graphConfig.showLabels}
+              scaleByConnections={graphConfig.scaleByConnections}
+            />
+          )}
+          {!graphLoading && !graphError && graphData && graphData.nodes.length === 0 && (
+            <div className="flex h-[500px] items-center justify-center rounded-xl border border-dashed border-border">
+              <p className="text-sm text-muted-foreground">No references found. Try a different search or add references between entries.</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* List view */}
+      {viewMode === "list" && loading && (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
             <EntryCardSkeleton key={i} />
@@ -370,15 +528,13 @@ export default function ExplorePage() {
         </div>
       )}
 
-      {/* Error */}
-      {error && (
+      {viewMode === "list" && error && (
         <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      {/* Results */}
-      {!loading && !error && (
+      {viewMode === "list" && !loading && !error && (
         <>
           <div className="mb-3 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
@@ -531,5 +687,13 @@ export default function ExplorePage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense>
+      <ExploreContent />
+    </Suspense>
   );
 }

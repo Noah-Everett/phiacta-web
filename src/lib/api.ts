@@ -386,6 +386,28 @@ export async function searchEntries(
   return request<SearchResponse>(`/v1/tools/search/?${params.toString()}`);
 }
 
+// --- Graph Tool ---
+
+export async function fetchGraph(params: {
+  entry_ids: string[];
+  mode?: string;
+  depth?: number;
+  direction?: string;
+  rel?: string[];
+  entry_type?: string[];
+  limit?: number;
+}): Promise<import("./types").GraphResponse> {
+  const q = new URLSearchParams();
+  q.set("entry_ids", params.entry_ids.join(","));
+  if (params.mode) q.set("mode", params.mode);
+  if (params.depth !== undefined) q.set("depth", String(params.depth));
+  if (params.direction) q.set("direction", params.direction);
+  if (params.rel?.length) q.set("rel", params.rel.join(","));
+  if (params.entry_type?.length) q.set("entry_type", params.entry_type.join(","));
+  if (params.limit !== undefined) q.set("limit", String(params.limit));
+  return request<import("./types").GraphResponse>(`/v1/tools/graph/?${q.toString()}`);
+}
+
 // --- Tags Extension ---
 
 export async function getEntryTags(entryId: string): Promise<TagListResponse> {

@@ -263,6 +263,39 @@ export interface DocListItem {
 
 export type DocDetail = DocListItem & { content: string };
 
+// Graph tool types — mirrors tools/graph/schemas.py
+export interface GraphRef {
+  id: string;
+  rel: string;
+  direction: "forward" | "reverse";
+  note: string | null;
+  weight: number | null;
+}
+
+export interface GraphEdge {
+  source: string;
+  target: string;
+  refs: GraphRef[];
+}
+
+export interface GraphNode {
+  id: string;
+  title: string | null;
+  summary: string | null;
+  entry_type: string | null;
+  tags: string[];
+  status: string;
+  depth: number;
+}
+
+export interface GraphResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  truncated: boolean;
+  seed_ids: string[];
+  mode: string;
+}
+
 // Activity types — mirrors activity.py
 export interface ActivityItem {
   id: string;
