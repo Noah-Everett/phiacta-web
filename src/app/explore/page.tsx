@@ -273,18 +273,25 @@ function ExploreContent() {
     setLoading(true);
     setError(null);
     try {
-      const res = await searchEntries(query, PAGE_SIZE, pageOffset);
+      const filters: Record<string, string> = {};
+      if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
+      if (filterTypes.length > 0) filters.entry_type = filterTypes.join(",");
+      if (filterTags.length > 0) {
+        filters.tags = filterTags.join(",") + (tagMode === "and" ? ";mode=and" : "");
+      }
+      const res = await searchEntries(query, PAGE_SIZE, pageOffset, filters);
       setEntries(res.items.map(toSearchEntry));
       setTotal(res.total);
       setHasMore(res.has_more);
       setOffset(pageOffset);
       setIsSearchMode(true);
+      setIsTagFilterMode(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Search failed");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter, filterTypes, filterTags, tagMode]);
 
   const fetchByTags = useCallback(async (tags: string[], mode: "and" | "or", pageOffset: number) => {
     setLoading(true);
@@ -316,43 +323,38 @@ function ExploreContent() {
     }
   }, [search, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]);
 
-  // Initial load + re-fetch on sort/status/tag changes
+  // Debounced search text — triggers on search text changes only
   useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     const trimmed = search.trim();
     if (!trimmed) {
+      // Search cleared — switch back to browse/tag mode immediately
       if (filterTags.length > 0) {
         fetchByTags(filterTags, tagMode, 0);
       } else {
         fetchBrowse(0);
       }
-    }
-  }, [fetchBrowse, filterTags, tagMode, fetchByTags]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Debounced search
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-
-    const trimmed = search.trim();
-    if (!trimmed) {
-      // Switch back to browse/tag mode
-      if (isSearchMode) {
-        if (filterTags.length > 0) {
-          fetchByTags(filterTags, tagMode, 0);
-        } else {
-          fetchBrowse(0);
-        }
-      }
       return;
     }
-
     debounceRef.current = setTimeout(() => {
       fetchSearch(trimmed, 0);
     }, SEARCH_DEBOUNCE_MS);
-
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
   }, [search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch when filters/sort change (no debounce)
+  useEffect(() => {
+    const trimmed = search.trim();
+    if (trimmed) {
+      fetchSearch(trimmed, 0);
+    } else if (filterTags.length > 0) {
+      fetchByTags(filterTags, tagMode, 0);
+    } else {
+      fetchBrowse(0);
+    }
+  }, [statusFilter, sortKey, filterTypes, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -461,7 +463,7 @@ function ExploreContent() {
         <Select
           value={sortKey}
           onValueChange={setSortKey}
-          disabled={isSearchMode || isTagFilterMode}
+          disabled={viewMode === "graph"}
         >
           <SelectTrigger className="h-9 w-[190px] text-sm">
             <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />

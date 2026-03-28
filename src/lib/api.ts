@@ -377,12 +377,18 @@ export async function closeIssue(
 export async function searchEntries(
   q: string,
   limit: number = 20,
-  offset: number = 0
+  offset: number = 0,
+  filters?: Record<string, string>
 ): Promise<SearchResponse> {
   const params = new URLSearchParams();
   params.set("q", q);
   params.set("limit", String(limit));
   params.set("offset", String(offset));
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (value) params.set(key, value);
+    }
+  }
   return request<SearchResponse>(`/v1/tools/search/?${params.toString()}`);
 }
 
