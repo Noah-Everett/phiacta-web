@@ -33,6 +33,7 @@ interface GraphViewProps {
   linkDistance?: number;
   showLabels?: boolean;
   scaleByConnections?: boolean;
+  configPanel?: React.ReactNode;
 }
 
 interface ForceNode {
@@ -63,6 +64,7 @@ export default function GraphView({
   linkDistance = 60,
   showLabels = true,
   scaleByConnections = true,
+  configPanel,
 }: GraphViewProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -293,6 +295,11 @@ export default function GraphView({
       {data.truncated && (
         <div className="absolute left-3 top-3 z-10 rounded-md bg-amber-50 px-2.5 py-1 text-xs text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
           Graph capped at {data.nodes.length} nodes. Narrow filters or reduce depth.
+        </div>
+      )}
+      {configPanel && (
+        <div className="absolute right-3 top-3 z-10">
+          {configPanel}
         </div>
       )}
       <ForceGraph2D

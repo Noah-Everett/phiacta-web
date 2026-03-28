@@ -28,7 +28,8 @@ import {
   ChevronRight,
   ArrowUpDown,
   X,
-  Filter,
+  Tag,
+  Shapes,
   List,
   GitFork,
 } from "lucide-react";
@@ -114,8 +115,8 @@ const STATUS_OPTIONS = [
   { value: "all", label: "All statuses" },
   { value: "active", label: "Active" },
   { value: "archived", label: "Archived" },
-  { value: "hidden", label: "Hidden" },
 ] as const;
+
 
 function ExploreContent() {
   const router = useRouter();
@@ -138,6 +139,8 @@ function ExploreContent() {
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [tagMode, setTagMode] = useState<"and" | "or">("or");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [filterTypes, setFilterTypes] = useState<string[]>([]);
+  const [typeInput, setTypeInput] = useState("");
   const [tagInput, setTagInput] = useState("");
   const [isTagFilterMode, setIsTagFilterMode] = useState(false);
   const authorsRef = useRef<Record<string, PublicUserResponse>>({});
@@ -374,6 +377,25 @@ function ExploreContent() {
     }
   };
 
+  const addFilterType = (type: string) => {
+    const normalized = type.trim().toLowerCase();
+    if (normalized && !filterTypes.includes(normalized)) {
+      setFilterTypes((prev) => [...prev, normalized]);
+    }
+  };
+
+  const removeFilterType = (type: string) => {
+    setFilterTypes((prev) => prev.filter((t) => t !== type));
+  };
+
+  const handleTypeInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addFilterType(typeInput);
+      setTypeInput("");
+    }
+  };
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-8">
       <div className="mb-6 flex items-start justify-between">
@@ -418,76 +440,137 @@ function ExploreContent() {
         </div>
       </div>
 
-      {/* Filters bar */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-        <div className="flex flex-wrap items-center gap-1.5">
-          {filterTags.map((tag) => (
-            <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
-              {tag}
-              <button
-                type="button"
-                onClick={() => removeFilterTag(tag)}
-                className="ml-0.5 rounded-sm hover:bg-muted-foreground/20"
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </Badge>
-          ))}
+      {/* Controls bar */}
+      <div className="mb-3 flex items-center gap-2">
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-9 w-[140px] text-sm">
+            <SelectValue placeholder="All statuses" />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            {STATUS_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={sortKey}
+          onValueChange={setSortKey}
+          disabled={isSearchMode || isTagFilterMode}
+        >
+          <SelectTrigger className="h-9 w-[190px] text-sm">
+            <ArrowUpDown className="h-3.5 w-3.5 shrink-0" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            {SORT_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <div className="h-5 w-px bg-border" />
+
+        <div className="relative flex-1">
+          <Shapes className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Add tag..."
+            placeholder="Filter by type..."
+            value={typeInput}
+            onChange={(e) => setTypeInput(e.target.value)}
+            onKeyDown={handleTypeInputKeyDown}
+            className="pl-9"
+          />
+        </div>
+
+        <div className="relative flex-1">
+          <Tag className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Filter by tag..."
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
             onKeyDown={handleTagInputKeyDown}
-            className="h-7 w-28 text-xs"
+            className="pl-9"
           />
         </div>
-        {filterTags.length > 0 && (
-          <Button
-            variant={tagMode === "and" ? "default" : "outline"}
-            size="sm"
-            className="h-7 px-2 text-[10px]"
-            onClick={() => setTagMode((m) => (m === "and" ? "or" : "and"))}
-          >
-            {tagMode.toUpperCase()}
-          </Button>
-        )}
-        <div className="ml-auto">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger size="sm" className="h-7 gap-1 text-xs">
-              <SelectValue placeholder="All statuses" />
-            </SelectTrigger>
-            <SelectContent position="popper">
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        {filterTags.length > 0 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 px-2 text-xs text-muted-foreground"
-            onClick={() => setFilterTags([])}
-          >
-            Clear tags
-          </Button>
-        )}
       </div>
+
+      {/* Active filters */}
+      {(filterTypes.length > 0 || filterTags.length > 0) && (
+        <div className="mb-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {filterTypes.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Types:</span>
+              {filterTypes.map((type) => (
+                <Badge key={type} variant="outline" className="gap-1 pr-1 text-xs">
+                  {type}
+                  <button
+                    type="button"
+                    onClick={() => removeFilterType(type)}
+                    className="ml-0.5 rounded-sm hover:bg-muted-foreground/20"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-xs text-muted-foreground"
+                onClick={() => setFilterTypes([])}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+          {filterTags.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-medium text-muted-foreground">Tags:</span>
+              {filterTags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="gap-1 pr-1 text-xs">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeFilterTag(tag)}
+                    className="ml-0.5 rounded-sm hover:bg-muted-foreground/20"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </Badge>
+              ))}
+              <Button
+                variant={tagMode === "and" ? "default" : "outline"}
+                size="sm"
+                className="h-6 px-2 text-[10px]"
+                onClick={() => setTagMode((m) => (m === "and" ? "or" : "and"))}
+              >
+                {tagMode.toUpperCase()}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-xs text-muted-foreground"
+                onClick={() => setFilterTags([])}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Graph view */}
       {viewMode === "graph" && (
         <>
-          <div className="mb-3 flex items-center justify-between">
+          <div className="mb-3">
             <p className="text-sm text-muted-foreground">
               {graphData
                 ? `${graphData.nodes.length} node${graphData.nodes.length !== 1 ? "s" : ""}, ${graphData.edges.length} edge${graphData.edges.length !== 1 ? "s" : ""}`
                 : "Loading graph..."}
             </p>
-            <GraphConfigPanel config={graphConfig} onChange={setGraphConfig} />
           </div>
           {graphLoading && (
             <div className="flex h-[500px] items-center justify-center rounded-xl border border-border bg-card">
@@ -509,6 +592,7 @@ function ExploreContent() {
               linkDistance={graphConfig.linkDistance}
               showLabels={graphConfig.showLabels}
               scaleByConnections={graphConfig.scaleByConnections}
+              configPanel={<GraphConfigPanel config={graphConfig} onChange={setGraphConfig} />}
             />
           )}
           {!graphLoading && !graphError && graphData && graphData.nodes.length === 0 && (
@@ -534,36 +618,22 @@ function ExploreContent() {
         </div>
       )}
 
-      {viewMode === "list" && !loading && !error && (
+      {viewMode === "list" && !loading && !error && (() => {
+        const filteredEntries = filterTypes.length === 0
+          ? entries
+          : entries.filter((e) => e.entry_type !== null && filterTypes.includes(e.entry_type));
+        const displayCount = filterTypes.length === 0 ? total : filteredEntries.length;
+        return (
         <>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              {isSearchMode
-                ? `${total} result${total !== 1 ? "s" : ""} for "${search.trim()}"`
-                : isTagFilterMode
-                  ? `${total} entr${total !== 1 ? "ies" : "y"} tagged ${filterTags.map((t) => `"${t}"`).join(tagMode === "and" ? " & " : " | ")}`
-                  : `${total} entr${total !== 1 ? "ies" : "y"}`}
-            </p>
-            <Select
-              value={sortKey}
-              onValueChange={setSortKey}
-              disabled={isSearchMode || isTagFilterMode}
-            >
-              <SelectTrigger size="sm" className="gap-1.5">
-                <ArrowUpDown className="h-3.5 w-3.5" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                {SORT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <p className="mb-3 text-sm text-muted-foreground">
+            {isSearchMode
+              ? `${displayCount} result${displayCount !== 1 ? "s" : ""} for \u201c${search.trim()}\u201d`
+              : isTagFilterMode
+                ? `${displayCount} entr${displayCount !== 1 ? "ies" : "y"} tagged ${filterTags.map((t) => `\u201c${t}\u201d`).join(tagMode === "and" ? " & " : " | ")}`
+                : `${displayCount} entr${displayCount !== 1 ? "ies" : "y"}`}
+          </p>
           <div className="space-y-2">
-            {entries.map((entry) => {
+            {filteredEntries.map((entry) => {
               const author = entry.created_by ? authors[entry.created_by] : undefined;
               return (
                 <Link
@@ -630,16 +700,18 @@ function ExploreContent() {
               );
             })}
 
-            {entries.length === 0 && (
+            {filteredEntries.length === 0 && (
               <div className="rounded-xl border border-dashed border-border py-16 text-center">
                 <p className="text-sm text-muted-foreground">
                   {isSearchMode
                     ? "No entries match your search."
                     : isTagFilterMode
                       ? "No entries match those tags."
-                      : "No entries yet. Create one from the Post page."}
+                      : filterTypes.length > 0
+                        ? "No entries match those types."
+                        : "No entries yet. Create one from the Post page."}
                 </p>
-                {(isSearchMode || isTagFilterMode) && (
+                {(isSearchMode || isTagFilterMode || filterTypes.length > 0) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -647,6 +719,7 @@ function ExploreContent() {
                     onClick={() => {
                       setSearch("");
                       setFilterTags([]);
+                      setFilterTypes([]);
                     }}
                   >
                     Clear filters
@@ -685,7 +758,8 @@ function ExploreContent() {
             </div>
           )}
         </>
-      )}
+        );
+      })()}
     </div>
   );
 }
