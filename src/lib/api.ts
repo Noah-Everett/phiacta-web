@@ -48,11 +48,16 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const { headers: extraHeaders, ...restOptions } = options ?? {};
+  // Include auth token when available so the backend can apply
+  // owner-specific visibility (e.g. showing archived entries to their owner).
+  // Unlike authFetch, this does NOT redirect on 401 — it silently
+  // falls back to unauthenticated access.
+  const token = getStoredToken();
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (extraHeaders) Object.assign(headers, extraHeaders);
   const res = await fetch(`${API_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...extraHeaders,
-    },
+    headers,
     cache: "no-store",
     ...restOptions,
   });
