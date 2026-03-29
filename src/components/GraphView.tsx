@@ -129,12 +129,15 @@ export default function GraphView({
     if (fy?.strength) fy.strength(centerForce);
   }, [centerForce, repulsion, linkForce, linkDistance]);
 
-  // Ref callback — fires the moment react-force-graph-2d mounts and
-  // gives us the handle, so we can set forces before the first tick.
-  const fgRefCallback = useCallback((instance: any) => {
-    fgRef.current = instance;
-    if (instance) applyForces(instance);
-  }, [applyForces]);
+  // Apply forces once the graph instance is available
+  const hasInitialForces = useRef(false);
+  useEffect(() => {
+    const fg = fgRef.current;
+    if (fg && !hasInitialForces.current) {
+      applyForces(fg);
+      hasInitialForces.current = true;
+    }
+  });
 
   // On slider changes, re-apply forces and reheat
   const hasAppliedForces = useRef(false);
@@ -303,7 +306,7 @@ export default function GraphView({
         </div>
       )}
       <ForceGraph2D
-        ref={fgRefCallback}
+        ref={fgRef}
         width={dimensions.width}
         height={dimensions.height}
         graphData={graphData}
