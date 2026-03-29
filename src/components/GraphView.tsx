@@ -41,7 +41,7 @@ interface ForceNode {
   title: string | null;
   summary: string | null;
   entry_type: string | null;
-  status: string;
+  visibility: string;
   depth: number;
   isSeed: boolean;
   connections: number;
@@ -168,7 +168,7 @@ export default function GraphView({
         title: n.title,
         summary: n.summary,
         entry_type: n.entry_type,
-        status: n.status,
+        visibility: n.visibility,
         depth: n.depth,
         isSeed: seedSet.has(n.id),
         connections: connCount[n.id] ?? 0,
@@ -199,7 +199,7 @@ export default function GraphView({
         : 5;
 
       const color = nodeColorRef.current;
-      const alpha = node.status === "archived" ? ARCHIVED_OPACITY : 1;
+      const alpha = node.visibility === "private" ? ARCHIVED_OPACITY : 1;
 
       ctx.globalAlpha = alpha;
 
@@ -341,8 +341,8 @@ export default function GraphView({
               {hoverNode.summary}
             </p>
           )}
-          {hoverNode.status === "archived" && (
-            <span className="text-xs text-amber-600">archived</span>
+          {hoverNode.visibility === "private" && (
+            <span className="text-xs text-amber-600">private</span>
           )}
         </div>
       )}

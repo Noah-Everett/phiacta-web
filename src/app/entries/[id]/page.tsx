@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
+import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
 import LatexContent from "@/components/LatexContent";
 import EntityLink from "@/components/EntityLink";
@@ -64,8 +64,6 @@ import {
   createReference,
   deleteReference,
   searchEntries,
-  archiveEntry,
-  unarchiveEntry,
   createIssue,
   createEditProposal,
   getActivity,
@@ -464,8 +462,6 @@ export default function EntryPage({ params }: EntryPageProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Status actions
-  const [statusSaving, setStatusSaving] = useState(false);
-  const [statusError, setStatusError] = useState<string | null>(null);
 
   // Create issue
   const [creatingIssue, setCreatingIssue] = useState(false);
@@ -797,21 +793,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     }
   };
 
-  const handleStatusAction = async (action: "archive" | "unarchive") => {
-    if (!resolvedId) return;
-    setStatusSaving(true);
-    setStatusError(null);
-    try {
-      const fns = { archive: archiveEntry, unarchive: unarchiveEntry };
-      await fns[action](resolvedId);
-      await fetchEntry(resolvedId);
-    } catch (err) {
-      setStatusError(err instanceof Error ? err.message : `Failed to ${action} entry`);
-    } finally {
-      setStatusSaving(false);
-    }
-  };
-
   const handleIssueSubmit = async () => {
     if (!resolvedId || !issueTitle.trim()) return;
     setIssueSaving(true);
@@ -922,7 +903,7 @@ export default function EntryPage({ params }: EntryPageProps) {
       <div className="mb-6">
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <EntryTypeBadge entryType={entry.entry_type} />
-          <StatusBadge status={entry.status} />
+          <VisibilityBadge visibility={entry.visibility} />
 
           {isOwner && (
             <div className="flex items-center gap-1 ml-auto">
@@ -937,44 +918,14 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </Button>
                 </>
               ) : (
-                <>
-                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
-                    <Pencil className="h-3.5 w-3.5" />
-                    Edit
-                  </Button>
-                  {statusSaving && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
-                  {entry.status === "active" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => handleStatusAction("archive")}
-                      disabled={statusSaving}
-                    >
-                      <Archive className="h-3.5 w-3.5" />
-                      Archive
-                    </Button>
-                  )}
-                  {entry.status === "archived" && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 text-xs gap-1"
-                      onClick={() => handleStatusAction("unarchive")}
-                      disabled={statusSaving}
-                    >
-                      <ArchiveRestore className="h-3.5 w-3.5" />
-                      Unarchive
-                    </Button>
-                  )}
-                </>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
+                  <Pencil className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
               )}
             </div>
           )}
         </div>
-        {statusError && (
-          <p className="mb-2 text-xs text-destructive">{statusError}</p>
-        )}
         {saveError && (
           <p className="mb-2 text-xs text-destructive">{saveError}</p>
         )}

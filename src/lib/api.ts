@@ -49,7 +49,7 @@ export class ApiError extends Error {
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const { headers: extraHeaders, ...restOptions } = options ?? {};
   // Include auth token when available so the backend can apply
-  // owner-specific visibility (e.g. showing archived entries to their owner).
+  // owner-specific visibility (e.g. showing private entries to their owner).
   // Unlike authFetch, this does NOT redirect on 401 — it silently
   // falls back to unauthenticated access.
   const token = getStoredToken();
@@ -188,12 +188,12 @@ export async function getMeApi(): Promise<User> {
 export async function listEntries(
   limit: number = 20,
   offset: number = 0,
-  filters?: { status?: string; include?: string; exclude?: string; sort?: string; order?: string }
+  filters?: { visibility?: string; include?: string; exclude?: string; sort?: string; order?: string }
 ): Promise<PaginatedResponse<EntryListItem>> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
   params.set("offset", String(offset));
-  if (filters?.status) params.set("status", filters.status);
+  if (filters?.visibility) params.set("visibility", filters.visibility);
   if (filters?.include) params.set("include", filters.include);
   if (filters?.exclude) params.set("exclude", filters.exclude);
   if (filters?.sort) params.set("sort", filters.sort);
@@ -475,13 +475,6 @@ export async function revokeToken(tokenId: string): Promise<void> {
 
 // --- Entry Status Actions ---
 
-export async function archiveEntry(id: string): Promise<EntryResponse> {
-  return authFetch<EntryResponse>(`/v1/entries/${id}/archive`, { method: "POST" });
-}
-
-export async function unarchiveEntry(id: string): Promise<EntryResponse> {
-  return authFetch<EntryResponse>(`/v1/entries/${id}/unarchive`, { method: "POST" });
-}
 
 export async function hideEntry(id: string): Promise<EntryResponse> {
   return authFetch<EntryResponse>(`/v1/entries/${id}/hide`, { method: "POST" });

@@ -32,16 +32,15 @@ export function EntryTypeBadge({ entryType }: { entryType: string | null }) {
   );
 }
 
-/** Status badge for entry status (active/archived/retracted). */
-export function StatusBadge({ status }: { status: string }) {
+/** Visibility badge for entry visibility (public/private). */
+export function VisibilityBadge({ visibility }: { visibility: string }) {
   const styles: Record<string, string> = {
-    active: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    archived: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-    retracted: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+    public: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+    private: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
   };
   return (
-    <span className={cn("rounded px-2 py-0.5 text-xs font-medium", styles[status] ?? styles.active)}>
-      {status}
+    <span className={cn("rounded px-2 py-0.5 text-xs font-medium", styles[visibility] ?? styles.public)}>
+      {visibility}
     </span>
   );
 }
