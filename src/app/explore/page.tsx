@@ -111,12 +111,6 @@ function toTagEntry(r: EntryTagItem): DisplayEntry {
   };
 }
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "All statuses" },
-  { value: "active", label: "Active" },
-  { value: "archived", label: "Archived" },
-] as const;
-
 
 function ExploreContent() {
   const router = useRouter();
@@ -138,7 +132,7 @@ function ExploreContent() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [tagMode, setTagMode] = useState<"and" | "or">("or");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter] = useState("active");
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [typeInput, setTypeInput] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -447,19 +441,6 @@ function ExploreContent() {
 
       {/* Controls bar */}
       <div className="mb-3 flex items-center gap-2">
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="h-9 w-[140px] text-sm">
-            <SelectValue placeholder="All statuses" />
-          </SelectTrigger>
-          <SelectContent position="popper">
-            {STATUS_OPTIONS.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         <Select
           value={sortKey}
           onValueChange={setSortKey}
