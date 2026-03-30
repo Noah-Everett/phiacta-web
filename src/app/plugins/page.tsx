@@ -5,7 +5,7 @@ import { listPlugins } from "@/lib/api";
 import type { PluginInfo } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Puzzle, Layers, Database, Wrench } from "lucide-react";
+import { Puzzle, Layers, Wrench } from "lucide-react";
 
 const TYPE_CONFIG: Record<
   string,
@@ -16,12 +16,6 @@ const TYPE_CONFIG: Record<
     icon: Layers,
     color:
       "bg-violet-50 text-violet-700 border-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:border-violet-800",
-  },
-  view: {
-    label: "Views",
-    icon: Database,
-    color:
-      "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/50 dark:text-sky-300 dark:border-sky-800",
   },
   tool: {
     label: "Tools",
@@ -154,7 +148,7 @@ export default function PluginsPage() {
   }
 
   // Sort group keys to match TYPE_CONFIG order, then any extras
-  const orderedTypes = ["extension", "view", "tool"];
+  const orderedTypes = ["extension", "tool"];
   const sortedGroupKeys = [
     ...orderedTypes.filter((t) => groups[t]),
     ...Object.keys(groups).filter((t) => !orderedTypes.includes(t)),
@@ -168,7 +162,7 @@ export default function PluginsPage() {
           <h1 className="text-2xl font-bold text-foreground">Plugins</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Extensions, views, and tools that power the platform.
+          Extensions and tools that power the platform.
         </p>
       </div>
 

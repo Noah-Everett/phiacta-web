@@ -242,9 +242,9 @@ export default function AboutPage() {
 
       {/* Architecture */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">Four-Layer Architecture</h2>
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Architecture</h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
-          Phiacta is organized into four layers, each with a clear responsibility. The core is
+          Phiacta is organized into three layers, each with a clear responsibility. The core is
           minimal — everything else is pluggable.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
@@ -252,7 +252,7 @@ export default function AboutPage() {
             {
               icon: Atom,
               title: "Entries",
-              body: "The knowledge itself. Git repos + a derived database index. If everything else were removed, the entries would still be intact.",
+              body: "The knowledge itself. Git repos store content, the database stores everything else. If everything else were removed, the entries would still be intact.",
             },
             {
               icon: Layers,
@@ -262,7 +262,7 @@ export default function AboutPage() {
             {
               icon: Puzzle,
               title: "Tools",
-              body: "Functions that take input and produce output using platform data. First-party (search, ingestion) and third-party tools use the same API.",
+              body: "Stateless endpoints that query platform data through service interfaces. Search, graph traversal, and future third-party tools use the same API.",
             },
           ].map(({ icon: Icon, title, body }) => (
             <div key={title} className="flex gap-4">
