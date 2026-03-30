@@ -114,8 +114,8 @@ describe("No dead API references in source code", () => {
     expect(violations).toEqual([]);
   });
 
-  // Verifies no TypeScript type uses "name" field on user (should be "handle")
-  it("no user type uses name field instead of handle", () => {
+  // Verifies no TypeScript type uses "name" field on user (should be "username")
+  it("no user type uses name field instead of username", () => {
     const violations: string[] = [];
     for (const file of sourceFiles) {
       const content = readFileSync(file, "utf-8");
@@ -132,16 +132,16 @@ describe("No dead API references in source code", () => {
     expect(violations).toEqual([]);
   });
 
-  // Verifies API client uses "handle" in register, not "name"
-  it("registration API call uses handle, not name", () => {
+  // Verifies API client uses "username" in register, not "name"
+  it("registration API call uses username, not name", () => {
     for (const file of sourceFiles) {
       const content = readFileSync(file, "utf-8");
       if (content.includes("register") && content.includes("auth")) {
-        // If the file sends a registration request, it must use "handle"
+        // If the file sends a registration request, it must use "username"
         // and not include "name" as a field key in the body
-        if (content.includes("name:") && !content.includes("handle")) {
+        if (content.includes("name:") && !content.includes("username")) {
           throw new Error(
-            `${file} uses "name" instead of "handle" in registration`,
+            `${file} uses "name" instead of "username" in registration`,
           );
         }
       }

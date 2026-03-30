@@ -134,30 +134,30 @@ export async function authFetch<T>(path: string, options?: RequestInit): Promise
 
 // --- Auth API ---
 
-export async function loginApi(handle: string, password: string): Promise<AuthResponse> {
+export async function loginApi(username: string, password: string): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/v1/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ handle, password }),
+    body: JSON.stringify({ username, password }),
   });
   if (res.status === 429) {
     throw new Error("Too many requests. Please wait a moment and try again.");
   }
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new Error(body?.detail || "Invalid handle or password.");
+    throw new Error(body?.detail || "Invalid username or password.");
   }
   return res.json() as Promise<AuthResponse>;
 }
 
 export async function registerApi(
-  handle: string,
+  username: string,
   password: string
 ): Promise<AuthResponse> {
   const res = await fetch(`${API_URL}/v1/auth/register`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ handle, password }),
+    body: JSON.stringify({ username, password }),
   });
   if (res.status === 429) {
     throw new Error("Too many requests. Please wait a moment and try again.");

@@ -33,7 +33,7 @@ describe("API Client — endpoint URLs", () => {
           token_type: "bearer",
           user: {
             id: "test-id",
-            handle: "testuser",
+            username: "testuser",
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
@@ -57,7 +57,7 @@ describe("API Client — endpoint URLs", () => {
           token_type: "bearer",
           user: {
             id: "test-id",
-            handle: "testuser",
+            username: "testuser",
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
@@ -142,7 +142,7 @@ describe("API Client — endpoint URLs", () => {
       json: () =>
         Promise.resolve({
           id: "test-id",
-          handle: "testuser",
+          username: "testuser",
           created_at: "2026-01-01T00:00:00Z",
         }),
     });
@@ -171,7 +171,7 @@ describe("API Client — request bodies", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  it("registerApi sends handle and password only, not email", async () => {
+  it("registerApi sends username and password only, not email", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -180,7 +180,7 @@ describe("API Client — request bodies", () => {
           token_type: "bearer",
           user: {
             id: "id",
-            handle: "drchen",
+            username: "drchen",
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
@@ -191,7 +191,7 @@ describe("API Client — request bodies", () => {
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
 
-    expect(body).toHaveProperty("handle", "drchen");
+    expect(body).toHaveProperty("username", "drchen");
     expect(body).toHaveProperty("password", "secure123");
     expect(body).not.toHaveProperty("name");
     expect(body).not.toHaveProperty("email");
@@ -250,7 +250,7 @@ describe("API Client — request bodies", () => {
     expect(body).not.toHaveProperty("claim_type");
   });
 
-  it("loginApi sends handle and password", async () => {
+  it("loginApi sends username and password", async () => {
     fetchMock.mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -259,7 +259,7 @@ describe("API Client — request bodies", () => {
           token_type: "bearer",
           user: {
             id: "id",
-            handle: "user",
+            username: "user",
             created_at: "2026-01-01T00:00:00Z",
           },
         }),
@@ -270,7 +270,7 @@ describe("API Client — request bodies", () => {
     const [, options] = fetchMock.mock.calls[0];
     const body = JSON.parse(options.body);
 
-    expect(body).toHaveProperty("handle", "testuser");
+    expect(body).toHaveProperty("username", "testuser");
     expect(body).toHaveProperty("password", "password");
     expect(body).not.toHaveProperty("email");
   });

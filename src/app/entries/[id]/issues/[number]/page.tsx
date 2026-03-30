@@ -158,7 +158,7 @@ export default function IssuePage({ params }: IssuePageProps) {
               >
                 {issue.state}
               </Badge>
-              <span>{issue.author.handle} opened on {new Date(issue.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+              <span>{issue.author.username} opened on {new Date(issue.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
               <span>&middot; {issue.comments_count} comment{issue.comments_count !== 1 ? "s" : ""}</span>
             </div>
           </div>
@@ -200,7 +200,7 @@ export default function IssuePage({ params }: IssuePageProps) {
           {issue.comments.map((c) => (
             <div key={c.id} className="rounded-xl border border-border bg-card overflow-hidden">
               <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-muted/50">
-                <span className="text-sm font-medium text-foreground">{c.author.handle}</span>
+                <span className="text-sm font-medium text-foreground">{c.author.username}</span>
                 <span className="text-xs text-muted-foreground">
                   {new Date(c.created_at).toLocaleDateString("en-US", {
                     year: "numeric", month: "short", day: "numeric",

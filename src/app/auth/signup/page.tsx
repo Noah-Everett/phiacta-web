@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 
 export default function SignupPage() {
-  const [handle, setHandle] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -21,7 +21,7 @@ export default function SignupPage() {
     setError("");
     setSubmitting(true);
     try {
-      await register(handle, password);
+      await register(username, password);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed. Please try again.");
@@ -48,14 +48,14 @@ export default function SignupPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <label htmlFor="handle" className="text-sm font-medium text-foreground">
+            <label htmlFor="username" className="text-sm font-medium text-foreground">
               Username
             </label>
             <Input
-              id="handle"
+              id="username"
               type="text"
-              value={handle}
-              onChange={(e) => setHandle(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               autoComplete="username"
               placeholder="jane-doe"

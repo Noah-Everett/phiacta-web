@@ -1,21 +1,21 @@
 // phiacta-web-repo/tests/e2e/auth-flow.spec.ts
 //
 // E2E tests for the authentication flow — verifies that registration sends
-// "handle" (not "name"), login works, and the auth state persists.
+// "username" (not "name"), login works, and the auth state persists.
 
 import { test, expect } from "@playwright/test";
 
 test.describe("Registration flow", () => {
-  // Scenario: User visits /auth/signup and sees a form with handle and
+  // Scenario: User visits /auth/signup and sees a form with username and
   // password fields (not a "name" or "email" field)
-  test("signup page has handle field, not name or email field", async ({ page }) => {
+  test("signup page has username field, not name or email field", async ({ page }) => {
     await page.goto("/auth/signup");
 
-    // Must have a handle input (not name)
-    const handleInput = page.locator(
-      'input[name="handle"], input[placeholder*="handle" i], input[id*="handle" i]',
+    // Must have a username input (not name)
+    const usernameInput = page.locator(
+      'input[name="username"], input[placeholder*="username" i], input[id*="username" i]',
     );
-    await expect(handleInput.first()).toBeVisible();
+    await expect(usernameInput.first()).toBeVisible();
 
     // Must NOT have a "name" field (the old schema)
     const nameInput = page.locator('input[name="name"]');
@@ -33,8 +33,8 @@ test.describe("Registration flow", () => {
   });
 
   // Scenario: User submits the registration form and the request body contains
-  // "handle" and "password" only, hitting /v1/auth/register
-  test("registration POST sends handle, password to /v1/auth/register", async ({
+  // "username" and "password" only, hitting /v1/auth/register
+  test("registration POST sends username, password to /v1/auth/register", async ({
     page,
   }) => {
     let capturedRequest: { url: string; body: string } | null = null;
@@ -51,10 +51,10 @@ test.describe("Registration flow", () => {
     await page.goto("/auth/signup");
 
     // Fill in the form
-    const handleInput = page.locator(
-      'input[name="handle"], input[placeholder*="handle" i], input[id*="handle" i]',
+    const usernameInput = page.locator(
+      'input[name="username"], input[placeholder*="username" i], input[id*="username" i]',
     );
-    await handleInput.first().fill("testuser123");
+    await usernameInput.first().fill("testuser123");
 
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
@@ -77,7 +77,7 @@ test.describe("Registration flow", () => {
 
     // Verify request body
     const body = JSON.parse(capturedRequest!.body);
-    expect(body).toHaveProperty("handle", "testuser123");
+    expect(body).toHaveProperty("username", "testuser123");
     expect(body).toHaveProperty("password", "securepassword123");
     // Must NOT contain "name" or "email" — those were the old schema
     expect(body).not.toHaveProperty("name");
@@ -86,14 +86,14 @@ test.describe("Registration flow", () => {
 });
 
 test.describe("Login flow", () => {
-  // Scenario: User visits /auth/login and sees handle + password fields
-  test("login page has handle and password fields", async ({ page }) => {
+  // Scenario: User visits /auth/login and sees username + password fields
+  test("login page has username and password fields", async ({ page }) => {
     await page.goto("/auth/login");
 
-    const handleInput = page.locator(
-      'input[name="handle"], input[placeholder*="handle" i], input[placeholder*="username" i], input[id*="handle" i]',
+    const usernameInput = page.locator(
+      'input[name="username"], input[placeholder*="username" i], input[id*="username" i]',
     );
-    await expect(handleInput.first()).toBeVisible();
+    await expect(usernameInput.first()).toBeVisible();
 
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
@@ -101,8 +101,8 @@ test.describe("Login flow", () => {
     await expect(passwordInput.first()).toBeVisible();
   });
 
-  // Scenario: Login form POSTs to /v1/auth/login with handle and password
-  test("login POST sends handle, password to /v1/auth/login", async ({
+  // Scenario: Login form POSTs to /v1/auth/login with username and password
+  test("login POST sends username, password to /v1/auth/login", async ({
     page,
   }) => {
     let capturedRequest: { url: string; body: string } | null = null;
@@ -118,10 +118,10 @@ test.describe("Login flow", () => {
 
     await page.goto("/auth/login");
 
-    const handleInput = page.locator(
-      'input[name="handle"], input[placeholder*="handle" i], input[placeholder*="username" i], input[id*="handle" i]',
+    const usernameInput = page.locator(
+      'input[name="username"], input[placeholder*="username" i], input[id*="username" i]',
     );
-    await handleInput.first().fill("testuser");
+    await usernameInput.first().fill("testuser");
 
     const passwordInput = page.locator(
       'input[type="password"], input[name="password"]',
@@ -139,7 +139,7 @@ test.describe("Login flow", () => {
     expect(capturedRequest!.url).toContain("/v1/auth/login");
 
     const body = JSON.parse(capturedRequest!.body);
-    expect(body).toHaveProperty("handle", "testuser");
+    expect(body).toHaveProperty("username", "testuser");
     expect(body).toHaveProperty("password", "securepassword123");
     expect(body).not.toHaveProperty("email");
   });

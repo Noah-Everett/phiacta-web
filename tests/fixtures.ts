@@ -13,7 +13,7 @@ import type {
 export function makeUser(overrides: Partial<User> = {}): User {
   return {
     id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-    handle: "drchen",
+    username: "drchen",
     created_at: "2026-01-15T10:30:00Z",
     ...overrides,
   };

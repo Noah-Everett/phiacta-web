@@ -35,7 +35,7 @@ export default function AccountSettingsPage() {
       <Separator className="my-5" />
 
       <div className="space-y-5">
-        <SettingsRow label="Handle" value={user.handle} />
+        <SettingsRow label="Username" value={user.username} />
 
         <SettingsRow label="Password" value="********">
           <Button variant="outline" size="sm" disabled>

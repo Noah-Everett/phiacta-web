@@ -29,7 +29,7 @@ export default function EntityLink({ id, children, className }: EntityLinkProps)
         const type = data.entity_type as string;
         const label =
           type === "entry" ? (data.title as string) || id.slice(0, 8)
-          : type === "user" ? (data.handle as string) || id.slice(0, 8)
+          : type === "user" ? (data.username as string) || id.slice(0, 8)
           : id.slice(0, 8);
         setResolved({ type, label });
       })
