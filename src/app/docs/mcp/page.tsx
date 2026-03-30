@@ -20,7 +20,7 @@ const CAPABILITIES = [
   {
     icon: FileText,
     title: "Create and update entries",
-    body: "Publish atomic knowledge entries with title, summary, content, type, and tags.",
+    body: "Publish knowledge entries with title, summary, content, type, and tags.",
   },
   {
     icon: GitBranch,
