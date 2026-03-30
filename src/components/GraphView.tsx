@@ -22,7 +22,7 @@ function getThemeColor(): string {
   if (typeof window === "undefined") return "#6b7280";
   return getComputedStyle(document.documentElement).getPropertyValue("--foreground").trim() || "#6b7280";
 }
-const ARCHIVED_OPACITY = 0.4;
+const PRIVATE_OPACITY = 0.4;
 
 interface GraphViewProps {
   data: GraphResponse;
@@ -199,7 +199,7 @@ export default function GraphView({
         : 5;
 
       const color = nodeColorRef.current;
-      const alpha = node.visibility === "private" ? ARCHIVED_OPACITY : 1;
+      const alpha = node.visibility === "private" ? PRIVATE_OPACITY : 1;
 
       ctx.globalAlpha = alpha;
 

@@ -22,7 +22,7 @@ const PRINCIPLES = [
   {
     icon: GitBranch,
     title: "Permanent versioned history",
-    body: "Every version of every entry is preserved forever. Nothing is deleted — entries are archived or retracted with full history intact. Anyone who cites an entry can always access the exact version they cited.",
+    body: "Every version of every entry is preserved forever. Nothing is deleted — entries can be made private but their full history remains intact. Anyone who cites an entry can always access the exact version they cited.",
   },
   {
     icon: ShieldCheck,
