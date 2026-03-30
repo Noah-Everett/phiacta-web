@@ -154,7 +154,45 @@ export default function AboutPage() {
 
       <Separator className="mb-10" />
 
-      {/* Entry vocabulary */}
+      {/* Architecture */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Architecture</h2>
+        <p className="mb-4 leading-relaxed text-muted-foreground">
+          Phiacta is organized into three layers, each with a clear responsibility. The core is
+          minimal — everything else is pluggable.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            {
+              icon: Atom,
+              title: "Entries",
+              body: "The knowledge itself. Git repos store content, the database stores everything else. If everything else were removed, the entries would still be intact.",
+            },
+            {
+              icon: Layers,
+              title: "Extensions",
+              body: "Platform features with their own data — metadata, types, references, tags, search indexes. Each extension declares its dependencies and can be added or removed independently.",
+            },
+            {
+              icon: Puzzle,
+              title: "Tools",
+              body: "Stateless endpoints that query platform data through service interfaces. Search, graph traversal, and future third-party tools use the same API.",
+            },
+          ].map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex gap-4">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                <Icon className="h-4 w-4 text-secondary-foreground" />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How Entries Work */}
       <section className="mb-10">
         <h2 className="mb-3 text-xl font-semibold text-foreground">How Entries Work</h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
@@ -188,20 +226,7 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* What Phiacta is not */}
-      <section className="mb-10">
-        <h2 className="mb-5 text-xl font-semibold text-foreground">What Phiacta Is Not</h2>
-        <div className="space-y-3">
-          {NOT_LIST.map(({ label, body }) => (
-            <div key={label} className="rounded-xl border border-border bg-card p-5">
-              <p className="mb-1 text-sm font-semibold text-foreground">{label}</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Platform */}
+      {/* Build on Phiacta */}
       <section className="mb-10">
         <h2 className="mb-3 text-xl font-semibold text-foreground">Build on Phiacta</h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
@@ -240,39 +265,14 @@ export default function AboutPage() {
 
       <Separator className="mb-10" />
 
-      {/* Architecture */}
+      {/* What Phiacta is not */}
       <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">Architecture</h2>
-        <p className="mb-4 leading-relaxed text-muted-foreground">
-          Phiacta is organized into three layers, each with a clear responsibility. The core is
-          minimal — everything else is pluggable.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            {
-              icon: Atom,
-              title: "Entries",
-              body: "The knowledge itself. Git repos store content, the database stores everything else. If everything else were removed, the entries would still be intact.",
-            },
-            {
-              icon: Layers,
-              title: "Extensions",
-              body: "Platform features with their own data — metadata, types, references, tags, search indexes. Each extension declares its dependencies and can be added or removed independently.",
-            },
-            {
-              icon: Puzzle,
-              title: "Tools",
-              body: "Stateless endpoints that query platform data through service interfaces. Search, graph traversal, and future third-party tools use the same API.",
-            },
-          ].map(({ icon: Icon, title, body }) => (
-            <div key={title} className="flex gap-4">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                <Icon className="h-4 w-4 text-secondary-foreground" />
-              </div>
-              <div>
-                <p className="mb-1 text-sm font-semibold text-foreground">{title}</p>
-                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-              </div>
+        <h2 className="mb-5 text-xl font-semibold text-foreground">What Phiacta Is Not</h2>
+        <div className="space-y-3">
+          {NOT_LIST.map(({ label, body }) => (
+            <div key={label} className="rounded-xl border border-border bg-card p-5">
+              <p className="mb-1 text-sm font-semibold text-foreground">{label}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
             </div>
           ))}
         </div>
