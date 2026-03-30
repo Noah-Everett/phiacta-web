@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
-  Atom,
+  Quote,
   ShieldCheck,
   Target,
   CheckCircle2,
@@ -45,9 +45,9 @@ const FORMATS = [
 
 const GUIDELINES = [
   {
-    icon: Atom,
-    title: "One idea per entry",
-    body: "An entry is atomic. State one assertion, one result, or one definition — not a paper.",
+    icon: Quote,
+    title: "Make it citable",
+    body: "If someone cited this entry, would it be clear what they're pointing to? A theorem, a paper, a dataset — any granularity works if it's a meaningful unit to reference.",
   },
   {
     icon: Target,
@@ -385,7 +385,7 @@ export default function PostPage() {
       <div className="mb-10">
         <h1 className="mb-2 text-3xl font-bold text-foreground">Post an entry</h1>
         <p className="text-lg text-muted-foreground">
-          Publish a new entry to the knowledge graph. Every entry is atomic, versioned,
+          Publish a new entry to the knowledge graph. Every entry is versioned
           and permanently citable.
         </p>
       </div>

@@ -18,7 +18,7 @@ const PRINCIPLES = [
   {
     icon: Atom,
     title: "Entries are the unit of knowledge",
-    body: "An entry is atomic — one assertion, not a paper. Complex arguments are expressed as networks of related entries. Every individual statement is citable, reviewable, and verifiable on its own terms.",
+    body: "An entry represents something worth citing — a single finding, a full paper, a dataset, a method. If a specific idea will be discussed or built upon independently, it's worth its own entry. Composite entries tie related entries together with references.",
   },
   {
     icon: GitBranch,
@@ -111,9 +111,8 @@ export default function AboutPage() {
           </p>
           <p>
             Phiacta is built around a different idea: every piece of knowledge should be an{" "}
-            <strong className="text-foreground">entry</strong> — an atomic, versioned assertion
-            that stands on its own, can be backed by evidence, and can be reviewed, challenged,
-            and cited independently.
+            <strong className="text-foreground">entry</strong> — a versioned, citable unit
+            that can be backed by evidence, reviewed, challenged, and built upon independently.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-card p-5">
