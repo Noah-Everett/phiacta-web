@@ -257,12 +257,7 @@ export default function AboutPage() {
             {
               icon: Layers,
               title: "Extensions",
-              body: "Platform features with their own data — metadata, types, references, tags. Separable: removing one does not affect entries or other extensions.",
-            },
-            {
-              icon: Database,
-              title: "Views",
-              body: "Precomputed, versioned data cached in dedicated tables — search tsvectors, embeddings, confidence scores. Drop the cache, re-run, get it back.",
+              body: "Platform features with their own data — metadata, types, references, tags, search indexes. Each extension declares its dependencies and can be added or removed independently.",
             },
             {
               icon: Puzzle,
