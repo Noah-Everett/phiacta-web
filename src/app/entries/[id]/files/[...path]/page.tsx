@@ -9,16 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
 import { useAuth } from "@/lib/auth-context";
-import { getEntry, putEntryFile } from "@/lib/api";
+import { getEntry, putEntryFile, API_URL, getStoredToken } from "@/lib/api";
 import { highlightCode, getLanguageFromPath, type HighlightToken } from "@/lib/highlighter";
 import type { FileListItem } from "@/lib/types";
-
-const API_URL =
-  typeof window === "undefined"
-    ? process.env.API_URL_INTERNAL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      "http://localhost:8000"
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const TEXT_EXTENSIONS = new Set([
   ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".csv", ".tex",
@@ -175,7 +168,11 @@ export default function FilePage({ params }: FilePageProps) {
     setError(null);
 
     const encodedPath = filePath.split("/").map((seg) => encodeURIComponent(seg)).join("/");
-    fetch(`${API_URL}/v1/entries/${entryId}/files/${encodedPath}`, { cache: "no-store" })
+    const token = getStoredToken();
+    fetch(`${API_URL}/v1/entries/${entryId}/files/${encodedPath}`, {
+      cache: "no-store",
+      ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    })
       .then(async (res) => {
         if (!res.ok) {
           setError("File not found");
