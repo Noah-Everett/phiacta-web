@@ -816,7 +816,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setEditError(null);
     try {
       const files = editProposalContent !== (contentText || "")
-        ? [{ path: `.phiacta/content.${contentFormat}`, content: btoa(editProposalContent) }]
+        ? [{ path: `.phiacta/content.${contentFormat}`, content: editProposalContent }]
         : [];
       await createEditProposal(resolvedId, editTitle.trim(), editBody.trim() || undefined, files);
       fetchEdits(resolvedId);
