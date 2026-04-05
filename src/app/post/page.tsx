@@ -199,7 +199,7 @@ export default function PostPage() {
     refDebounceRef.current = setTimeout(async () => {
       setRefSearching(true);
       try {
-        const res = await searchEntries(trimmed, 5, 0);
+        const res = await searchEntries(trimmed, 5);
         setRefResults(res.items.map((r) => ({ id: r.entry_id, title: r.title || "Untitled" })));
       } catch {
         setRefResults([]);

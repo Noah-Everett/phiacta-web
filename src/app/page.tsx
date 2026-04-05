@@ -59,11 +59,9 @@ const FEATURES = [
 
 export default async function Home() {
   let featuredEntries: EntryListItem[] = [];
-  let totalEntries = 0;
   try {
-    const res = await listEntries(8, 0, { sort: "updated_at", order: "desc" });
+    const res = await listEntries(8, null, { sort: "updated_at", order: "desc" });
     featuredEntries = res.items;
-    totalEntries = res.total;
   } catch {
     // API unavailable — show empty
   }
@@ -123,24 +121,8 @@ export default async function Home() {
           </div>
         </div>
 
-        {/* TODO: uncomment when there are enough real entries
-        {totalEntries > 0 && (
-          <div className="mt-10 flex gap-12 text-center">
-            <div>
-              <p className="text-3xl font-bold text-foreground">{totalEntries}</p>
-              <p className="text-sm text-muted-foreground">entries</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-foreground">Open</p>
-              <p className="text-sm text-muted-foreground">source</p>
-            </div>
-            <div>
-              <p className="text-3xl font-bold text-foreground">Forever</p>
-              <p className="text-sm text-muted-foreground">versioned</p>
-            </div>
-          </div>
-        )}
-        */}
+        {/* TODO: add stats section when there are enough real entries
+           (cursor-based pagination no longer returns total count) */}
       </section>
 
       {/* Recent entries — auto-scrolling carousel */}

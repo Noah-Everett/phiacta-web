@@ -6,7 +6,7 @@ import type {
   AuthResponse,
   EntryListItem,
   EntryCreate,
-  PaginatedResponse,
+  CursorPage,
 } from "@/lib/types";
 
 /** Produces a realistic User matching the backend schema */
@@ -53,17 +53,16 @@ export function makeAuthResponse(
   };
 }
 
-/** Produces a realistic PaginatedResponse of entries */
+/** Produces a realistic CursorPage of entries */
 export function makePaginatedEntries(
   items: EntryListItem[] = [makeEntryListItem()],
-  overrides: Partial<PaginatedResponse<EntryListItem>> = {},
-): PaginatedResponse<EntryListItem> {
+  overrides: Partial<CursorPage<EntryListItem>> = {},
+): CursorPage<EntryListItem> {
   return {
     items,
-    total: items.length,
     limit: 20,
-    offset: 0,
     has_more: false,
+    next_cursor: null,
     ...overrides,
   };
 }
