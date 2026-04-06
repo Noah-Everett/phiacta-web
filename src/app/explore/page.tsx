@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EntryTypeBadge, StatusBadge } from "@/components/EntryBadges";
+import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
 import GraphView from "@/components/GraphView";
 import GraphConfigPanel from "@/components/GraphConfigPanel";
 import type { GraphConfig } from "@/components/GraphConfigPanel";
@@ -75,7 +75,7 @@ interface DisplayEntry {
   summary: string | null;
   tags?: string[];
   // Browse-only fields (absent when searching)
-  status?: string;
+  visibility?: string;
   created_by?: string;
   created_at?: string;
 }
@@ -87,7 +87,7 @@ function toBrowseEntry(e: EntryListItem): DisplayEntry {
     entry_type: e.entry_type,
     summary: e.summary,
     tags: e.tags,
-    status: e.status,
+    visibility: e.visibility,
     created_by: e.created_by,
     created_at: e.created_at,
   };
@@ -111,6 +111,11 @@ function toTagEntry(r: EntryTagItem): DisplayEntry {
   };
 }
 
+const VISIBILITY_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "public", label: "Public" },
+  { value: "private", label: "Private" },
+] as const;
 
 function ExploreContent() {
   const router = useRouter();
@@ -132,7 +137,7 @@ function ExploreContent() {
   const [isSearchMode, setIsSearchMode] = useState(false);
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [tagMode, setTagMode] = useState<"and" | "or">("or");
-  const [statusFilter] = useState("active");
+  const [visibilityFilter, setVisibilityFilter] = useState("all");
   const [filterTypes, setFilterTypes] = useState<string[]>([]);
   const [typeInput, setTypeInput] = useState("");
   const [tagInput, setTagInput] = useState("");
@@ -244,8 +249,8 @@ function ExploreContent() {
     setError(null);
     try {
       const [field, dir] = sortKey.split(":");
-      const filters: { status?: string; sort?: string; order?: string } = { sort: field, order: dir };
-      if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
+      const filters: { visibility?: string; sort?: string; order?: string } = { sort: field, order: dir };
+      if (visibilityFilter && visibilityFilter !== "all") filters.visibility = visibilityFilter;
       const res = await listEntries(PAGE_SIZE, pageOffset, filters);
       setEntries(res.items.map(toBrowseEntry));
       setTotal(res.total);
@@ -261,14 +266,14 @@ function ExploreContent() {
     } finally {
       setLoading(false);
     }
-  }, [resolveAuthors, sortKey, statusFilter]);
+  }, [resolveAuthors, sortKey, visibilityFilter]);
 
   const fetchSearch = useCallback(async (query: string, pageOffset: number) => {
     setLoading(true);
     setError(null);
     try {
       const filters: Record<string, string> = {};
-      if (statusFilter && statusFilter !== "all") filters.status = statusFilter;
+      if (visibilityFilter && visibilityFilter !== "all") filters.visibility = visibilityFilter;
       if (filterTypes.length > 0) filters.entry_type = filterTypes.join(",");
       if (filterTags.length > 0) {
         filters.tags = filterTags.join(",") + (tagMode === "and" ? ";mode=and" : "");
@@ -285,7 +290,7 @@ function ExploreContent() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, filterTypes, filterTags, tagMode]);
+  }, [visibilityFilter, filterTypes, filterTags, tagMode]);
 
   const fetchByTags = useCallback(async (tags: string[], mode: "and" | "or", pageOffset: number) => {
     setLoading(true);
@@ -348,7 +353,7 @@ function ExploreContent() {
     } else {
       fetchBrowse(0);
     }
-  }, [statusFilter, sortKey, filterTypes, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [visibilityFilter, sortKey, filterTypes, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
   const totalPages = Math.ceil(total / PAGE_SIZE);
@@ -441,6 +446,19 @@ function ExploreContent() {
 
       {/* Controls bar */}
       <div className="mb-3 flex items-center gap-2">
+        <Select value={visibilityFilter} onValueChange={setVisibilityFilter}>
+          <SelectTrigger className="h-9 w-[140px] text-sm">
+            <SelectValue placeholder="All" />
+          </SelectTrigger>
+          <SelectContent position="popper">
+            {VISIBILITY_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
         <Select
           value={sortKey}
           onValueChange={setSortKey}
@@ -666,7 +684,7 @@ function ExploreContent() {
                         <span>{author.handle}</span>
                       </div>
                     )}
-                    {entry.status && <StatusBadge status={entry.status} />}
+                    {entry.visibility && <VisibilityBadge visibility={entry.visibility} />}
                     {entry.created_at && (() => {
                       const created = new Date(entry.created_at);
                       const daysAgo = (Date.now() - created.getTime()) / (1000 * 60 * 60 * 24);

@@ -29,8 +29,7 @@ type FilterType = "all" | "entry" | "issue" | "edit" | "comment";
 function actionIcon(item: ActivityItem) {
   switch (item.action) {
     case "entry.created":
-    case "entry.archived":
-    case "entry.unarchived":
+    case "entry.visibility_changed":
       return <FileText className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />;
     case "issue.created":
     case "issue.closed":
@@ -50,8 +49,7 @@ function actionIcon(item: ActivityItem) {
 function actionLabel(action: string): string {
   switch (action) {
     case "entry.created": return "Published entry";
-    case "entry.archived": return "Archived entry";
-    case "entry.unarchived": return "Unarchived entry";
+    case "entry.visibility_changed": return "Changed entry visibility";
     case "issue.created": return "Opened issue";
     case "issue.closed": return "Closed issue";
     case "issue.commented": return "Commented on issue";

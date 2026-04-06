@@ -14,7 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusBadge } from "@/components/EntryBadges";
+import { VisibilityBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
 import { getUser, listEntries, getEntryIssues, getEntryEdits, getEntryTags } from "@/lib/api";
 import {
@@ -210,8 +210,8 @@ export default function UserPage({ params }: UserPageProps) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-medium text-foreground transition-colors group-hover:text-primary">{e.title || "Untitled"}</p>
-                      {isOwnProfile && e.status !== "active" && (
-                        <StatusBadge status={e.status} />
+                      {isOwnProfile && e.visibility !== "public" && (
+                        <VisibilityBadge visibility={e.visibility} />
                       )}
                     </div>
                     {e.summary && <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{e.summary}</p>}

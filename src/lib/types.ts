@@ -42,12 +42,11 @@ export interface TokenListItem {
 // corresponding extensions are loaded.
 export interface EntryListItem {
   id: string;
-  schema_version: number;
   forgejo_repo_id: number | null;
   repo_name: string;
   current_head_sha: string | null;
   repo_status: string;
-  status: string;
+  visibility: string;
   created_by: string;
   created_at: string;
   updated_at: string;
@@ -284,7 +283,7 @@ export interface GraphNode {
   summary: string | null;
   entry_type: string | null;
   tags: string[];
-  status: string;
+  visibility: string;
   depth: number;
 }
 
