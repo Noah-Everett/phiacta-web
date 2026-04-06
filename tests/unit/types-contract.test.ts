@@ -10,7 +10,7 @@ import type {
   EntryDetailResponse,
   EntryCreate,
   EntryUpdate,
-  PaginatedResponse,
+  CursorPage,
   ReferenceItem,
 } from "@/lib/types";
 
@@ -123,20 +123,18 @@ describe("TypeScript types match backend contract", () => {
     expect(update.tags).toEqual(["math", "proof"]);
   });
 
-  it("PaginatedResponse has pagination fields including has_more", () => {
-    const response: PaginatedResponse<EntryListItem> = {
+  it("CursorPage has cursor-based pagination fields", () => {
+    const response: CursorPage<EntryListItem> = {
       items: [],
-      total: 0,
       limit: 20,
-      offset: 0,
       has_more: false,
+      next_cursor: null,
     };
 
     expect(response.items).toEqual([]);
-    expect(response.total).toBe(0);
     expect(response.limit).toBe(20);
-    expect(response.offset).toBe(0);
     expect(response.has_more).toBe(false);
+    expect(response.next_cursor).toBeNull();
   });
 
   it("EntryDetailResponse extends EntryListItem with references", () => {

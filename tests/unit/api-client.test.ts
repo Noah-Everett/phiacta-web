@@ -77,10 +77,9 @@ describe("API Client — endpoint URLs", () => {
       json: () =>
         Promise.resolve({
           items: [],
-          total: 0,
           limit: 20,
-          offset: 0,
           has_more: false,
+          next_cursor: null,
         }),
     });
 

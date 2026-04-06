@@ -68,7 +68,7 @@ export default function UserPage({ params }: UserPageProps) {
     if (!id) return;
     setLoading(true);
 
-    Promise.all([getUser(id), listEntries(200, 0)])
+    Promise.all([getUser(id), listEntries(200)])
       .then(async ([userData, entriesRes]) => {
         setUser(userData);
         const userEntries = entriesRes.items.filter((e) => e.created_by === id);

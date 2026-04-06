@@ -44,10 +44,9 @@ test.describe("Explore entries page", () => {
         contentType: "application/json",
         body: JSON.stringify({
           items: [],
-          total: 0,
           limit: 20,
-          offset: 0,
           has_more: false,
+          next_cursor: null,
         }),
       });
     });
@@ -102,10 +101,9 @@ test.describe("Explore entries page", () => {
               updated_at: "2026-03-01T12:00:00Z",
             },
           ],
-          total: 2,
           limit: 20,
-          offset: 0,
           has_more: false,
+          next_cursor: null,
         }),
       });
     });
@@ -130,10 +128,9 @@ test.describe("Explore entries page", () => {
         contentType: "application/json",
         body: JSON.stringify({
           items: [],
-          total: 0,
           limit: 20,
-          offset: 0,
           has_more: false,
+          next_cursor: null,
         }),
       });
     });

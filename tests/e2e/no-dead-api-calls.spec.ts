@@ -78,10 +78,9 @@ test("no deprecated API calls when navigating to entry detail", async ({
             updated_at: "2026-02-20T14:00:00Z",
           },
         ],
-        total: 1,
         limit: 20,
-        offset: 0,
         has_more: false,
+        next_cursor: null,
       }),
     });
   });

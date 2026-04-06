@@ -126,9 +126,11 @@ function ExploreContent() {
   const initialQ = searchParams.get("q") ?? "";
 
   const [entries, setEntries] = useState<DisplayEntry[]>([]);
-  const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const [offset, setOffset] = useState(0);
+  // Cursor-based pagination: stack of cursors for each visited page
+  const cursorStackRef = useRef<(string | null)[]>([null]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState(initialQ);
@@ -244,18 +246,17 @@ function ExploreContent() {
     setAuthors({ ...authorsRef.current });
   }, []);
 
-  const fetchBrowse = useCallback(async (pageOffset: number) => {
+  const fetchBrowse = useCallback(async (cursor: string | null) => {
     setLoading(true);
     setError(null);
     try {
       const [field, dir] = sortKey.split(":");
       const filters: { visibility?: string; sort?: string; order?: string } = { sort: field, order: dir };
       if (visibilityFilter && visibilityFilter !== "all") filters.visibility = visibilityFilter;
-      const res = await listEntries(PAGE_SIZE, pageOffset, filters);
+      const res = await listEntries(PAGE_SIZE, cursor, filters);
       setEntries(res.items.map(toBrowseEntry));
-      setTotal(res.total);
       setHasMore(res.has_more);
-      setOffset(pageOffset);
+      setNextCursor(res.next_cursor);
       setIsSearchMode(false);
       setIsTagFilterMode(false);
 
@@ -268,7 +269,7 @@ function ExploreContent() {
     }
   }, [resolveAuthors, sortKey, visibilityFilter]);
 
-  const fetchSearch = useCallback(async (query: string, pageOffset: number) => {
+  const fetchSearch = useCallback(async (query: string, cursor: string | null) => {
     setLoading(true);
     setError(null);
     try {
@@ -278,11 +279,10 @@ function ExploreContent() {
       if (filterTags.length > 0) {
         filters.tags = filterTags.join(",") + (tagMode === "and" ? ";mode=and" : "");
       }
-      const res = await searchEntries(query, PAGE_SIZE, pageOffset, filters);
+      const res = await searchEntries(query, PAGE_SIZE, cursor, filters);
       setEntries(res.items.map(toSearchEntry));
-      setTotal(res.total);
       setHasMore(res.has_more);
-      setOffset(pageOffset);
+      setNextCursor(res.next_cursor);
       setIsSearchMode(true);
       setIsTagFilterMode(false);
     } catch (err) {
@@ -292,15 +292,14 @@ function ExploreContent() {
     }
   }, [visibilityFilter, filterTypes, filterTags, tagMode]);
 
-  const fetchByTags = useCallback(async (tags: string[], mode: "and" | "or", pageOffset: number) => {
+  const fetchByTags = useCallback(async (tags: string[], mode: "and" | "or", cursor: string | null) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await findEntriesByTags(tags, mode, PAGE_SIZE, pageOffset);
+      const res = await findEntriesByTags(tags, mode, PAGE_SIZE, cursor);
       setEntries(res.items.map(toTagEntry));
-      setTotal(res.total);
       setHasMore(res.has_more);
-      setOffset(pageOffset);
+      setNextCursor(res.next_cursor);
       setIsSearchMode(false);
       setIsTagFilterMode(true);
     } catch (err) {
@@ -311,16 +310,22 @@ function ExploreContent() {
   }, []);
 
   // Determine the active fetch strategy based on current filters
-  const fetchActive = useCallback((pageOffset: number) => {
+  const fetchActive = useCallback((cursor: string | null) => {
     const trimmed = search.trim();
     if (trimmed) {
-      fetchSearch(trimmed, pageOffset);
+      fetchSearch(trimmed, cursor);
     } else if (filterTags.length > 0) {
-      fetchByTags(filterTags, tagMode, pageOffset);
+      fetchByTags(filterTags, tagMode, cursor);
     } else {
-      fetchBrowse(pageOffset);
+      fetchBrowse(cursor);
     }
   }, [search, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]);
+
+  // Reset pagination to first page
+  const resetPagination = useCallback(() => {
+    cursorStackRef.current = [null];
+    setPageNumber(1);
+  }, []);
 
   // Debounced search text — triggers on search text changes only
   useEffect(() => {
@@ -328,15 +333,17 @@ function ExploreContent() {
     const trimmed = search.trim();
     if (!trimmed) {
       // Search cleared — switch back to browse/tag mode immediately
+      resetPagination();
       if (filterTags.length > 0) {
-        fetchByTags(filterTags, tagMode, 0);
+        fetchByTags(filterTags, tagMode, null);
       } else {
-        fetchBrowse(0);
+        fetchBrowse(null);
       }
       return;
     }
     debounceRef.current = setTimeout(() => {
-      fetchSearch(trimmed, 0);
+      resetPagination();
+      fetchSearch(trimmed, null);
     }, SEARCH_DEBOUNCE_MS);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -345,21 +352,30 @@ function ExploreContent() {
 
   // Re-fetch when filters/sort change (no debounce)
   useEffect(() => {
+    resetPagination();
     const trimmed = search.trim();
     if (trimmed) {
-      fetchSearch(trimmed, 0);
+      fetchSearch(trimmed, null);
     } else if (filterTags.length > 0) {
-      fetchByTags(filterTags, tagMode, 0);
+      fetchByTags(filterTags, tagMode, null);
     } else {
-      fetchBrowse(0);
+      fetchBrowse(null);
     }
   }, [visibilityFilter, sortKey, filterTypes, filterTags, tagMode, fetchSearch, fetchByTags, fetchBrowse]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const currentPage = Math.floor(offset / PAGE_SIZE) + 1;
-  const totalPages = Math.ceil(total / PAGE_SIZE);
+  const handleNextPage = () => {
+    if (!nextCursor) return;
+    cursorStackRef.current.push(nextCursor);
+    setPageNumber(cursorStackRef.current.length);
+    fetchActive(nextCursor);
+  };
 
-  const handlePageChange = (newOffset: number) => {
-    fetchActive(newOffset);
+  const handlePrevPage = () => {
+    if (cursorStackRef.current.length <= 1) return;
+    cursorStackRef.current.pop();
+    const prevCursor = cursorStackRef.current[cursorStackRef.current.length - 1];
+    setPageNumber(cursorStackRef.current.length);
+    fetchActive(prevCursor);
   };
 
   const addFilterTag = (tag: string) => {
@@ -623,15 +639,14 @@ function ExploreContent() {
         const filteredEntries = filterTypes.length === 0
           ? entries
           : entries.filter((e) => e.entry_type !== null && filterTypes.includes(e.entry_type));
-        const displayCount = filterTypes.length === 0 ? total : filteredEntries.length;
         return (
         <>
           <p className="mb-3 text-sm text-muted-foreground">
             {isSearchMode
-              ? `${displayCount} result${displayCount !== 1 ? "s" : ""} for \u201c${search.trim()}\u201d`
+              ? `Results for \u201c${search.trim()}\u201d`
               : isTagFilterMode
-                ? `${displayCount} entr${displayCount !== 1 ? "ies" : "y"} tagged ${filterTags.map((t) => `\u201c${t}\u201d`).join(tagMode === "and" ? " & " : " | ")}`
-                : `${displayCount} entr${displayCount !== 1 ? "ies" : "y"}`}
+                ? `Entries tagged ${filterTags.map((t) => `\u201c${t}\u201d`).join(tagMode === "and" ? " & " : " | ")}`
+                : `${filteredEntries.length} entr${filteredEntries.length !== 1 ? "ies" : "y"}`}
           </p>
           <div className="space-y-2">
             {filteredEntries.map((entry) => {
@@ -731,26 +746,26 @@ function ExploreContent() {
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {(pageNumber > 1 || hasMore) && (
             <div className="mt-6 flex items-center justify-between">
               <Button
                 variant="outline"
                 size="sm"
-                disabled={offset === 0}
-                onClick={() => handlePageChange(offset - PAGE_SIZE)}
+                disabled={pageNumber <= 1}
+                onClick={handlePrevPage}
                 className="gap-1.5"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 Previous
               </Button>
               <span className="text-xs text-muted-foreground">
-                Page {currentPage} of {totalPages}
+                Page {pageNumber}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={!hasMore}
-                onClick={() => handlePageChange(offset + PAGE_SIZE)}
+                onClick={handleNextPage}
                 className="gap-1.5"
               >
                 Next

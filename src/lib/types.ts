@@ -93,13 +93,12 @@ export interface EntryUpdate {
   [key: string]: unknown;
 }
 
-// Pagination — mirrors common.py
-export interface PaginatedResponse<T> {
+// Cursor-based pagination — mirrors pagination.py CursorPage
+export interface CursorPage<T> {
   items: T[];
-  total: number;
   limit: number;
-  offset: number;
   has_more: boolean;
+  next_cursor: string | null;
 }
 
 // File types — mirrors entry_file.py
@@ -227,12 +226,7 @@ export interface SearchResultItem {
   rank: number;
 }
 
-export interface SearchResponse {
-  items: SearchResultItem[];
-  total: number;
-  limit: number;
-  offset: number;
-  has_more: boolean;
+export interface SearchResponse extends CursorPage<SearchResultItem> {
   version_id: string | null;
 }
 
@@ -308,7 +302,4 @@ export interface ActivityItem {
   created_at: string;
 }
 
-export interface ActivityFeedResponse {
-  items: ActivityItem[];
-  next_cursor: string | null;
-}
+export type ActivityFeedResponse = CursorPage<ActivityItem>;

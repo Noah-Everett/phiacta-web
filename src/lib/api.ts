@@ -4,7 +4,7 @@ import type {
   EntryResponse,
   EntryCreate,
   EntryUpdate,
-  PaginatedResponse,
+  CursorPage,
   User,
   PublicUserResponse,
   AuthResponse,
@@ -188,18 +188,17 @@ export async function getMeApi(): Promise<User> {
 
 export async function listEntries(
   limit: number = 20,
-  offset: number = 0,
-  filters?: { visibility?: string; include?: string; exclude?: string; sort?: string; order?: string }
-): Promise<PaginatedResponse<EntryListItem>> {
+  cursor?: string | null,
+  filters?: { visibility?: string; include?: string; sort?: string; order?: string }
+): Promise<CursorPage<EntryListItem>> {
   const params = new URLSearchParams();
   params.set("limit", String(limit));
-  params.set("offset", String(offset));
+  if (cursor) params.set("cursor", cursor);
   if (filters?.visibility) params.set("visibility", filters.visibility);
   if (filters?.include) params.set("include", filters.include);
-  if (filters?.exclude) params.set("exclude", filters.exclude);
   if (filters?.sort) params.set("sort", filters.sort);
   if (filters?.order) params.set("order", filters.order);
-  return request<PaginatedResponse<EntryListItem>>(`/v1/entries?${params.toString()}`);
+  return request<CursorPage<EntryListItem>>(`/v1/entries?${params.toString()}`);
 }
 
 export async function getEntry(
@@ -237,7 +236,8 @@ export async function resolveEntity(id: string): Promise<Record<string, unknown>
 // --- Entry Files ---
 
 export async function getEntryFiles(id: string): Promise<FileListItem[]> {
-  return request<FileListItem[]>(`/v1/entries/${id}/files`);
+  const res = await request<CursorPage<FileListItem>>(`/v1/entries/${id}/files`);
+  return res.items;
 }
 
 export async function putEntryFile(
@@ -292,7 +292,8 @@ export async function getEntryEdits(
   state?: string
 ): Promise<EditProposalListItem[]> {
   const params = state ? `?state=${state}` : "";
-  return request<EditProposalListItem[]>(`/v1/entries/${id}/edits${params}`);
+  const res = await request<CursorPage<EditProposalListItem>>(`/v1/entries/${id}/edits${params}`);
+  return res.items;
 }
 
 export async function getEntryEditDetail(
@@ -323,7 +324,8 @@ export async function closeEditProposal(
 // --- Entry History ---
 
 export async function getEntryHistory(id: string): Promise<CommitListItem[]> {
-  return request<CommitListItem[]>(`/v1/entries/${id}/history`);
+  const res = await request<CursorPage<CommitListItem>>(`/v1/entries/${id}/history`);
+  return res.items;
 }
 
 export async function getEntryCommitDiff(
@@ -359,7 +361,8 @@ export async function getEntryIssues(
   state?: string
 ): Promise<IssueListItem[]> {
   const params = state ? `?state=${state}` : "";
-  return request<IssueListItem[]>(`/v1/entries/${id}/issues${params}`);
+  const res = await request<CursorPage<IssueListItem>>(`/v1/entries/${id}/issues${params}`);
+  return res.items;
 }
 
 export async function getEntryIssueDetail(
@@ -383,13 +386,13 @@ export async function closeIssue(
 export async function searchEntries(
   q: string,
   limit: number = 20,
-  offset: number = 0,
+  cursor?: string | null,
   filters?: Record<string, string>
 ): Promise<SearchResponse> {
   const params = new URLSearchParams();
   params.set("q", q);
   params.set("limit", String(limit));
-  params.set("offset", String(offset));
+  if (cursor) params.set("cursor", cursor);
   if (filters) {
     for (const [key, value] of Object.entries(filters)) {
       if (value) params.set(key, value);
@@ -440,14 +443,14 @@ export async function findEntriesByTags(
   tags: string[],
   mode: "and" | "or" = "or",
   limit: number = 50,
-  offset: number = 0
-): Promise<PaginatedResponse<EntryTagItem>> {
+  cursor?: string | null
+): Promise<CursorPage<EntryTagItem>> {
   const params = new URLSearchParams();
   params.set("tags", tags.join(","));
   params.set("mode", mode);
   params.set("limit", String(limit));
-  params.set("offset", String(offset));
-  return request<PaginatedResponse<EntryTagItem>>(`/v1/extensions/tags/entries?${params.toString()}`);
+  if (cursor) params.set("cursor", cursor);
+  return request<CursorPage<EntryTagItem>>(`/v1/extensions/tags/entries?${params.toString()}`);
 }
 
 // --- Personal Access Tokens ---
@@ -465,7 +468,8 @@ export async function createToken(
 }
 
 export async function listTokens(): Promise<TokenListItem[]> {
-  return authFetch<TokenListItem[]>("/v1/auth/tokens");
+  const res = await authFetch<CursorPage<TokenListItem>>("/v1/auth/tokens");
+  return res.items;
 }
 
 export async function revokeToken(tokenId: string): Promise<void> {
@@ -539,13 +543,15 @@ export async function createEditProposal(
 // --- Plugins ---
 
 export async function listPlugins(): Promise<PluginInfo[]> {
-  return request<PluginInfo[]>("/v1/plugins");
+  const res = await request<CursorPage<PluginInfo>>("/v1/plugins");
+  return res.items;
 }
 
 // --- Docs ---
 
 export async function listDocs(): Promise<DocListItem[]> {
-  return request<DocListItem[]>("/v1/docs");
+  const res = await request<CursorPage<DocListItem>>("/v1/docs");
+  return res.items;
 }
 
 export async function getDoc(slug: string): Promise<DocDetail> {
