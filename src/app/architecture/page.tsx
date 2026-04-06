@@ -115,9 +115,9 @@ export default function ArchitecturePage() {
           Core Entities
         </h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
-          The core schema is deliberately minimal. The four-layer architecture
-          separates entries (core), extensions (tags, references, etc.), views (search), and
-          tools (external).
+          The core schema is deliberately minimal. The architecture
+          separates entries (core), extensions (tags, references, search, etc.), and
+          tools (search endpoints, graph traversal).
         </p>
 
         {/* Entity grid */}

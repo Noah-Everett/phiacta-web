@@ -45,8 +45,6 @@ import {
   Plus,
   Trash2,
   Upload,
-  Archive,
-  ArchiveRestore,
   Activity,
   Search,
   Expand,

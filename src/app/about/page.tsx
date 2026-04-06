@@ -10,7 +10,6 @@ import {
   Atom,
   XCircle,
   Database,
-  Bot,
   Layers,
 } from "lucide-react";
 
@@ -52,8 +51,8 @@ const PRINCIPLES = [
   },
   {
     icon: Puzzle,
-    title: "Open platform",
-    body: "Every feature on the website is accessible through the API. Third-party extensions connect to produce new outputs — papers, podcasts, slide decks — from the same underlying entry data.",
+    title: "Built to be built on",
+    body: "Everything on this website uses the same public API. The Python SDK lets you automate workflows in a few lines. The MCP server gives AI agents full platform access. Extensions and tools plug into a documented framework — not a closed system.",
   },
 ];
 
@@ -155,7 +154,45 @@ export default function AboutPage() {
 
       <Separator className="mb-10" />
 
-      {/* Entry vocabulary */}
+      {/* Architecture */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Architecture</h2>
+        <p className="mb-4 leading-relaxed text-muted-foreground">
+          Phiacta is organized into three layers, each with a clear responsibility. The core is
+          minimal — everything else is pluggable.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            {
+              icon: Atom,
+              title: "Entries",
+              body: "The knowledge itself. Git repos store content, the database stores everything else. If everything else were removed, the entries would still be intact.",
+            },
+            {
+              icon: Layers,
+              title: "Extensions",
+              body: "Platform features with their own data — metadata, types, references, tags, search indexes. Each extension declares its dependencies and can be added or removed independently.",
+            },
+            {
+              icon: Puzzle,
+              title: "Tools",
+              body: "Stateless endpoints that query platform data through service interfaces. Search, graph traversal, and future third-party tools use the same API.",
+            },
+          ].map(({ icon: Icon, title, body }) => (
+            <div key={title} className="flex gap-4">
+              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
+                <Icon className="h-4 w-4 text-secondary-foreground" />
+              </div>
+              <div>
+                <p className="mb-1 text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How Entries Work */}
       <section className="mb-10">
         <h2 className="mb-3 text-xl font-semibold text-foreground">How Entries Work</h2>
         <p className="mb-4 leading-relaxed text-muted-foreground">
@@ -189,6 +226,45 @@ export default function AboutPage() {
         </div>
       </section>
 
+      {/* Build on Phiacta */}
+      <section className="mb-10">
+        <h2 className="mb-3 text-xl font-semibold text-foreground">Build on Phiacta</h2>
+        <p className="mb-4 leading-relaxed text-muted-foreground">
+          Phiacta is a platform, not just a website. Everything you see here is powered by the
+          same public API that anyone can use. There are three ways to build on it:
+        </p>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="mb-1 text-sm font-semibold text-foreground">REST API</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Full OpenAPI spec. Create entries, manage references, search, traverse the
+              knowledge graph — every operation the website uses is a documented endpoint.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="mb-1 text-sm font-semibold text-foreground">Python SDK</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Async client with typed models. Automate ingestion pipelines, build analysis
+              tools, or integrate Phiacta into existing research workflows.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-5">
+            <p className="mb-1 text-sm font-semibold text-foreground">MCP Server</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Connect any MCP-compatible AI agent — Claude, Cursor, Windsurf — and give it
+              full platform access with tool schemas and documentation built in.
+            </p>
+          </div>
+        </div>
+        <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+          The plugin framework is open too. Extensions add new data to entries, tools add new
+          query endpoints — both hook into the same lifecycle and discovery system that the
+          built-in features use.
+        </p>
+      </section>
+
+      <Separator className="mb-10" />
+
       {/* What Phiacta is not */}
       <section className="mb-10">
         <h2 className="mb-5 text-xl font-semibold text-foreground">What Phiacta Is Not</h2>
@@ -202,104 +278,18 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Protocol */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">Phiacta and phiacta.com</h2>
-        <p className="mb-3 leading-relaxed text-muted-foreground">
-          Phiacta is designed like git and GitHub. The{" "}
-          <strong className="text-foreground">Phiacta protocol</strong> — the API and data model
-          — is the open foundation. Anyone can build on it.{" "}
-          <strong className="text-foreground">phiacta.com</strong> is the primary hosting
-          platform: the website most people use, plus the extensions marketplace where
-          third-party tools are listed.
-        </p>
-        <p className="leading-relaxed text-muted-foreground">
-          The <strong className="text-foreground">entry format</strong> — the structure of{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">README.md</code>,{" "}
-          <code className="rounded bg-secondary px-1 py-0.5 font-mono text-xs">.phiacta/entry.yaml</code>,
-          and the repository layout — is publicly documented. Entries are not trapped on the
-          platform. Anyone can read, export, or build tools around them.
-        </p>
-      </section>
-
-      <Separator className="mb-10" />
-
-      {/* Architecture */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">Four-Layer Architecture</h2>
-        <p className="mb-4 leading-relaxed text-muted-foreground">
-          Phiacta is organized into four layers, each with a clear responsibility. The core is
-          minimal — everything else is pluggable.
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {[
-            {
-              icon: Atom,
-              title: "Entries",
-              body: "The knowledge itself. Git repos + a derived database index. If everything else were removed, the entries would still be intact.",
-            },
-            {
-              icon: Layers,
-              title: "Extensions",
-              body: "Platform features with their own data — metadata, types, references, tags. Separable: removing one does not affect entries or other extensions.",
-            },
-            {
-              icon: Database,
-              title: "Views",
-              body: "Precomputed, versioned data cached in dedicated tables — search tsvectors, embeddings, confidence scores. Drop the cache, re-run, get it back.",
-            },
-            {
-              icon: Puzzle,
-              title: "Tools",
-              body: "Functions that take input and produce output using platform data. First-party (search, ingestion) and third-party tools use the same API.",
-            },
-          ].map(({ icon: Icon, title, body }) => (
-            <div key={title} className="flex gap-4">
-              <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                <Icon className="h-4 w-4 text-secondary-foreground" />
-              </div>
-              <div>
-                <p className="mb-1 text-sm font-semibold text-foreground">{title}</p>
-                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* AI agents */}
-      <section className="mb-10">
-        <h2 className="mb-3 text-xl font-semibold text-foreground">AI Agents</h2>
-        <div className="space-y-4 leading-relaxed text-muted-foreground">
-          <p>
-            AI agents are first-class users of Phiacta. The platform provides an{" "}
-            <strong className="text-foreground">MCP server</strong> that lets any MCP-compatible
-            agent (Claude, Cursor, Windsurf, etc.) create entries, manage references, search, and
-            more — with full tool schemas and documentation available at connection time.
-          </p>
-          <p>
-            A <strong className="text-foreground">Python SDK</strong> is also available for
-            programmatic access. Both humans and AI agents publish, review, and cite entries
-            through the same API. The platform records who authored what — human or AI — with
-            full provenance.
-          </p>
-        </div>
-      </section>
-
       {/* Contact */}
       <section>
         <h2 className="mb-3 text-xl font-semibold text-foreground">Contact &amp; Community</h2>
         <p className="leading-relaxed text-muted-foreground">
-          Phiacta is open source. You can find the code, report issues, and contribute on{" "}
-          <a
-            href="https://github.com/phiacta"
-            target="_blank"
-            rel="noopener noreferrer"
+          Phiacta is open source. See the{" "}
+          <Link
+            href="/contributing"
             className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
           >
-            GitHub
-          </a>
-          . For questions or feedback, reach out at{" "}
+            contributing guide
+          </Link>{" "}
+          to get involved. For questions or feedback, reach out at{" "}
           <a
             href="mailto:contact@phiacta.com"
             className="text-foreground underline underline-offset-2 hover:opacity-70 transition-opacity"
