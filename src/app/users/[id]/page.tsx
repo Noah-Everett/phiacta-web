@@ -149,10 +149,10 @@ export default function UserPage({ params }: UserPageProps) {
       {/* Profile header */}
       <div className="mb-8 flex gap-4 border-b border-border pb-6">
         <Avatar className="h-16 w-16 shrink-0 text-xl">
-          <AvatarFallback className="text-xl font-semibold">{getInitials(user.handle)}</AvatarFallback>
+          <AvatarFallback className="text-xl font-semibold">{getInitials(user.username)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">{user.handle}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">{user.username}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Joined {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </p>

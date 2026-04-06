@@ -1,7 +1,7 @@
 // User types — mirrors auth.py UserResponse
 export interface User {
   id: string;
-  handle: string;
+  username: string;
   created_at: string;
 }
 
@@ -116,7 +116,7 @@ export interface FileWriteResponse {
 
 // Edit proposal types — mirrors entry_edit.py
 export interface EditProposalAuthor {
-  handle: string;
+  username: string;
 }
 
 export interface EditProposalListItem {
@@ -189,7 +189,7 @@ export interface EntryTagItem {
 
 // Issue types — mirrors entry_issue.py
 export interface IssueAuthor {
-  handle: string;
+  username: string;
 }
 
 export interface IssueListItem {

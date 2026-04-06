@@ -146,7 +146,7 @@ export default function EditPage({ params }: EditPageProps) {
               <Badge variant="outline" className={statusClass}>
                 {statusLabel}
               </Badge>
-              <span>{edit.author.handle} opened on {new Date(edit.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
+              <span>{edit.author.username} opened on {new Date(edit.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</span>
             </div>
           </div>
         </div>

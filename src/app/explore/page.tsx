@@ -678,10 +678,10 @@ function ExploreContent() {
                       <div className="flex items-center gap-1.5">
                         <Avatar className="h-4 w-4">
                           <AvatarFallback className="text-[8px]">
-                            {getInitials(author.handle)}
+                            {getInitials(author.username)}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{author.handle}</span>
+                        <span>{author.username}</span>
                       </div>
                     )}
                     {entry.visibility && <VisibilityBadge visibility={entry.visibility} />}

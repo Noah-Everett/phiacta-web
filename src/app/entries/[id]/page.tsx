@@ -116,7 +116,7 @@ function EditRow({ edit, entryId }: { edit: EditProposalListItem; entryId: strin
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground">{edit.title}</p>
         <p className="text-xs text-muted-foreground">
-          #{edit.number} &middot; {edit.author.handle} &middot;{" "}
+          #{edit.number} &middot; {edit.author.username} &middot;{" "}
           {new Date(edit.created_at).toLocaleDateString()}
         </p>
       </div>
@@ -351,7 +351,7 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium text-foreground">{issue.title}</p>
         <p className="text-xs text-muted-foreground">
-          #{issue.number} &middot; {issue.author.handle} &middot;{" "}
+          #{issue.number} &middot; {issue.author.username} &middot;{" "}
           {new Date(issue.created_at).toLocaleDateString()}
         </p>
       </div>
@@ -968,9 +968,9 @@ export default function EntryPage({ params }: EntryPageProps) {
               className="flex items-center gap-2 hover:text-foreground transition-colors"
             >
               <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-[10px]">{getInitials(author.handle)}</AvatarFallback>
+                <AvatarFallback className="text-[10px]">{getInitials(author.username)}</AvatarFallback>
               </Avatar>
-              <span className="font-medium text-foreground">{author.handle}</span>
+              <span className="font-medium text-foreground">{author.username}</span>
             </Link>
             <Separator orientation="vertical" className="h-4" />
             </>
@@ -1532,10 +1532,10 @@ export default function EntryPage({ params }: EntryPageProps) {
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Author</h3>
             <Link href={`/users/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <Avatar className="h-9 w-9">
-                <AvatarFallback>{getInitials(author.handle)}</AvatarFallback>
+                <AvatarFallback>{getInitials(author.username)}</AvatarFallback>
               </Avatar>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{author.handle}</p>
+                <p className="text-sm font-semibold text-foreground">{author.username}</p>
               </div>
             </Link>
             <Separator className="my-3" />

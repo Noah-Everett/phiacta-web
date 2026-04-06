@@ -1,7 +1,7 @@
 // phiacta-web-repo/tests/unit/get-initials.test.ts
 //
 // Unit tests for the getInitials utility — verifies it works with
-// handle-style strings (single words, hyphenated, short handles),
+// username-style strings (single words, hyphenated, short usernames),
 // not just "First Last" human names.
 
 import { describe, it, expect } from "vitest";
@@ -9,19 +9,19 @@ import { describe, it, expect } from "vitest";
 // The implementation must export getInitials from @/lib/utils
 import { getInitials } from "@/lib/utils";
 
-describe("getInitials — handle-style strings", () => {
-  // Handles are single-word identifiers like "drchen", not "Dr. Chen"
-  it('returns first two chars uppercased for simple handle: "drchen" -> "DR"', () => {
+describe("getInitials — username-style strings", () => {
+  // Usernames are single-word identifiers like "drchen", not "Dr. Chen"
+  it('returns first two chars uppercased for simple username: "drchen" -> "DR"', () => {
     expect(getInitials("drchen")).toBe("DR");
   });
 
-  // Single character handle
-  it('returns single char uppercased for 1-char handle: "a" -> "A"', () => {
+  // Single character username
+  it('returns single char uppercased for 1-char username: "a" -> "A"', () => {
     expect(getInitials("a")).toBe("A");
   });
 
-  // Hyphenated handle — should use first chars of segments or first two chars
-  it('handles hyphenated handle: "dr-sarah-chen" -> "DR" or "DS"', () => {
+  // Hyphenated username — should use first chars of segments or first two chars
+  it('handles hyphenated username: "dr-sarah-chen" -> "DR" or "DS"', () => {
     const result = getInitials("dr-sarah-chen");
     // Either take first two chars ("DR") or first char of first two segments ("DS")
     // Both are valid — the key is it does not crash and returns uppercase letters
@@ -35,24 +35,24 @@ describe("getInitials — handle-style strings", () => {
     expect(getInitials("")).toBe("?");
   });
 
-  // Two character handle
-  it('returns both chars uppercased for 2-char handle: "ab" -> "AB"', () => {
+  // Two character username
+  it('returns both chars uppercased for 2-char username: "ab" -> "AB"', () => {
     expect(getInitials("ab")).toBe("AB");
   });
 
-  // Longer handle
-  it('returns first two chars uppercased for long handle: "researcher42" -> "RE"', () => {
+  // Longer username
+  it('returns first two chars uppercased for long username: "researcher42" -> "RE"', () => {
     expect(getInitials("researcher42")).toBe("RE");
   });
 
-  // Handle with underscores
-  it("handles underscore-separated handle", () => {
+  // Username with underscores
+  it("handles underscore-separated username", () => {
     const result = getInitials("data_scientist");
     expect(result).toMatch(/^[A-Z]{1,2}$/);
   });
 
-  // Handle with numbers at start
-  it("handles handle starting with numbers", () => {
+  // Username with numbers at start
+  it("handles username starting with numbers", () => {
     const result = getInitials("42researcher");
     // Should not crash — numbers are valid
     expect(typeof result).toBe("string");
@@ -60,13 +60,13 @@ describe("getInitials — handle-style strings", () => {
     expect(result.length).toBeLessThanOrEqual(2);
   });
 
-  // Uppercase handle
-  it("handles already-uppercase handle", () => {
+  // Uppercase username
+  it("handles already-uppercase username", () => {
     expect(getInitials("ADMIN")).toBe("AD");
   });
 
   // Mixed case
-  it("handles mixed case handle", () => {
+  it("handles mixed case username", () => {
     expect(getInitials("DrChen")).toBe("DR");
   });
 });

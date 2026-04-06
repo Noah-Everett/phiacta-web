@@ -23,11 +23,11 @@ export default function NavbarAuth() {
         >
           <Avatar className="h-7 w-7">
             <AvatarFallback className="text-[10px]">
-              {getInitials(user.handle)}
+              {getInitials(user.username)}
             </AvatarFallback>
           </Avatar>
           <span className="hidden text-sm font-medium text-foreground sm:block">
-            {user.handle}
+            {user.username}
           </span>
         </Link>
         <Button

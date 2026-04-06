@@ -18,15 +18,15 @@ describe("TypeScript types match backend contract", () => {
   it("User has correct fields", () => {
     const user: User = {
       id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-      handle: "drchen",
+      username: "drchen",
       created_at: "2026-01-15T10:30:00Z",
     };
 
     expect(user.id).toBe("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-    expect(user.handle).toBe("drchen");
+    expect(user.username).toBe("drchen");
     expect(user.created_at).toBe("2026-01-15T10:30:00Z");
 
-    expect("handle" in user).toBe(true);
+    expect("username" in user).toBe(true);
 
     const userKeys = Object.keys(user);
     expect(userKeys).not.toContain("name");
@@ -43,14 +43,14 @@ describe("TypeScript types match backend contract", () => {
       token_type: "bearer",
       user: {
         id: "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
-        handle: "drchen",
+        username: "drchen",
         created_at: "2026-01-15T10:30:00Z",
       },
     };
 
     expect(auth.access_token).toBe("eyJ...");
     expect(auth.token_type).toBe("bearer");
-    expect(auth.user.handle).toBe("drchen");
+    expect(auth.user.username).toBe("drchen");
     expect("name" in auth.user).toBe(false);
   });
 

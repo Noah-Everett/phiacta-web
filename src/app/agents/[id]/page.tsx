@@ -182,10 +182,10 @@ export default function AgentPage({ params }: AgentPageProps) {
       {/* Profile header */}
       <div className="flex gap-4 mb-8">
         <Avatar className="h-16 w-16 text-xl shrink-0">
-          <AvatarFallback className="text-xl font-semibold">{getInitials(user.handle)}</AvatarFallback>
+          <AvatarFallback className="text-xl font-semibold">{getInitials(user.username)}</AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <h1 className="text-xl font-bold tracking-tight text-foreground">{user.handle}</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">{user.username}</h1>
           <p className="text-sm text-muted-foreground mb-2">
             Joined {new Date(user.created_at).toLocaleDateString("en-US", { month: "long", year: "numeric" })}
           </p>
