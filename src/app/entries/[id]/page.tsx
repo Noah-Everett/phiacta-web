@@ -68,6 +68,8 @@ import {
   createEditProposal,
   getActivity,
   ApiError,
+  API_URL,
+  getStoredToken,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type {
@@ -81,13 +83,6 @@ import type {
   ActivityItem,
   SearchResultItem,
 } from "@/lib/types";
-
-const API_URL =
-  typeof window === "undefined"
-    ? process.env.API_URL_INTERNAL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      "http://localhost:8000"
-    : process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface EntryPageProps {
   params: Promise<{ id: string }>;
@@ -253,7 +248,11 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
     if (isDir) {
       if (children === null && !loadingContent) {
         setLoadingContent(true);
-        fetch(`${API_URL}/v1/entries/${entryId}/files/${file.path}`, { cache: "no-store" })
+        const dirToken = getStoredToken();
+        fetch(`${API_URL}/v1/entries/${entryId}/files/${file.path}`, {
+          cache: "no-store",
+          ...(dirToken ? { headers: { Authorization: `Bearer ${dirToken}` } } : {}),
+        })
           .then((res) => res.ok ? res.json() : [])
           .then((items) => setChildren(items))
           .catch(() => setChildren([]))
@@ -268,7 +267,11 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
         return;
       }
       setLoadingContent(true);
-      fetch(`${API_URL}/v1/entries/${entryId}/files/${file.path}`, { cache: "no-store" })
+      const fileToken = getStoredToken();
+      fetch(`${API_URL}/v1/entries/${entryId}/files/${file.path}`, {
+        cache: "no-store",
+        ...(fileToken ? { headers: { Authorization: `Bearer ${fileToken}` } } : {}),
+      })
         .then((res) => {
           if (!res.ok) throw new Error("Failed to fetch");
           const ct = res.headers.get("content-type") || "";
@@ -500,9 +503,11 @@ export default function EntryPage({ params }: EntryPageProps) {
   }, []);
 
   const fetchContent = useCallback(async (id: string) => {
+    const contentToken = getStoredToken();
+    const authHeaders: Record<string, string> = contentToken ? { Authorization: `Bearer ${contentToken}` } : {};
     for (const ext of [".md", ".tex", ".txt"]) {
       try {
-        const res = await fetch(`${API_URL}/v1/entries/${id}/files/.phiacta/content${ext}`, { cache: "no-store" });
+        const res = await fetch(`${API_URL}/v1/entries/${id}/files/.phiacta/content${ext}`, { cache: "no-store", headers: authHeaders });
         if (res.ok) {
           const text = await res.text();
           if (text) {
@@ -816,7 +821,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setEditError(null);
     try {
       const files = editProposalContent !== (contentText || "")
-        ? [{ path: `.phiacta/content.${contentFormat}`, content: btoa(editProposalContent) }]
+        ? [{ path: `.phiacta/content.${contentFormat}`, content: editProposalContent }]
         : [];
       await createEditProposal(resolvedId, editTitle.trim(), editBody.trim() || undefined, files);
       fetchEdits(resolvedId);

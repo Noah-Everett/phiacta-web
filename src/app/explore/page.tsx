@@ -106,8 +106,8 @@ function toTagEntry(r: EntryTagItem): DisplayEntry {
   return {
     id: r.entry_id,
     title: r.title,
-    entry_type: null,
-    summary: null,
+    entry_type: r.entry_type ?? null,
+    summary: r.summary ?? null,
   };
 }
 

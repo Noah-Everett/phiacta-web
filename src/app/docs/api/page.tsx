@@ -4,9 +4,7 @@ import { useState, useEffect } from "react";
 import { ApiReferenceReact } from "@scalar/api-reference-react";
 import "@scalar/api-reference-react/style.css";
 import { useTheme } from "next-themes";
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? "https://api.phiacta.com";
+import { API_URL } from "@/lib/api";
 
 export default function DocsApiPage() {
   const { resolvedTheme } = useTheme();

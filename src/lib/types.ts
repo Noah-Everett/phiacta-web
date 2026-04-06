@@ -184,7 +184,9 @@ export interface TagListResponse {
 
 export interface EntryTagItem {
   entry_id: string;
-  title: string;
+  title: string | null;
+  summary: string | null;
+  entry_type: string | null;
 }
 
 // Issue types — mirrors entry_issue.py

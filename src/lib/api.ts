@@ -30,7 +30,7 @@ import type {
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
-const API_URL =
+export const API_URL =
   typeof window === "undefined"
     ? process.env.API_URL_INTERNAL ||
       process.env.NEXT_PUBLIC_API_URL ||
@@ -129,6 +129,7 @@ export async function authFetch<T>(path: string, options?: RequestInit): Promise
     throw new ApiError(res.status, detail || `API error: ${res.status} ${res.statusText}`);
   }
 
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -473,17 +474,6 @@ export async function revokeToken(tokenId: string): Promise<void> {
   });
 }
 
-// --- Entry Status Actions ---
-
-
-export async function hideEntry(id: string): Promise<EntryResponse> {
-  return authFetch<EntryResponse>(`/v1/entries/${id}/hide`, { method: "POST" });
-}
-
-export async function unhideEntry(id: string): Promise<EntryResponse> {
-  return authFetch<EntryResponse>(`/v1/entries/${id}/unhide`, { method: "POST" });
-}
-
 // --- Entry File Deletion ---
 
 export async function deleteEntryFile(
@@ -491,10 +481,12 @@ export async function deleteEntryFile(
   path: string,
   message?: string,
 ): Promise<FileWriteResponse> {
-  const params = message ? `?message=${encodeURIComponent(message)}` : "";
   return authFetch<FileWriteResponse>(
-    `/v1/entries/${entryId}/files/${encodeURIComponent(path)}${params}`,
-    { method: "DELETE" },
+    `/v1/entries/${entryId}/files/${encodeURIComponent(path)}`,
+    {
+      method: "DELETE",
+      body: message ? JSON.stringify({ message }) : undefined,
+    },
   );
 }
 

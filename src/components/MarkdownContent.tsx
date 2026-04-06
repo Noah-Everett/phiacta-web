@@ -10,8 +10,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 import type { Components } from "react-markdown";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+import { API_URL, getStoredToken } from "@/lib/api";
 
 const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
@@ -81,9 +80,11 @@ export default function MarkdownContent({
 
     (async () => {
       const broken = new Set<string>();
+      const token = getStoredToken();
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
       for (const id of ids) {
         try {
-          const res = await fetch(`${API_URL}/v1/entities/${id}`, { cache: "no-store" });
+          const res = await fetch(`${API_URL}/v1/entities/${id}`, { cache: "no-store", headers });
           if (!res.ok) broken.add(id);
         } catch {
           broken.add(id);
