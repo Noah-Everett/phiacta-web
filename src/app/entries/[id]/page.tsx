@@ -48,6 +48,8 @@ import {
   Activity,
   Search,
   Expand,
+  FileOutput,
+  Download,
 } from "lucide-react";
 import {
   getEntry,
@@ -67,6 +69,7 @@ import {
   createIssue,
   createEditProposal,
   getActivity,
+  compileLatex,
   ApiError,
   API_URL,
   getStoredToken,
@@ -473,6 +476,12 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [issueSaving, setIssueSaving] = useState(false);
   const [issueError, setIssueError] = useState<string | null>(null);
 
+  // LaTeX compile
+  const [compiling, setCompiling] = useState(false);
+  const [compileLog, setCompileLog] = useState<string | null>(null);
+  const [compileError, setCompileError] = useState<string | null>(null);
+  const [hasPdf, setHasPdf] = useState(false);
+
   // Create edit proposal
   const [creatingEdit, setCreatingEdit] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -572,6 +581,39 @@ export default function EntryPage({ params }: EntryPageProps) {
     setNewTagInput("");
     setSaveError(null);
     setEditing(true);
+  };
+
+  // Check for existing PDF on load
+  useEffect(() => {
+    if (!resolvedId) return;
+    const pdfToken = getStoredToken();
+    fetch(`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/output.pdf`, {
+      method: "HEAD",
+      cache: "no-store",
+      ...(pdfToken ? { headers: { Authorization: `Bearer ${pdfToken}` } } : {}),
+    })
+      .then((res) => setHasPdf(res.ok))
+      .catch(() => setHasPdf(false));
+  }, [resolvedId]);
+
+  const handleCompile = async () => {
+    if (!resolvedId) return;
+    setCompiling(true);
+    setCompileLog(null);
+    setCompileError(null);
+    try {
+      const result = await compileLatex(resolvedId);
+      setCompileLog(result.log);
+      if (result.success) {
+        setHasPdf(true);
+      } else {
+        setCompileError("Compilation failed — see log below");
+      }
+    } catch (err) {
+      setCompileError(err instanceof Error ? err.message : "Compilation failed");
+    } finally {
+      setCompiling(false);
+    }
   };
 
   const exitEditMode = () => {
@@ -1052,21 +1094,83 @@ export default function EntryPage({ params }: EntryPageProps) {
                   />
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-card p-6">
-                  {contentText && contentFormat === "tex" ? (
-                    <LatexContent
-                      content={contentText}
-                      className="text-sm leading-relaxed text-card-foreground"
-                      entryId={entry.id}
-                    />
-                  ) : contentText ? (
-                    <MarkdownContent
-                      content={contentText}
-                      className="text-sm leading-relaxed text-card-foreground"
-                      entryId={entry.id}
-                    />
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
+                <div className="space-y-4">
+                  <div className="rounded-xl border border-border bg-card p-6">
+                    {contentText && contentFormat === "tex" ? (
+                      <LatexContent
+                        content={contentText}
+                        className="text-sm leading-relaxed text-card-foreground"
+                        entryId={entry.id}
+                      />
+                    ) : contentText ? (
+                      <MarkdownContent
+                        content={contentText}
+                        className="text-sm leading-relaxed text-card-foreground"
+                        entryId={entry.id}
+                      />
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
+                    )}
+                  </div>
+
+                  {/* LaTeX compile + PDF viewer */}
+                  {contentFormat === "tex" && isAuthenticated && (
+                    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-foreground">PDF Compilation</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={handleCompile}
+                          disabled={compiling}
+                        >
+                          {compiling ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <FileOutput className="h-3.5 w-3.5" />
+                          )}
+                          {compiling ? "Compiling..." : "Compile PDF"}
+                        </Button>
+                      </div>
+
+                      {compileError && (
+                        <p className="text-xs text-destructive">{compileError}</p>
+                      )}
+
+                      {compileLog && (
+                        <details className="text-xs">
+                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                            Compilation log
+                          </summary>
+                          <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-3 font-mono text-[11px] text-muted-foreground whitespace-pre-wrap">
+                            {compileLog}
+                          </pre>
+                        </details>
+                      )}
+
+                      {hasPdf && resolvedId && (
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/output.pdf`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                            >
+                              <Download className="h-3.5 w-3.5" />
+                              Download PDF
+                            </a>
+                          </div>
+                          <iframe
+                            src={`${API_URL}/v1/entries/${resolvedId}/files/.phiacta/output.pdf`}
+                            className="w-full rounded-md border border-border"
+                            style={{ height: "600px" }}
+                            title="Compiled PDF"
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

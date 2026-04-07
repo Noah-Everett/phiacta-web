@@ -540,6 +540,21 @@ export async function createEditProposal(
   });
 }
 
+// --- LaTeX Compilation ---
+
+export interface CompileResponse {
+  success: boolean;
+  log: string;
+  pdf_path: string | null;
+}
+
+export async function compileLatex(entryId: string): Promise<CompileResponse> {
+  return authFetch<CompileResponse>("/v1/tools/latex/compile", {
+    method: "POST",
+    body: JSON.stringify({ entry_id: entryId }),
+  });
+}
+
 // --- Plugins ---
 
 export async function listPlugins(): Promise<PluginInfo[]> {
