@@ -251,7 +251,7 @@ export async function putEntryFile(
   if (message) form.append("message", message);
 
   const res = await fetch(
-    `${API_URL}/v1/entries/${entryId}/files/${encodeURIComponent(path)}`,
+    `${API_URL}/v1/entries/${entryId}/files/${path.split("/").map(encodeURIComponent).join("/")}`,
     {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -545,7 +545,7 @@ export async function createEditProposal(
 export interface CompileResponse {
   success: boolean;
   log: string;
-  pdf_path: string | null;
+  file_size: number | null;
 }
 
 export async function compileLatex(entryId: string): Promise<CompileResponse> {
@@ -553,6 +553,11 @@ export async function compileLatex(entryId: string): Promise<CompileResponse> {
     method: "POST",
     body: JSON.stringify({ entry_id: entryId }),
   });
+}
+
+/** URL to fetch the compiled PDF for an entry via the compiled_content extension. */
+export function getCompiledPdfUrl(entryId: string): string {
+  return `${API_URL}/v1/extensions/compiled_content/${entryId}?format=pdf`;
 }
 
 // --- Plugins ---

@@ -71,9 +71,18 @@ export interface ReferenceItem {
   created_at: string;
 }
 
+// Compiled content metadata (detail-only, from compiled_content extension)
+export interface CompiledContentInfo {
+  format: string;
+  file_size: number;
+  compiled_at: string;
+  source_sha: string;
+}
+
 // Detail includes references (auto-composed, detail-only by default)
 export interface EntryDetailResponse extends EntryListItem {
   references?: ReferenceItem[];
+  compiled_content?: CompiledContentInfo | null;
 }
 
 export interface EntryCreate {
