@@ -7,17 +7,12 @@ import { createEntry, getEntry, setEntryTags, putEntryFile, postEntryFiles, crea
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
-  Quote,
-  ShieldCheck,
-  Target,
   CheckCircle2,
   LogIn,
   X,
   ArrowRight,
   Plus,
-  Sparkles,
   Upload,
   FileIcon,
   Link2,
@@ -26,6 +21,8 @@ import {
   FolderOpen,
   Loader2,
   FileArchive,
+  ChevronDown,
+  Tag,
 } from "lucide-react";
 import { unzipSync, gunzipSync } from "fflate";
 
@@ -47,24 +44,6 @@ const FORMATS = [
   { value: "plain", label: "Plain text", note: null },
   { value: "latex", label: "LaTeX", note: null },
 ] as const;
-
-const GUIDELINES = [
-  {
-    icon: Quote,
-    title: "Make it citable",
-    body: "If someone cited this entry, would it be clear what they're pointing to? A theorem, a paper, a dataset — any granularity works if it's a meaningful unit to reference.",
-  },
-  {
-    icon: Target,
-    title: "Be precise",
-    body: "Include scope, conditions, and limitations. A narrow claim with clear boundaries is more useful than a broad one.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Show your evidence",
-    body: "Attach data, proofs, or code. Unverified entries are accepted — but the absence of proof is visible.",
-  },
-];
 
 const REL_TYPES = [
   { value: "cites", label: "Cites" },
@@ -110,6 +89,9 @@ export default function PostPage() {
   const [latexError, setLatexError] = useState("");
   const [arxivDragOver, setArxivDragOver] = useState(false);
   const [arxivImporting, setArxivImporting] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const [showRefs, setShowRefs] = useState(false);
+  const [showFiles, setShowFiles] = useState(false);
 
   // Processing steps — shown between submit and success
   type StepStatus = "pending" | "active" | "done" | "warning" | "error";
@@ -859,208 +841,154 @@ export default function PostPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-12">
-      {/* Hero */}
-      <div className="mb-10">
-        <h1 className="mb-2 text-3xl font-bold text-foreground">Post an entry</h1>
-        <p className="text-lg text-muted-foreground">
-          Publish a new entry to the knowledge graph. Every entry is versioned
-          and permanently citable.
-        </p>
-      </div>
-
-      {/* Guidelines */}
-      <div className="mb-10 grid gap-4 sm:grid-cols-3">
-        {GUIDELINES.map(({ icon: Icon, title, body }) => (
-          <div key={title} className="flex gap-3">
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary">
-              <Icon className="h-4 w-4 text-secondary-foreground" />
-            </div>
-            <div>
-              <p className="mb-0.5 text-sm font-semibold text-foreground">{title}</p>
-              <p className="text-xs leading-relaxed text-muted-foreground">{body}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Separator className="mb-10" />
-
-      {/* arXiv Import — optional quick-start */}
-      <div className="mb-10">
-        <input
-          ref={arxivInputRef}
-          type="file"
-          accept=".zip,.tar,.tar.gz,.tgz,.gz,.tex"
-          onChange={(e) => { if (e.target.files) handleArxivImport(e.target.files); e.target.value = ""; }}
-          className="hidden"
-        />
-        <button
-          type="button"
-          onClick={() => arxivInputRef.current?.click()}
-          disabled={arxivImporting}
-          onDragOver={(e) => { e.preventDefault(); setArxivDragOver(true); }}
-          onDragLeave={() => setArxivDragOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setArxivDragOver(false);
-            if (e.dataTransfer.files) handleArxivImport(e.dataTransfer.files);
-          }}
-          className={`flex w-full items-center gap-4 rounded-xl border border-dashed px-6 py-5 text-left transition-colors ${
-            arxivDragOver
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-muted-foreground/40"
-          }`}
-        >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+    <div className="mx-auto max-w-2xl px-6 py-16">
+      {/* Header */}
+      <div className="mb-10 flex items-end justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">New entry</h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            Versioned and permanently citable.
+          </p>
+        </div>
+        {/* arXiv import — compact */}
+        <div>
+          <input
+            ref={arxivInputRef}
+            type="file"
+            accept=".zip,.tar,.tar.gz,.tgz,.gz,.tex"
+            onChange={(e) => { if (e.target.files) handleArxivImport(e.target.files); e.target.value = ""; }}
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => arxivInputRef.current?.click()}
+            disabled={arxivImporting}
+            onDragOver={(e) => { e.preventDefault(); setArxivDragOver(true); }}
+            onDragLeave={() => setArxivDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setArxivDragOver(false);
+              if (e.dataTransfer.files) handleArxivImport(e.dataTransfer.files);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              arxivDragOver
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+            }`}
+          >
             {arxivImporting ? (
-              <Loader2 className="h-5 w-5 text-secondary-foreground animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <FileArchive className="h-5 w-5 text-secondary-foreground" />
+              <FileArchive className="h-3.5 w-3.5" />
             )}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-foreground">
-              {arxivImporting ? "Extracting..." : "Import from arXiv source"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Drop a .tar.gz / .zip from arXiv and we&apos;ll extract the title, abstract, and source files automatically.
-            </p>
-          </div>
-        </button>
+            {arxivImporting ? "Importing..." : "Import arXiv"}
+          </button>
+        </div>
       </div>
 
       {error && (
-        <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div className="mb-8 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit}>
-        {/* Section 1: The Essentials */}
-        <section className="mb-10">
-          <h2 className="mb-4 text-xl font-semibold text-foreground">The entry</h2>
+      {latexError && (
+        <div className="mb-8 rounded-md border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+          {latexError}
+        </div>
+      )}
 
-          {/* Title */}
-          <div className="mb-5 space-y-1.5">
-            <label htmlFor="title" className="text-sm font-medium text-foreground">
-              Title
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Title */}
+        <div>
+          <Input
+            id="title"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            maxLength={500}
+            placeholder="Title"
+            className="h-auto text-xl rounded-md px-3 py-2.5 font-semibold placeholder:font-normal placeholder:text-muted-foreground/60"
+          />
+        </div>
+
+        {/* Type chips */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {ENTRY_TYPES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => handlePresetClick(value)}
+              className={`inline-flex h-7 items-center rounded-full px-3 text-xs font-medium transition-colors ${
+                !isCustomType && entryType === value
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={handleCustomClick}
+            className={`inline-flex h-7 items-center rounded-full border border-dashed px-3 text-xs font-medium transition-colors ${
+              isCustomType
+                ? "border-foreground bg-foreground text-background"
+                : "border-muted-foreground/30 text-muted-foreground hover:border-muted-foreground/50 hover:text-foreground"
+            }`}
+          >
+            Custom
+          </button>
+          {isCustomType && (
             <Input
-              id="title"
+              ref={customInputRef}
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
-              maxLength={500}
-              placeholder="A concise, precise statement of one idea..."
-              className="text-base"
+              value={customType}
+              onChange={(e) => setCustomType(e.target.value)}
+              placeholder="e.g. lecture-notes"
+              maxLength={100}
+              className="ml-1 h-7 w-40 text-xs"
             />
-            <p className="text-xs text-muted-foreground">
-              The title should be a self-contained statement. Think of it as the entry&apos;s one-line abstract.
-            </p>
-          </div>
+          )}
+        </div>
 
-          {/* Entry type — ghost chips */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-foreground">Type</label>
-            <div className="flex flex-wrap gap-1.5">
-              {ENTRY_TYPES.map(({ value, label }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => handlePresetClick(value)}
-                  className={`inline-flex h-8 items-center rounded-md px-3 text-sm font-medium transition-colors ${
-                    !isCustomType && entryType === value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
+        {/* Summary */}
+        <div>
+          <label htmlFor="summary" className="mb-1.5 block text-xs font-medium text-muted-foreground">
+            Summary
+          </label>
+          <textarea
+            id="summary"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            rows={3}
+            placeholder="A brief abstract or description..."
+            className="w-full resize-none rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+          />
+        </div>
+
+        {/* Content area with format tabs */}
+        <div>
+          <div className="mb-3 flex items-center gap-0.5 rounded-md bg-muted/50 p-0.5 w-fit">
+            {FORMATS.map(({ value, label }) => (
               <button
+                key={value}
                 type="button"
-                onClick={handleCustomClick}
-                className={`inline-flex h-8 items-center rounded-md border border-dashed px-3 text-sm font-medium transition-colors ${
-                  isCustomType
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                onClick={() => { setContentFormat(value); if (value !== "latex") { setLatexFiles([]); setLatexError(""); } }}
+                className={`inline-flex h-7 items-center rounded px-3 text-xs font-medium transition-colors ${
+                  contentFormat === value
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                Custom...
+                {label}
               </button>
-            </div>
-            {isCustomType && (
-              <Input
-                ref={customInputRef}
-                type="text"
-                value={customType}
-                onChange={(e) => setCustomType(e.target.value)}
-                placeholder="e.g. lecture-notes, dataset, survey..."
-                maxLength={100}
-              />
-            )}
-          </div>
-        </section>
-
-        <Separator className="mb-10" />
-
-        {/* Section 2: Content */}
-        <section className="mb-10">
-          <h2 className="mb-1 text-xl font-semibold text-foreground">Content</h2>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Optional now — you can always add content and files from the entry page after publishing.
-          </p>
-
-          {/* Summary */}
-          <div className="mb-5 space-y-1.5">
-            <label htmlFor="summary" className="text-sm font-medium text-foreground">
-              Summary
-            </label>
-            <Input
-              id="summary"
-              type="text"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              maxLength={500}
-              placeholder="A brief summary expanding on the title..."
-            />
+            ))}
           </div>
 
-          {/* Format selector */}
-          <div className="mb-3 space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Format</label>
-            <div className="flex gap-1.5">
-              {FORMATS.map(({ value, label, note }) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => { setContentFormat(value); if (value !== "latex") { setLatexFiles([]); setLatexError(""); } }}
-                  className={`inline-flex h-8 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition-colors ${
-                    contentFormat === value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                  }`}
-                >
-                  {label}
-                  {note && (
-                    <span className={`text-[10px] font-normal ${
-                      contentFormat === value ? "text-primary-foreground/70" : "text-muted-foreground/60"
-                    }`}>
-                      {note}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Content — textarea for markdown/plain, file upload for LaTeX */}
           {contentFormat === "latex" ? (
             <div className="space-y-3">
-              <label className="text-sm font-medium text-foreground">LaTeX Source</label>
-
               <input
                 ref={latexInputRef}
                 type="file"
@@ -1070,52 +998,54 @@ export default function PostPage() {
                 className="hidden"
               />
 
-              <button
-                type="button"
-                onClick={() => latexInputRef.current?.click()}
-                onDragOver={(e) => { e.preventDefault(); setLatexDragOver(true); }}
-                onDragLeave={() => setLatexDragOver(false)}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setLatexDragOver(false);
-                  if (e.dataTransfer.files) processLatexFiles(e.dataTransfer.files);
-                }}
-                className={`flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed py-10 text-sm transition-colors ${
-                  latexDragOver
-                    ? "border-primary bg-primary/5 text-foreground"
-                    : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
-                }`}
-              >
-                <Upload className="h-5 w-5" />
-                <span className="font-medium">Drop LaTeX files or archive here</span>
-                <span className="text-xs text-muted-foreground">
-                  .tex, .bib, .cls, images — or a .tar / .zip / .tar.gz from arXiv
-                </span>
-              </button>
-
-              {latexError && (
-                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5">
-                  <p className="text-xs text-destructive">{latexError}</p>
-                </div>
+              {latexFiles.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => latexInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setLatexDragOver(true); }}
+                  onDragLeave={() => setLatexDragOver(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setLatexDragOver(false);
+                    if (e.dataTransfer.files) processLatexFiles(e.dataTransfer.files);
+                  }}
+                  className={`flex w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed py-10 text-sm transition-colors ${
+                    latexDragOver
+                      ? "border-primary bg-primary/5 text-foreground"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+                  }`}
+                >
+                  <Upload className="h-4 w-4" />
+                  <span className="font-medium">Drop LaTeX files or archive</span>
+                  <span className="text-xs text-muted-foreground">.tex, .bib, .cls, images, or .tar.gz / .zip</span>
+                </button>
               )}
 
               {latexFiles.length > 0 && (
-                <div className="rounded-xl border border-border bg-card">
-                  <div className="flex items-center gap-2 border-b border-border px-4 py-2.5">
-                    <FolderOpen className="h-4 w-4 text-muted-foreground" />
-                    <p className="text-sm font-medium text-foreground">
-                      {latexFiles.length} file{latexFiles.length !== 1 ? "s" : ""}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {latexFiles.filter((f) => f.name.endsWith(".tex")).length} .tex
-                      {latexFiles.some((f) => f.name.endsWith(".bib")) && ", .bib"}
-                      {latexFiles.some((f) => /\.(png|jpg|jpeg|pdf|eps|svg)$/i.test(f.name)) && ", figures"}
-                    </p>
+                <div className="rounded-md border border-border">
+                  <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs font-medium text-foreground">
+                        {latexFiles.length} file{latexFiles.length !== 1 ? "s" : ""}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {latexFiles.filter((f) => f.name.endsWith(".tex")).length} .tex
+                        {latexFiles.some((f) => f.name.endsWith(".bib")) && ", .bib"}
+                        {latexFiles.some((f) => /\.(png|jpg|jpeg|pdf|eps|svg)$/i.test(f.name)) && ", figures"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => latexInputRef.current?.click()}
+                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      + Add files
+                    </button>
                   </div>
                   <div className="divide-y divide-border">
                     {latexFiles
                       .sort((a, b) => {
-                        // Main file first, then .tex files, then alphabetical
                         if (a.isMain) return -1;
                         if (b.isMain) return 1;
                         const aIsTex = a.name.endsWith(".tex") ? 0 : 1;
@@ -1124,16 +1054,11 @@ export default function PostPage() {
                         return a.name.localeCompare(b.name);
                       })
                       .map((f) => (
-                        <div
-                          key={f.name}
-                          className="flex items-center gap-3 px-4 py-2"
-                        >
-                          <FileText className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="min-w-0 flex-1 truncate text-sm font-mono text-foreground">
-                            {f.name}
-                          </span>
+                        <div key={f.name} className="flex items-center gap-2 px-3 py-1.5">
+                          <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                          <span className="min-w-0 flex-1 truncate text-xs font-mono text-foreground">{f.name}</span>
                           {f.isMain && (
-                            <Badge variant="secondary" className="shrink-0 text-[10px]">main</Badge>
+                            <Badge variant="secondary" className="shrink-0 h-4 text-[10px] px-1.5">main</Badge>
                           )}
                           {f.name.endsWith(".tex") && !f.isMain && (
                             <button
@@ -1152,13 +1077,13 @@ export default function PostPage() {
                             onClick={() => removeLatexFile(f.name)}
                             className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
                           >
-                            <X className="h-3.5 w-3.5" />
+                            <X className="h-3 w-3" />
                           </button>
                         </div>
                       ))}
                   </div>
                   {!latexFiles.some((f) => f.isMain) && (
-                    <div className="border-t border-amber-200 bg-amber-50 px-4 py-2.5 dark:border-amber-800 dark:bg-amber-950/50">
+                    <div className="border-t border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/50">
                       <p className="text-xs text-amber-800 dark:text-amber-300">
                         No main .tex file detected. Click &quot;set as main&quot; on the file with \documentclass.
                       </p>
@@ -1168,271 +1093,275 @@ export default function PostPage() {
               )}
 
               {latexFiles.length === 0 && (
-                <p className="text-xs text-muted-foreground">
-                  Or write LaTeX directly:
-                </p>
-              )}
-              {latexFiles.length === 0 && (
                 <textarea
                   id="content"
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  rows={12}
+                  rows={10}
                   placeholder={"\\documentclass{article}\n\\begin{document}\n\nYour content here...\n\n\\end{document}"}
-                  className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
+                  className="w-full resize-y rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
                 />
               )}
             </div>
           ) : (
-            <div className="space-y-1.5">
-              <label htmlFor="content" className="text-sm font-medium text-foreground">
-                Body
-              </label>
-              <textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={12}
-                placeholder={
-                  contentFormat === "markdown"
-                    ? "State the entry clearly and precisely. Markdown formatting supported — use $...$ for inline math and $$...$$ for display math."
-                    : "State the entry clearly and precisely. Include key evidence, conditions, and scope."
-                }
-                className="w-full resize-y rounded-xl border border-input bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
-              />
-            </div>
+            <textarea
+              id="content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={10}
+              placeholder={
+                contentFormat === "markdown"
+                  ? "Write your content... (Markdown supported, $...$ for math)"
+                  : "Write your content..."
+              }
+              className="w-full resize-y rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
+            />
           )}
-        </section>
+        </div>
 
-        <Separator className="mb-10" />
-
-        {/* Section 3: Tags & References */}
-        <section className="mb-10">
-          <h2 className="mb-4 text-xl font-semibold text-foreground">Tags &amp; references</h2>
-
+        {/* Collapsible extras: Tags, References, Files */}
+        <div className="space-y-0.5 rounded-md border border-border">
           {/* Tags */}
-          <div className="mb-6 space-y-1.5">
-            <label htmlFor="tags" className="text-sm font-medium text-foreground">
-              Tags
-            </label>
-            <div className="flex gap-2">
-              <Input
-                id="tags"
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleTagKeyDown}
-                placeholder="Add a tag and press Enter..."
-                maxLength={50}
-              />
-              <Button type="button" variant="outline" onClick={addTag} disabled={!tagInput.trim()}>
-                Add
-              </Button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="gap-1 text-xs">
-                    {tag}
-                    <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowTags((v) => !v)}
+              className="flex w-full items-center gap-2.5 px-4 py-3 text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
+            >
+              <Tag className="h-4 w-4" />
+              <span className="font-medium">Tags</span>
+              {tags.length > 0 && (
+                <Badge variant="secondary" className="h-5 text-[10px] px-1.5">{tags.length}</Badge>
+              )}
+              <ChevronDown className={`ml-auto h-4 w-4 transition-transform duration-200 ${showTags ? "rotate-180" : ""}`} />
+            </button>
+            {showTags && (
+              <div className="px-4 pb-4 pt-0 space-y-3">
+                <div className="flex gap-2">
+                  <Input
+                    id="tags"
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    placeholder="Add a tag and press Enter..."
+                    maxLength={50}
+                    className="h-8 text-sm"
+                  />
+                  <Button type="button" variant="outline" size="sm" onClick={addTag} disabled={!tagInput.trim()}>
+                    Add
+                  </Button>
+                </div>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="gap-1 text-xs">
+                        {tag}
+                        <button type="button" onClick={() => removeTag(tag)} className="hover:text-destructive transition-colors">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
-            {tags.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {tags.length} / {MAX_TAGS} tags
-              </p>
-            )}
           </div>
+
+          <div className="mx-4 border-t border-border" />
 
           {/* References */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">
-              References
-            </label>
-
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                value={refSearch}
-                onChange={(e) => handleRefSearch(e.target.value)}
-                placeholder="Search for an entry to reference..."
-                className="pl-9"
-              />
-              {refResults.length > 0 && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card shadow-lg">
-                  {refResults.map((result) => (
-                    <button
-                      key={result.id}
-                      type="button"
-                      onClick={() => addRef(result.id, result.title)}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors first:rounded-t-lg last:rounded-b-lg"
-                    >
-                      <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      <span className="truncate text-foreground">{result.title}</span>
-                    </button>
-                  ))}
-                </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowRefs((v) => !v)}
+              className="flex w-full items-center gap-2.5 px-4 py-3 text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
+            >
+              <Link2 className="h-4 w-4" />
+              <span className="font-medium">References</span>
+              {refs.length > 0 && (
+                <Badge variant="secondary" className="h-5 text-[10px] px-1.5">{refs.length}</Badge>
               )}
-              {refSearching && refSearch.trim() && (
-                <div className="absolute z-10 mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 shadow-lg">
-                  <p className="text-xs text-muted-foreground">Searching...</p>
-                </div>
-              )}
-            </div>
-
-            {refs.length > 0 && (
-              <div className="space-y-1.5 pt-1">
-                {refs.map((ref) => (
-                  <div
-                    key={`${ref.targetId}-${ref.rel}`}
-                    className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2"
-                  >
-                    <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
-                    <select
-                      value={ref.rel}
-                      onChange={(e) => updateRefRel(ref.targetId, ref.rel, e.target.value)}
-                      className="h-5 cursor-pointer rounded bg-secondary px-1 text-[11px] font-medium text-secondary-foreground outline-none"
-                    >
-                      {REL_TYPES.map(({ value, label }) => (
-                        <option key={value} value={value}>{label}</option>
+              <ChevronDown className={`ml-auto h-4 w-4 transition-transform duration-200 ${showRefs ? "rotate-180" : ""}`} />
+            </button>
+            {showRefs && (
+              <div className="px-4 pb-4 pt-0 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    value={refSearch}
+                    onChange={(e) => handleRefSearch(e.target.value)}
+                    placeholder="Search entries..."
+                    className="h-8 pl-9 text-sm"
+                  />
+                  {refResults.length > 0 && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-card shadow-lg">
+                      {refResults.map((result) => (
+                        <button
+                          key={result.id}
+                          type="button"
+                          onClick={() => addRef(result.id, result.title)}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent transition-colors first:rounded-t-md last:rounded-b-md"
+                        >
+                          <Link2 className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate text-foreground">{result.title}</span>
+                        </button>
                       ))}
-                    </select>
-                    <p className="min-w-0 truncate text-sm text-foreground">{ref.targetTitle}</p>
-                    <button
-                      type="button"
-                      onClick={() => removeRef(ref.targetId, ref.rel)}
-                      className="ml-auto shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                    </div>
+                  )}
+                  {refSearching && refSearch.trim() && (
+                    <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-card px-3 py-2 shadow-lg">
+                      <p className="text-xs text-muted-foreground">Searching...</p>
+                    </div>
+                  )}
+                </div>
+                {refs.length > 0 && (
+                  <div className="space-y-1">
+                    {refs.map((ref) => (
+                      <div
+                        key={`${ref.targetId}-${ref.rel}`}
+                        className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5"
+                      >
+                        <select
+                          value={ref.rel}
+                          onChange={(e) => updateRefRel(ref.targetId, ref.rel, e.target.value)}
+                          className="h-5 cursor-pointer rounded bg-secondary px-1 text-[11px] font-medium text-secondary-foreground outline-none"
+                        >
+                          {REL_TYPES.map(({ value, label }) => (
+                            <option key={value} value={value}>{label}</option>
+                          ))}
+                        </select>
+                        <p className="min-w-0 truncate text-sm text-foreground">{ref.targetTitle}</p>
+                        <button
+                          type="button"
+                          onClick={() => removeRef(ref.targetId, ref.rel)}
+                          className="ml-auto shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>
-        </section>
 
-        <Separator className="mb-10" />
+          <div className="mx-4 border-t border-border" />
 
-        {/* Section 4: Files */}
-        <section className="mb-10">
-          <h2 className="mb-1 text-xl font-semibold text-foreground">Files</h2>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Attach supporting materials — data, proofs, scripts, figures. Uploaded to the entry&apos;s versioned repository after publishing.
-          </p>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            onChange={handleFilesSelected}
-            className="hidden"
-          />
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleFilesDrop}
-            className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-sm transition-colors ${
-              dragOver
-                ? "border-primary bg-primary/5 text-foreground"
-                : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
-            }`}
-          >
-            <Upload className="h-4 w-4" />
-            Choose files or drag and drop
-          </button>
-
-          {files.length > 0 && (
-            <div className="mt-3 space-y-1.5">
-              {files.map(({ file, path }) => (
-                <div
-                  key={file.name}
-                  className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+          {/* Files */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowFiles((v) => !v)}
+              className="flex w-full items-center gap-2.5 px-4 py-3 text-sm text-muted-foreground hover:bg-accent/50 transition-colors"
+            >
+              <FileIcon className="h-4 w-4" />
+              <span className="font-medium">Files</span>
+              {files.length > 0 && (
+                <Badge variant="secondary" className="h-5 text-[10px] px-1.5">{files.length}</Badge>
+              )}
+              <ChevronDown className={`ml-auto h-4 w-4 transition-transform duration-200 ${showFiles ? "rotate-180" : ""}`} />
+            </button>
+            {showFiles && (
+              <div className="px-4 pb-4 pt-0 space-y-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  onChange={handleFilesSelected}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={handleFilesDrop}
+                  className={`flex w-full items-center justify-center gap-2 rounded-md border border-dashed py-8 text-sm transition-colors ${
+                    dragOver
+                      ? "border-primary bg-primary/5 text-foreground"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+                  }`}
                 >
-                  <FileIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <span className="shrink-0 text-xs font-medium text-muted-foreground">Path:</span>
-                      <input
-                        type="text"
-                        value={path}
-                        onChange={(e) => updateFilePath(file.name, e.target.value)}
-                        placeholder="e.g., figures/image.png"
-                        className="w-full rounded px-1.5 py-0.5 text-sm text-foreground font-mono outline-none border border-transparent bg-transparent focus:border-border focus:bg-muted/50 transition-colors"
-                        title="File path in the entry repository"
-                      />
-                    </div>
-                    <p className="mt-0.5 text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
+                  <Upload className="h-4 w-4" />
+                  Choose files or drag and drop
+                </button>
+
+                {files.length > 0 && (
+                  <div className="space-y-1">
+                    {files.map(({ file, path }) => (
+                      <div
+                        key={file.name}
+                        className="flex items-center gap-2 rounded-md border border-border px-2.5 py-1.5"
+                      >
+                        <FileIcon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                        <input
+                          type="text"
+                          value={path}
+                          onChange={(e) => updateFilePath(file.name, e.target.value)}
+                          placeholder="path/to/file"
+                          className="min-w-0 flex-1 bg-transparent text-sm font-mono text-foreground outline-none placeholder:text-muted-foreground"
+                          title="File path in the entry repository"
+                        />
+                        <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">{formatFileSize(file.size)}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeFile(file.name)}
+                          className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeFile(file.name)}
-                    className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-              <p className="text-xs text-muted-foreground">
-                Edit the path to organize files into directories (e.g., figures/plot.png, src/code.py)
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Submit / Auth gate */}
+        <div className="pt-4">
+          {!user ? (
+            <div className="flex items-center justify-between rounded-md border border-border bg-card px-4 py-3.5">
+              <p className="text-sm text-muted-foreground">Sign in to publish</p>
+              <div className="flex gap-2">
+                <Button asChild variant="ghost" size="sm">
+                  <Link href="/auth/login">
+                    <LogIn className="mr-1.5 h-3.5 w-3.5" />
+                    Log in
+                  </Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/auth/signup">
+                    Sign up
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between gap-6">
+              <p className="text-xs text-muted-foreground/80">
+                Entries are permanent. You can update content after publishing.
               </p>
+              <Button type="submit" disabled={submitting} className="shrink-0">
+                {submitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Publishing...
+                  </>
+                ) : (
+                  <>
+                    Publish
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
             </div>
           )}
-        </section>
-
-        <Separator className="mb-10" />
-
-        {/* Auth gate / Submit */}
-        {!user ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center">
-            <Sparkles className="mx-auto mb-3 h-6 w-6 text-muted-foreground" />
-            <p className="mb-1 text-sm font-semibold text-foreground">
-              Sign in to publish
-            </p>
-            <p className="mb-4 text-xs text-muted-foreground">
-              You need an account to post entries. It only takes a moment.
-            </p>
-            <div className="flex justify-center gap-3">
-              <Button asChild variant="outline">
-                <Link href="/auth/login">
-                  <LogIn className="mr-1.5 h-3.5 w-3.5" />
-                  Log in
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link href="/auth/signup">
-                  Sign up <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Entries are public and permanent. You can update content after publishing.
-            </p>
-            <Button type="submit" size="lg" disabled={submitting}>
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Publishing{contentFormat === "latex" && (latexFiles.length > 0 || content) ? " & compiling..." : "..."}
-                </>
-              ) : (
-                <>
-                  {contentFormat === "latex" && (latexFiles.length > 0 || content) ? "Publish & compile" : "Publish entry"}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+        </div>
       </form>
     </div>
   );
