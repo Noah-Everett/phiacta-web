@@ -5,9 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,22 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
 import LatexContent from "@/components/LatexContent";
 import EntityLink from "@/components/EntityLink";
 import FileIcon from "@/components/FileIcon";
 import DiffBlock from "@/components/DiffBlock";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getInitials } from "@/lib/utils";
 import {
   GitBranch,
-  History,
   ChevronRight,
   ChevronDown,
   FileCode2,
   File,
-  Tag,
   Loader2,
   MessageCircle,
   CircleDot,
@@ -50,13 +42,9 @@ import {
   Expand,
 } from "lucide-react";
 import {
-  getEntry,
-  getUser,
   getEntryFiles,
-  getEntryEdits,
   getEntryHistory,
   getEntryCommitDiff,
-  getEntryIssues,
   updateEntry,
   setEntryTags,
   putEntryFile,
@@ -68,27 +56,18 @@ import {
   createEditProposal,
   getActivity,
   getCompiledPdfUrl,
-  ApiError,
   API_URL,
   getStoredToken,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 import type {
-  EntryDetailResponse,
-  CompiledContentInfo,
   EditProposalListItem,
   CommitListItem,
   CommitDiffResponse,
   FileListItem,
-  PublicUserResponse,
-  IssueListItem,
   ActivityItem,
   SearchResultItem,
 } from "@/lib/types";
-
-interface EntryPageProps {
-  params: Promise<{ id: string }>;
-}
+import { useEntryContext } from "./entry-context";
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
@@ -346,7 +325,7 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
 }
 
 // Issue row — links to full page
-function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string }) {
+function IssueRow({ issue, entryId }: { issue: { number: number; title: string; state: string; author: { username: string }; created_at: string; comments_count: number }; entryId: string }) {
   return (
     <Link
       href={`/entries/${entryId}/issues/${issue.number}`}
@@ -385,46 +364,35 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
 
 const VALID_TABS = ["content", "issues", "edits", "history", "files", "references", "activity"] as const;
 
-export default function EntryPage({ params }: EntryPageProps) {
-  const { user } = useAuth();
+export default function EntryPage() {
+  const {
+    entry,
+    isOwner,
+    isAuthenticated,
+    resolvedId,
+    issues,
+    edits,
+    compiledInfo,
+    refetchEntry,
+    refetchIssues,
+    refetchEdits,
+  } = useEntryContext();
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const tabParam = searchParams.get("tab");
-  const initialTab = tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : "content";
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : "content";
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    const url = new URL(window.location.href);
-    if (value === "content") {
-      url.searchParams.delete("tab");
-    } else {
-      url.searchParams.set("tab", value);
-    }
-    router.replace(url.pathname + url.search, { scroll: false });
-  };
-
-  const [resolvedId, setResolvedId] = useState<string | null>(null);
-  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
-  const [author, setAuthor] = useState<PublicUserResponse | null>(null);
+  // Page-specific data
   const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
-  const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
-  const [issues, setIssues] = useState<IssueListItem[]>([]);
   const [contentText, setContentText] = useState<string | null>(null);
   const [contentFormat, setContentFormat] = useState<string>("md");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
 
   // Activity state
   const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
-
-  // Ownership
-  const isOwner = user?.id != null && entry?.created_by != null && user.id === entry.created_by;
-  const isAuthenticated = user != null;
 
   // --- Unified edit mode ---
   const [editing, setEditing] = useState(false);
@@ -466,17 +434,12 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Status actions
-
   // Create issue
   const [creatingIssue, setCreatingIssue] = useState(false);
   const [issueTitle, setIssueTitle] = useState("");
   const [issueBody, setIssueBody] = useState("");
   const [issueSaving, setIssueSaving] = useState(false);
   const [issueError, setIssueError] = useState<string | null>(null);
-
-  // Compiled content (auto-generated on ingestion for LaTeX entries)
-  const [compiledInfo, setCompiledInfo] = useState<CompiledContentInfo | null>(null);
 
   // Create edit proposal
   const [creatingEdit, setCreatingEdit] = useState(false);
@@ -488,24 +451,8 @@ export default function EntryPage({ params }: EntryPageProps) {
 
   // --- Data fetching helpers ---
 
-  const fetchEntry = useCallback((id: string) => {
-    return getEntry(id).then((data) => {
-      setEntry(data);
-      setCompiledInfo(data.compiled_content ?? null);
-      return data;
-    });
-  }, []);
-
   const fetchFiles = useCallback((id: string) => {
     getEntryFiles(id).then(setEntryFiles).catch((err) => console.warn("Failed to load files:", err));
-  }, []);
-
-  const fetchEdits = useCallback((id: string) => {
-    getEntryEdits(id).then(setEdits).catch((err) => console.warn("Failed to load edits:", err));
-  }, []);
-
-  const fetchIssues = useCallback((id: string) => {
-    getEntryIssues(id).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
   }, []);
 
   const fetchContent = useCallback(async (id: string) => {
@@ -534,37 +481,15 @@ export default function EntryPage({ params }: EntryPageProps) {
       .finally(() => setActivityLoading(false));
   }, []);
 
+  // Fetch page-specific data when entry is available
   useEffect(() => {
-    params.then((p) => setResolvedId(p.id));
-  }, [params]);
-
-  useEffect(() => {
-    if (!resolvedId) return;
-
-    setLoading(true);
-    setError(null);
-
-    getEntry(resolvedId)
-      .then((data) => {
-        setEntry(data);
-        setCompiledInfo(data.compiled_content ?? null);
-        getUser(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
-      })
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 404) {
-          setNotFound(true);
-        }
-        setError(err instanceof Error ? err.message : "Failed to load entry");
-      })
-      .finally(() => setLoading(false));
+    if (!resolvedId || !entry) return;
 
     fetchFiles(resolvedId);
-    fetchEdits(resolvedId);
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
-    fetchIssues(resolvedId);
     fetchContent(resolvedId);
     fetchActivity(resolvedId);
-  }, [resolvedId, fetchFiles, fetchEdits, fetchContent, fetchActivity]);
+  }, [resolvedId, entry, fetchFiles, fetchContent, fetchActivity]);
 
   // --- Action handlers ---
 
@@ -656,7 +581,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     }
 
     await Promise.all([
-      fetchEntry(resolvedId),
+      refetchEntry(),
       contentChanged ? fetchContent(resolvedId) : Promise.resolve(),
     ]);
 
@@ -682,7 +607,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     setRefSearching(true);
     try {
       const data = await searchEntries(refSearchQuery.trim());
-      // Filter out the current entry from results
       setRefSearchResults(data.items.filter((item) => item.entry_id !== resolvedId));
     } catch {
       setRefSearchResults([]);
@@ -697,7 +621,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setRefError(null);
     try {
       await createReference(resolvedId, refSelectedEntry.entry_id, refRel, refNote || undefined);
-      await fetchEntry(resolvedId);
+      await refetchEntry();
       setAddingReference(false);
       setRefSearchQuery("");
       setRefSearchResults([]);
@@ -716,7 +640,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setRefDeleting(referenceId);
     try {
       await deleteReference(referenceId);
-      await fetchEntry(resolvedId);
+      await refetchEntry();
     } catch (err) {
       console.warn("Failed to delete reference:", err);
     } finally {
@@ -781,7 +705,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     fetchFiles(resolvedId);
     if (failures.length > 0) {
       setFileError(`Failed to upload ${failures.length} file(s): ${failures.join("; ")}`);
-      // Remove successfully uploaded files from the list
       const failedNames = new Set(failures.map((f) => f.split(":")[0].trim()));
       setUploadFiles((prev) => prev.filter((f) => failedNames.has(f.path.trim() || f.file.name)));
     } else {
@@ -811,7 +734,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setIssueError(null);
     try {
       await createIssue(resolvedId, issueTitle.trim(), issueBody.trim() || undefined);
-      fetchIssues(resolvedId);
+      refetchIssues();
       setCreatingIssue(false);
       setIssueTitle("");
       setIssueBody("");
@@ -831,7 +754,7 @@ export default function EntryPage({ params }: EntryPageProps) {
         ? [{ path: `.phiacta/content.${contentFormat}`, content: editProposalContent }]
         : [];
       await createEditProposal(resolvedId, editTitle.trim(), editBody.trim() || undefined, files);
-      fetchEdits(resolvedId);
+      refetchEdits();
       setCreatingEdit(false);
       setEditTitle("");
       setEditBody("");
@@ -843,205 +766,94 @@ export default function EntryPage({ params }: EntryPageProps) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* Breadcrumb skeleton */}
-        <div className="mb-5 flex items-center gap-1.5">
-          <Skeleton className="h-3 w-12" />
-          <Skeleton className="h-3 w-3" />
-          <Skeleton className="h-3 w-40" />
-        </div>
-        {/* Header skeleton */}
-        <div className="mb-6 space-y-3">
-          <div className="flex gap-2">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-4 w-full" />
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-6 w-6 rounded-full" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-        {/* Content skeleton */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-          <div className="space-y-3">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full rounded-xl" />
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-48 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !entry) {
-    const is404 = notFound || !entry;
-    return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-foreground">
-          {is404 ? "Entry not found" : "Something went wrong"}
-        </h1>
-        <p className="mb-4 text-sm text-muted-foreground">
-          {is404
-            ? "This entry does not exist or has been removed."
-            : error || "An unexpected error occurred."}
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/explore">Browse entries</Link>
-        </Button>
-      </div>
-    );
-  }
+  // Layout handles loading/error — if entry is null, we're still loading
+  if (!entry) return null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      {/* Breadcrumb */}
-      <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link href="/explore" className="hover:text-foreground transition-colors">
-          Explore
-        </Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground truncate max-w-[300px]">{entry.title || "Untitled"}</span>
-      </nav>
-
-      {/* Header */}
-      <div className="mb-6">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <EntryTypeBadge entryType={entry.entry_type} />
-          <VisibilityBadge visibility={entry.visibility} />
-
-          {isOwner && (
-            <div className="flex items-center gap-1 ml-auto">
-              {editing ? (
-                <>
-                  <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
-                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                    Save
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-        {saveError && (
-          <p className="mb-2 text-xs text-destructive">{saveError}</p>
-        )}
-
-        {editing ? (
-          <div className="space-y-3 mb-4">
-            <Input
-              value={metaTitle}
-              onChange={(e) => setMetaTitle(e.target.value)}
-              placeholder="Title"
-              className="text-2xl font-bold h-auto py-1.5"
-            />
-            <textarea
-              value={metaSummary}
-              onChange={(e) => setMetaSummary(e.target.value)}
-              placeholder="Summary (optional)"
-              rows={3}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-            />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mb-4">
-              <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-                {entry.title || "Untitled"}
-              </h1>
-            </div>
-
-            {entry.summary && (
-              <p className="mb-4 text-sm text-muted-foreground">{entry.summary}</p>
-            )}
-          </>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          {author && (
+    <>
+      {/* Edit controls (only visible to owner) */}
+      {isOwner && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {editing ? (
             <>
-            <Link
-              href={`/users/${author.id}`}
-              className="flex items-center gap-2 hover:text-foreground transition-colors"
-            >
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-[10px]">{getInitials(author.username)}</AvatarFallback>
-              </Avatar>
-              <span className="font-medium text-foreground">{author.username}</span>
-            </Link>
-            <Separator orientation="vertical" className="h-4" />
+              <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
+                Cancel
+              </Button>
             </>
+          ) : (
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
           )}
-          <span>
-            {new Date(entry.created_at).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
         </div>
-      </div>
+      )}
+      {saveError && (
+        <p className="mb-2 text-xs text-destructive">{saveError}</p>
+      )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-        {/* Main panel */}
-        <div className="min-w-0">
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="mb-4 w-full justify-start flex-wrap h-auto gap-1">
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="issues" className="gap-1.5">
-                <CircleDot className="h-3.5 w-3.5" />
-                Issues
-                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {issues.filter((i) => i.state === "open").length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="edits" className="gap-1.5">
-                <GitBranch className="h-3.5 w-3.5" />
-                Edits
-                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {edits.filter((e) => e.state === "open").length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="history" className="gap-1.5">
-                <History className="h-3.5 w-3.5" />
-                History
-              </TabsTrigger>
-              <TabsTrigger value="files" className="gap-1.5">
-                <FileCode2 className="h-3.5 w-3.5" />
-                Files
-              </TabsTrigger>
-              <TabsTrigger value="references" className="gap-1.5">
-                <Link2 className="h-3.5 w-3.5" />
-                References
-                {entry?.references && entry.references.length > 0 && (
-                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {entry.references.length}
-                </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-1.5">
-                <Activity className="h-3.5 w-3.5" />
-                Activity
-              </TabsTrigger>
-            </TabsList>
+      {editing && (
+        <div className="space-y-3 mb-4">
+          <Input
+            value={metaTitle}
+            onChange={(e) => setMetaTitle(e.target.value)}
+            placeholder="Title"
+            className="text-2xl font-bold h-auto py-1.5"
+          />
+          <textarea
+            value={metaSummary}
+            onChange={(e) => setMetaSummary(e.target.value)}
+            placeholder="Summary (optional)"
+            rows={3}
+            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
+          />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Type:</span>
+              <Input
+                value={metaType}
+                onChange={(e) => setMetaType(e.target.value)}
+                placeholder="e.g. paper, note"
+                className="h-7 w-32 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="text-xs font-medium text-muted-foreground shrink-0">Tags:</span>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {editTags.map((t) => (
+                  <Badge key={t} variant="secondary" className="text-xs gap-1 pr-1">
+                    {t}
+                    <button onClick={() => removeTag(t)} className="hover:text-destructive transition-colors">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+                <div className="flex items-center gap-1">
+                  <Input
+                    value={newTagInput}
+                    onChange={(e) => setNewTagInput(e.target.value)}
+                    placeholder="Add tag..."
+                    className="text-xs h-7 w-24"
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
+                  />
+                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={addTag}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
-            {/* Content */}
-            <TabsContent value="content">
+      <div>
+          {/* Content */}
+          {activeTab === "content" && (
+            <>
               {editing ? (
                 <div className="rounded-xl border border-border bg-card p-6 space-y-3">
                   <textarea
@@ -1084,12 +896,12 @@ export default function EntryPage({ params }: EntryPageProps) {
                           className="text-sm leading-relaxed text-card-foreground"
                           entryId={entry.id}
                         />
-                      ) : loading ? null : (
+                      ) : (
                         <p className="text-sm text-muted-foreground">
                           No rendered content available. Browse the source under{" "}
                           <button
                             className="underline hover:text-foreground transition-colors"
-                            onClick={() => handleTabChange("files")}
+                            onClick={() => router.push(`/entries/${resolvedId}?tab=files`)}
                           >.phiacta/content/</button>.
                         </p>
                       )}
@@ -1097,10 +909,12 @@ export default function EntryPage({ params }: EntryPageProps) {
                   )}
                 </div>
               )}
-            </TabsContent>
+            </>
+          )}
 
-            {/* Issues */}
-            <TabsContent value="issues">
+          {/* Issues */}
+          {activeTab === "issues" && (
+            <>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Issues are discussions and bug reports on this entry.
@@ -1147,10 +961,12 @@ export default function EntryPage({ params }: EntryPageProps) {
                   <p className="py-8 text-center text-sm text-muted-foreground">No issues yet.</p>
                 )}
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            {/* Edits */}
-            <TabsContent value="edits">
+          {/* Edits */}
+          {activeTab === "edits" && (
+            <>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Edit proposals are content changes — like pull requests on the entry&apos;s repository.
@@ -1207,157 +1023,159 @@ export default function EntryPage({ params }: EntryPageProps) {
                   <p className="py-8 text-center text-sm text-muted-foreground">No edit proposals yet.</p>
                 )}
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            {/* History */}
-            <TabsContent value="history">
-              <div className="space-y-2">
-                {history.map((commit, i) => (
-                  <CommitRow key={commit.sha} commit={commit} index={i} total={history.length} entryId={entry.id} />
-                ))}
-                {history.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
-                )}
-              </div>
-            </TabsContent>
+          {/* History */}
+          {activeTab === "history" && (
+            <div className="space-y-2">
+              {history.map((commit, i) => (
+                <CommitRow key={commit.sha} commit={commit} index={i} total={history.length} entryId={entry.id} />
+              ))}
+              {history.length === 0 && (
+                <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
+              )}
+            </div>
+          )}
 
-            {/* Files */}
-            <TabsContent value="files">
-              <div className="rounded-xl border border-border overflow-hidden bg-card">
-                <div className="border-b border-border px-4 py-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Files
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {editing && !uploadingFile && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setUploadingFile(true)}>
-                        <Upload className="h-3.5 w-3.5" />
-                        Upload File
-                      </Button>
-                    )}
-                    <code className="font-mono text-xs text-muted-foreground">
-                      {entry.id.slice(0, 8)}
-                    </code>
-                  </div>
-                </div>
-                {uploadingFile && (
-                  <div className="border-b border-border p-4 space-y-3 bg-accent/20">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      onChange={handleUploadFilesSelected}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={handleUploadFilesDrop}
-                      className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-sm transition-colors ${
-                        dragOver
-                          ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
-                      }`}
-                    >
-                      <Upload className="h-4 w-4" />
-                      Choose files or drag and drop
-                    </button>
-
-                    {uploadFiles.length > 0 && (
-                      <div className="space-y-1.5">
-                        {uploadFiles.map(({ file, path }) => (
-                          <div
-                            key={file.name}
-                            className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
-                          >
-                            <File className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="shrink-0 text-xs font-medium text-muted-foreground">Path:</span>
-                                <input
-                                  type="text"
-                                  value={path}
-                                  onChange={(e) => updateUploadFilePath(file.name, e.target.value)}
-                                  placeholder="e.g., figures/image.png"
-                                  className="w-full rounded px-1.5 py-0.5 text-sm text-foreground font-mono outline-none border border-transparent bg-transparent focus:border-border focus:bg-muted/50 transition-colors"
-                                  title="File path in the entry repository"
-                                />
-                              </div>
-                              <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeUploadFile(file.name)}
-                              className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                              disabled={fileSaving}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    <Input
-                      value={uploadMessage}
-                      onChange={(e) => setUploadMessage(e.target.value)}
-                      placeholder="Commit message (optional)"
-                      className="text-sm"
-                    />
-                    {fileError && <p className="text-xs text-destructive">{fileError}</p>}
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={handleFileUpload} disabled={fileSaving || uploadFiles.length === 0}>
-                        {fileSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
-                        Upload
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setUploadingFile(false); setUploadFiles([]); setUploadMessage(""); setFileError(null); setDragOver(false); }} disabled={fileSaving}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                )}
-                <div>
-                  {entryFiles.map((file) => (
-                    <div key={file.path} className="flex items-center border-b border-border last:border-0">
-                      <Link
-                        href={`/entries/${entry.id}/files/${file.path}`}
-                        className="flex flex-1 items-center gap-2.5 px-4 py-2.5 hover:bg-accent/40 transition-colors min-w-0"
-                      >
-                        <FileIcon name={file.name} type={file.type} />
-                        <code className="flex-1 font-mono text-sm text-foreground truncate">{file.name}</code>
-                        {file.type !== "dir" && (
-                          <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                            {formatBytes(file.size)}
-                          </span>
-                        )}
-                      </Link>
-                      {editing && file.path !== ".phiacta/entry.yaml" && file.name !== "entry.yaml" && (
-                        <button
-                          onClick={() => handleFileDelete(file.path)}
-                          disabled={fileDeleting === file.path}
-                          className="shrink-0 p-2.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                          title="Delete file"
-                        >
-                          {fileDeleting === file.path ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {entryFiles.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>
+          {/* Files */}
+          {activeTab === "files" && (
+            <div className="rounded-xl border border-border overflow-hidden bg-card">
+              <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Files
+                </p>
+                <div className="flex items-center gap-2">
+                  {editing && !uploadingFile && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setUploadingFile(true)}>
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload File
+                    </Button>
                   )}
+                  <code className="font-mono text-xs text-muted-foreground">
+                    {entry.id.slice(0, 8)}
+                  </code>
                 </div>
               </div>
-            </TabsContent>
+              {uploadingFile && (
+                <div className="border-b border-border p-4 space-y-3 bg-accent/20">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleUploadFilesSelected}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleUploadFilesDrop}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-sm transition-colors ${
+                      dragOver
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+                    }`}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Choose files or drag and drop
+                  </button>
 
-            {/* References */}
-            <TabsContent value="references">
+                  {uploadFiles.length > 0 && (
+                    <div className="space-y-1.5">
+                      {uploadFiles.map(({ file, path }) => (
+                        <div
+                          key={file.name}
+                          className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                        >
+                          <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="shrink-0 text-xs font-medium text-muted-foreground">Path:</span>
+                              <input
+                                type="text"
+                                value={path}
+                                onChange={(e) => updateUploadFilePath(file.name, e.target.value)}
+                                placeholder="e.g., figures/image.png"
+                                className="w-full rounded px-1.5 py-0.5 text-sm text-foreground font-mono outline-none border border-transparent bg-transparent focus:border-border focus:bg-muted/50 transition-colors"
+                                title="File path in the entry repository"
+                              />
+                            </div>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeUploadFile(file.name)}
+                            className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                            disabled={fileSaving}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <Input
+                    value={uploadMessage}
+                    onChange={(e) => setUploadMessage(e.target.value)}
+                    placeholder="Commit message (optional)"
+                    className="text-sm"
+                  />
+                  {fileError && <p className="text-xs text-destructive">{fileError}</p>}
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={handleFileUpload} disabled={fileSaving || uploadFiles.length === 0}>
+                      {fileSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                      Upload
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => { setUploadingFile(false); setUploadFiles([]); setUploadMessage(""); setFileError(null); setDragOver(false); }} disabled={fileSaving}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <div>
+                {entryFiles.map((file) => (
+                  <div key={file.path} className="flex items-center border-b border-border last:border-0">
+                    <Link
+                      href={`/entries/${entry.id}/files/${file.path}`}
+                      className="flex flex-1 items-center gap-2.5 px-4 py-2.5 hover:bg-accent/40 transition-colors min-w-0"
+                    >
+                      <FileIcon name={file.name} type={file.type} />
+                      <code className="flex-1 font-mono text-sm text-foreground truncate">{file.name}</code>
+                      {file.type !== "dir" && (
+                        <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                          {formatBytes(file.size)}
+                        </span>
+                      )}
+                    </Link>
+                    {editing && file.path !== ".phiacta/entry.yaml" && file.name !== "entry.yaml" && (
+                      <button
+                        onClick={() => handleFileDelete(file.path)}
+                        disabled={fileDeleting === file.path}
+                        className="shrink-0 p-2.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        title="Delete file"
+                      >
+                        {fileDeleting === file.path ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {entryFiles.length === 0 && (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* References */}
+          {activeTab === "references" && (
+            <>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Typed links between this entry and other entries in the knowledge graph.
@@ -1488,10 +1306,12 @@ export default function EntryPage({ params }: EntryPageProps) {
                   <p className="py-8 text-center text-sm text-muted-foreground">No references yet.</p>
                 )}
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            {/* Activity */}
-            <TabsContent value="activity">
+          {/* Activity */}
+          {activeTab === "activity" && (
+            <>
               <div className="mb-3">
                 <p className="text-sm text-muted-foreground">
                   Chronological log of actions on this entry.
@@ -1553,114 +1373,9 @@ export default function EntryPage({ params }: EntryPageProps) {
               ) : (
                 <p className="py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
               )}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {author && (
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Author</h3>
-            <Link href={`/users/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback>{getInitials(author.username)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{author.username}</p>
-              </div>
-            </Link>
-            <Separator className="my-3" />
-            <p className="text-xs text-muted-foreground">
-              Joined{" "}
-              {new Date(author.created_at).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-          </div>
+            </>
           )}
-
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metadata</h3>
-            <dl className="space-y-2.5 text-sm">
-              <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Type</dt>
-                {editing ? (
-                  <dd>
-                    <Input
-                      value={metaType}
-                      onChange={(e) => setMetaType(e.target.value)}
-                      placeholder="e.g. paper, note"
-                      className="h-7 w-32 text-xs text-right"
-                    />
-                  </dd>
-                ) : (
-                  <dd className="font-medium text-foreground capitalize">{entry.entry_type || "not specified"}</dd>
-                )}
-              </div>
-              {[
-                { label: "Published", value: new Date(entry.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
-                { label: "Last updated", value: new Date(entry.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-medium text-foreground capitalize">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          {/* Tags — show when there are tags OR when owner can edit */}
-          {((entry?.tags && entry.tags.length > 0) || isOwner) && (
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Tag className="mr-1.5 inline h-3 w-3" />
-              Tags
-            </h3>
-            {editing ? (
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {editTags.map((t) => (
-                    <Badge key={t} variant="secondary" className="text-xs gap-1 pr-1">
-                      {t}
-                      <button onClick={() => removeTag(t)} className="hover:text-destructive transition-colors">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    placeholder="Add tag..."
-                    className="text-xs h-7 flex-1"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                  />
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={addTag}>
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {entry?.tags && entry.tags.length > 0 ? (
-                  entry.tags.map((t) => (
-                    <Badge key={t} variant="secondary" className="text-xs">
-                      {t}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground">No tags yet.</p>
-                )}
-              </div>
-            )}
-          </div>
-          )}
-
-        </div>
       </div>
-    </div>
+    </>
   );
 }

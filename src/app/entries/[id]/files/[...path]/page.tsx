@@ -8,10 +8,10 @@ import FileIcon from "@/components/FileIcon";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
-import { useAuth } from "@/lib/auth-context";
-import { getEntry, putEntryFile, API_URL, getStoredToken } from "@/lib/api";
+import { putEntryFile, API_URL, getStoredToken } from "@/lib/api";
 import { highlightCode, getLanguageFromPath, type HighlightToken } from "@/lib/highlighter";
 import type { FileListItem } from "@/lib/types";
+import { useEntryContext } from "../../entry-context";
 
 const TEXT_EXTENSIONS = new Set([
   ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".csv", ".tex",
@@ -80,8 +80,7 @@ interface FilePageProps {
 }
 
 export default function FilePage({ params }: FilePageProps) {
-  const { user } = useAuth();
-  const [entryId, setEntryId] = useState<string>("");
+  const { resolvedId: entryId, isOwner } = useEntryContext();
   const [filePath, setFilePath] = useState<string>("");
   const [content, setContent] = useState<string | null>(null);
   const [dirItems, setDirItems] = useState<FileListItem[] | null>(null);
@@ -90,7 +89,6 @@ export default function FilePage({ params }: FilePageProps) {
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [editMessage, setEditMessage] = useState("");
@@ -108,7 +106,6 @@ export default function FilePage({ params }: FilePageProps) {
 
   useEffect(() => {
     params.then((p) => {
-      setEntryId(p.id);
       setFilePath(p.path.map((seg) => decodeURIComponent(seg)).join("/"));
     });
   }, [params]);
@@ -202,12 +199,6 @@ export default function FilePage({ params }: FilePageProps) {
       .finally(() => setLoading(false));
   }, [entryId, filePath]);
 
-  // Check ownership
-  useEffect(() => {
-    if (!entryId || !user) { setIsOwner(false); return; }
-    getEntry(entryId).then((e) => setIsOwner(e.created_by === user.id)).catch(() => setIsOwner(false));
-  }, [entryId, user]);
-
   // Syntax highlighting (PHI-131)
   useEffect(() => {
     if (!content || !filePath || filePath.endsWith(".md")) {
@@ -259,7 +250,7 @@ export default function FilePage({ params }: FilePageProps) {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div>
         <Skeleton className="h-6 w-48 mb-4" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -267,14 +258,10 @@ export default function FilePage({ params }: FilePageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      {/* Breadcrumb */}
+    <div>
+      {/* File path breadcrumb */}
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors">
-          Entry
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors">
+        <Link href={`/entries/${entryId}?tab=files`} className="hover:text-foreground transition-colors">
           Files
         </Link>
         {segments.map((seg, i) => {
