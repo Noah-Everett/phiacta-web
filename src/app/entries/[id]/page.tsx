@@ -32,7 +32,6 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   X,
-  Check,
   Plus,
   Trash2,
   Upload,
@@ -44,8 +43,6 @@ import {
   getEntryFiles,
   getEntryHistory,
   getEntryCommitDiff,
-  updateEntry,
-  setEntryTags,
   putEntryFile,
   deleteEntryFile,
   createReference,
@@ -377,8 +374,7 @@ export default function EntryPage() {
     refetchIssues,
     refetchEdits,
     editing,
-    setEditing,
-    enterEditRef,
+    exitEditMode,
   } = useEntryContext();
 
   const router = useRouter();
@@ -396,23 +392,6 @@ export default function EntryPage() {
   // Activity state
   const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
-
-  // --- Unified edit mode ---
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  // Metadata form state
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaSummary, setMetaSummary] = useState("");
-  const [metaType, setMetaType] = useState("");
-
-  // Content form state
-  const [editContentText, setEditContentText] = useState("");
-  const [editContentMessage, setEditContentMessage] = useState("");
-
-  // Tags form state
-  const [editTags, setEditTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState("");
 
   // Reference adding
   const [addingReference, setAddingReference] = useState(false);
@@ -493,117 +472,25 @@ export default function EntryPage() {
     fetchActivity(resolvedId);
   }, [resolvedId, entry, fetchFiles, fetchContent, fetchActivity]);
 
+  // Clear page-local sub-states when edit mode exits
+  useEffect(() => {
+    if (!editing) {
+      setAddingReference(false);
+      setRefSearchQuery("");
+      setRefSearchResults([]);
+      setRefSelectedEntry(null);
+      setRefRel("cites");
+      setRefNote("");
+      setRefError(null);
+      setUploadingFile(false);
+      setUploadFiles([]);
+      setUploadMessage("");
+      setFileError(null);
+      setDragOver(false);
+    }
+  }, [editing]);
+
   // --- Action handlers ---
-
-  const enterEditMode = () => {
-    if (!entry) return;
-    setMetaTitle(entry.title || "");
-    setMetaSummary(entry.summary || "");
-    setMetaType(entry.entry_type || "");
-    setEditContentText(contentText || "");
-    setEditContentMessage("");
-    setEditTags(entry.tags ? [...entry.tags] : []);
-    setNewTagInput("");
-    setSaveError(null);
-    setEditing(true);
-  };
-  enterEditRef.current = enterEditMode;
-
-  const exitEditMode = () => {
-    setEditing(false);
-    setSaveError(null);
-    setEditContentMessage("");
-    setAddingReference(false);
-    setRefSearchQuery("");
-    setRefSearchResults([]);
-    setRefSelectedEntry(null);
-    setRefRel("cites");
-    setRefNote("");
-    setRefError(null);
-    setUploadingFile(false);
-    setUploadFiles([]);
-    setUploadMessage("");
-    setFileError(null);
-    setDragOver(false);
-  };
-
-  const handleSaveAll = async () => {
-    if (!resolvedId || !entry) return;
-    setSaving(true);
-    setSaveError(null);
-
-    const metadataChanged =
-      metaTitle !== (entry.title || "") ||
-      metaSummary !== (entry.summary || "") ||
-      metaType !== (entry.entry_type || "");
-    const contentChanged = editContentText !== (contentText || "");
-    const tagsChanged =
-      JSON.stringify([...editTags].sort()) !== JSON.stringify([...(entry.tags || [])].sort());
-
-    const errors: string[] = [];
-    const promises: Promise<void>[] = [];
-
-    if (metadataChanged) {
-      promises.push(
-        updateEntry(resolvedId, {
-          title: metaTitle,
-          summary: metaSummary || null,
-          entry_type: metaType || null,
-        }).then(() => {}).catch((err) => {
-          errors.push(`Metadata: ${err instanceof Error ? err.message : "failed"}`);
-        })
-      );
-    }
-
-    if (contentChanged) {
-      promises.push(
-        (async () => {
-          const blob = new Blob([editContentText], { type: "text/plain" });
-          const file = new window.File([blob], `content.${contentFormat}`, { type: "text/plain" });
-          await putEntryFile(resolvedId, `.phiacta/content.${contentFormat}`, file, editContentMessage || undefined);
-        })().catch((err) => {
-          errors.push(`Content: ${err instanceof Error ? err.message : "failed"}`);
-        })
-      );
-    }
-
-    if (tagsChanged) {
-      promises.push(
-        setEntryTags(resolvedId, editTags).then(() => {}).catch((err) => {
-          errors.push(`Tags: ${err instanceof Error ? err.message : "failed"}`);
-        })
-      );
-    }
-
-    await Promise.all(promises);
-
-    if (errors.length > 0) {
-      setSaveError(errors.join("; "));
-      setSaving(false);
-      return;
-    }
-
-    await Promise.all([
-      refetchEntry(),
-      contentChanged ? fetchContent(resolvedId) : Promise.resolve(),
-    ]);
-
-    setEditing(false);
-    setEditContentMessage("");
-    setSaving(false);
-  };
-
-  const addTag = () => {
-    const tag = newTagInput.trim().toLowerCase();
-    if (tag && !editTags.includes(tag)) {
-      setEditTags([...editTags, tag]);
-    }
-    setNewTagInput("");
-  };
-
-  const removeTag = (tag: string) => {
-    setEditTags(editTags.filter((t) => t !== tag));
-  };
 
   const handleRefSearch = async () => {
     if (!refSearchQuery.trim()) return;
@@ -774,98 +661,23 @@ export default function EntryPage() {
 
   return (
     <>
-      {/* Save/Cancel controls (only visible to owner while editing) */}
-      {isOwner && editing && (
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
-            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-            Save
-          </Button>
-          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
-            Cancel
-          </Button>
-        </div>
-      )}
-      {saveError && (
-        <p className="mb-2 text-xs text-destructive">{saveError}</p>
-      )}
-
-      {editing && (
-        <div className="space-y-3 mb-4">
-          <Input
-            value={metaTitle}
-            onChange={(e) => setMetaTitle(e.target.value)}
-            placeholder="Title"
-            className="text-2xl font-bold h-auto py-1.5"
-          />
-          <textarea
-            value={metaSummary}
-            onChange={(e) => setMetaSummary(e.target.value)}
-            placeholder="Summary (optional)"
-            rows={3}
-            className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-          />
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-muted-foreground">Type:</span>
-              <Input
-                value={metaType}
-                onChange={(e) => setMetaType(e.target.value)}
-                placeholder="e.g. paper, note"
-                className="h-7 w-32 text-xs"
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-xs font-medium text-muted-foreground shrink-0">Tags:</span>
-              <div className="flex flex-wrap items-center gap-1.5">
-                {editTags.map((t) => (
-                  <Badge key={t} variant="secondary" className="text-xs gap-1 pr-1">
-                    {t}
-                    <button onClick={() => removeTag(t)} className="hover:text-destructive transition-colors">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                <div className="flex items-center gap-1">
-                  <Input
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    placeholder="Add tag..."
-                    className="text-xs h-7 w-24"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                  />
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={addTag}>
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div>
           {/* Content */}
           {activeTab === "content" && (
             <>
-              {editing ? (
-                <div className="rounded-xl border border-border bg-card p-6 space-y-3">
-                  <textarea
-                    value={editContentText}
-                    onChange={(e) => setEditContentText(e.target.value)}
-                    rows={20}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                    placeholder="Write your content here..."
-                  />
-                  <Input
-                    value={editContentMessage}
-                    onChange={(e) => setEditContentMessage(e.target.value)}
-                    placeholder="Commit message (optional)"
-                    className="text-sm"
-                  />
-                </div>
-              ) : (
-                <div className="space-y-4">
+              {editing && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  To edit content, go to the{" "}
+                  <button
+                    className="underline hover:text-foreground transition-colors"
+                    onClick={exitEditMode}
+                  >
+                    Files tab
+                  </button>
+                  .
+                </p>
+              )}
+              <div className="space-y-4">
                   {compiledInfo && resolvedId ? (
                     <div>
                       <iframe
@@ -902,7 +714,6 @@ export default function EntryPage() {
                     </div>
                   )}
                 </div>
-              )}
             </>
           )}
 

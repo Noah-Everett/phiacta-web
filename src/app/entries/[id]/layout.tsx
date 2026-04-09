@@ -5,10 +5,18 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
+import { VisibilityBadge } from "@/components/EntryBadges";
 import { getInitials } from "@/lib/utils";
 import {
   ChevronRight,
@@ -20,6 +28,10 @@ import {
   Activity,
   Tag,
   Pencil,
+  Check,
+  Loader2,
+  X,
+  Plus,
 } from "lucide-react";
 import { EntryProvider, useEntryContext } from "./entry-context";
 
@@ -133,42 +145,114 @@ function EntryTabBar() {
 }
 
 function EntryHeader() {
-  const { entry, isOwner, editing, enterEditRef } = useEntryContext();
+  const {
+    entry,
+    isOwner,
+    editing,
+    saving,
+    saveError,
+    enterEditMode,
+    exitEditMode,
+    handleSaveAll,
+    metaTitle,
+    setMetaTitle,
+    metaSummary,
+    setMetaSummary,
+  } = useEntryContext();
   if (!entry) return null;
 
   return (
     <div className="mb-6">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <EntryTypeBadge entryType={entry.entry_type} />
-        <VisibilityBadge visibility={entry.visibility} />
-      </div>
-
-      <div className="flex items-start justify-between gap-4 mb-4">
-        <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-          {entry.title || "Untitled"}
-        </h1>
-        {isOwner && !editing && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 shrink-0 text-xs gap-1"
-            onClick={() => enterEditRef.current()}
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            Edit
-          </Button>
+      <div className="flex items-start justify-between gap-4 mb-2">
+        {editing && isOwner ? (
+          <Input
+            value={metaTitle}
+            onChange={(e) => setMetaTitle(e.target.value)}
+            placeholder="Title"
+            className="text-2xl font-bold h-auto py-1.5"
+          />
+        ) : (
+          <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
+            {entry.title || "Untitled"}
+          </h1>
         )}
+
+        <div className="flex shrink-0 items-center gap-1.5">
+          {isOwner && !editing && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs gap-1"
+              onClick={enterEditMode}
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit
+            </Button>
+          )}
+          {isOwner && editing && (
+            <>
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={handleSaveAll}
+                disabled={saving}
+              >
+                {saving ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5" />
+                )}
+                Save
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs"
+                onClick={exitEditMode}
+                disabled={saving}
+              >
+                Cancel
+              </Button>
+            </>
+          )}
+        </div>
       </div>
 
-      {entry.summary && (
-        <p className="mb-4 text-sm text-muted-foreground">{entry.summary}</p>
+      {saveError && (
+        <p className="mb-2 text-xs text-destructive">{saveError}</p>
       )}
+
+      {editing && isOwner ? (
+        <textarea
+          value={metaSummary}
+          onChange={(e) => setMetaSummary(e.target.value)}
+          placeholder="Summary (optional)"
+          rows={2}
+          className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y mb-4"
+        />
+      ) : entry.summary ? (
+        <p className="mb-4 text-sm text-muted-foreground">{entry.summary}</p>
+      ) : null}
     </div>
   );
 }
 
 function EntrySidebar() {
-  const { entry, author } = useEntryContext();
+  const {
+    entry,
+    author,
+    isOwner,
+    editing,
+    metaType,
+    setMetaType,
+    metaVisibility,
+    setMetaVisibility,
+    editTags,
+    newTagInput,
+    setNewTagInput,
+    addTag,
+    removeTag,
+  } = useEntryContext();
   if (!entry) return null;
 
   return (
@@ -207,10 +291,44 @@ function EntrySidebar() {
           Metadata
         </h3>
         <dl className="space-y-2.5 text-sm">
-          <div className="flex items-center justify-between">
-            <dt className="text-muted-foreground">Type</dt>
-            <dd className="font-medium text-foreground capitalize">
-              {entry.entry_type || "not specified"}
+          <div className="flex items-center justify-between gap-2">
+            <dt className="text-muted-foreground shrink-0">Type</dt>
+            <dd className="min-w-0">
+              {editing && isOwner ? (
+                <Input
+                  value={metaType}
+                  onChange={(e) => setMetaType(e.target.value)}
+                  placeholder="e.g. paper, note"
+                  className="h-7 w-32 text-xs"
+                />
+              ) : (
+                <span className="font-medium text-foreground capitalize">
+                  {entry.entry_type || "—"}
+                </span>
+              )}
+            </dd>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <dt className="text-muted-foreground shrink-0">Visibility</dt>
+            <dd>
+              {editing && isOwner ? (
+                <Select
+                  value={metaVisibility}
+                  onValueChange={(v) =>
+                    setMetaVisibility(v as "public" | "private")
+                  }
+                >
+                  <SelectTrigger className="h-7 w-28 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <VisibilityBadge visibility={entry.visibility} />
+              )}
             </dd>
           </div>
           {[
@@ -241,21 +359,54 @@ function EntrySidebar() {
         </dl>
       </div>
 
-      {entry?.tags && entry.tags.length > 0 && (
+      {/* Tags — always shown when editing (to add/remove), shown only if non-empty otherwise */}
+      {(editing && isOwner) || (entry.tags && entry.tags.length > 0) ? (
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
             <Tag className="mr-1.5 inline h-3 w-3" />
             Tags
           </h3>
           <div className="flex flex-wrap gap-1.5">
-            {entry.tags.map((t) => (
-              <Badge key={t} variant="secondary" className="text-xs">
+            {(editing && isOwner ? editTags : entry.tags ?? []).map((t) => (
+              <Badge key={t} variant="secondary" className="text-xs gap-1 pr-1">
                 {t}
+                {editing && isOwner && (
+                  <button
+                    onClick={() => removeTag(t)}
+                    className="hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </Badge>
             ))}
+            {editing && isOwner && (
+              <div className="flex items-center gap-1">
+                <Input
+                  value={newTagInput}
+                  onChange={(e) => setNewTagInput(e.target.value)}
+                  placeholder="Add tag…"
+                  className="text-xs h-7 w-24"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addTag();
+                    }
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  onClick={addTag}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
