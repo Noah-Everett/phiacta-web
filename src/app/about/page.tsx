@@ -67,7 +67,7 @@ const CALLOUT_LEGEND = [
 const PRINCIPLES = [
   {
     icon: Atom,
-    title: "Entries are the unit of knowledge",
+    title: "An entry is anything worth citing",
     body: "An entry represents something worth citing — a single finding, a full paper, a dataset, a method. Composite entries tie related entries together with references.",
   },
   {
@@ -151,7 +151,7 @@ const NOT_LIST = [
   },
   {
     label: "Not a software repository",
-    body: "Entries are for knowledge assertions. Versioned repositories inside entries hold supporting materials (data, proofs, scripts), not software projects.",
+    body: "Versioned repositories inside entries hold supporting materials (data, proofs, scripts), not software projects.",
   },
 ];
 
