@@ -26,7 +26,6 @@ import {
   Lightbulb,
   Sparkles,
   Target,
-  Equal,
 } from "lucide-react";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -138,12 +137,6 @@ const SCENARIOS = [
     icon: ShieldCheck,
     title: "Attach the proof",
     body: "A theorem is claimed. In a paper, you trust the author. In Phiacta, the entry can carry a machine-checked Lean 4 proof. The verification is part of the permanent record.",
-  },
-  {
-    icon: Equal,
-    title: "The code gets the same treatment as the paper",
-    body: "In traditional publishing, code and data are supplementary materials — a zip file on a university server that breaks in five years. In Phiacta, the dataset, the analysis script, and the result entry are all first-class entries: versioned, citable, and permanently addressable. Supporting materials are no longer supplementary.",
-    wide: true,
   },
 ];
 
@@ -393,27 +386,13 @@ export default function AboutPage() {
             Some of these were theoretically possible. Most weren&apos;t worth attempting.
           </p>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {SCENARIOS.map(({ icon: Icon, title, body, wide }) => (
-              <div key={title} className={`rounded-xl border border-border bg-card p-6 ${wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
-                {wide ? (
-                  <div className="flex items-start gap-5">
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary">
-                      <Icon className="h-4 w-4 text-secondary-foreground" />
-                    </div>
-                    <div>
-                      <p className="mb-2 text-sm font-semibold text-foreground">{title}</p>
-                      <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
-                      <Icon className="h-4 w-4 text-secondary-foreground" />
-                    </div>
-                    <p className="mb-2 text-sm font-semibold text-foreground">{title}</p>
-                    <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
-                  </>
-                )}
+            {SCENARIOS.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="rounded-xl border border-border bg-card p-6">
+                <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                  <Icon className="h-4 w-4 text-secondary-foreground" />
+                </div>
+                <p className="mb-2 text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
               </div>
             ))}
           </div>
