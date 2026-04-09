@@ -25,6 +25,7 @@ import {
   FileText,
   FolderOpen,
   Loader2,
+  FileArchive,
 } from "lucide-react";
 import { unzipSync, gunzipSync } from "fflate";
 
@@ -107,6 +108,8 @@ export default function PostPage() {
   const [latexFiles, setLatexFiles] = useState<{ name: string; data: Uint8Array; isMain: boolean }[]>([]);
   const [latexDragOver, setLatexDragOver] = useState(false);
   const [latexError, setLatexError] = useState("");
+  const [arxivDragOver, setArxivDragOver] = useState(false);
+  const [arxivImporting, setArxivImporting] = useState(false);
 
   // Processing steps — shown between submit and success
   type StepStatus = "pending" | "active" | "done" | "warning" | "error";
@@ -388,6 +391,119 @@ export default function PostPage() {
   function setMainTexFile(name: string) {
     setLatexFiles((prev) => prev.map((f) => ({ ...f, isMain: f.name === name })));
   }
+
+  /** Extract balanced braced content, handling nested braces. */
+  function extractBraced(text: string, startIdx: number): string | null {
+    if (text[startIdx] !== "{") return null;
+    let depth = 0;
+    let i = startIdx;
+    while (i < text.length) {
+      if (text[i] === "{") depth++;
+      else if (text[i] === "}") { depth--; if (depth === 0) return text.slice(startIdx + 1, i); }
+      i++;
+    }
+    return null;
+  }
+
+  /** Strip common LaTeX commands from extracted text for display. */
+  function cleanLatexText(text: string): string {
+    return text
+      .replace(/\\(?:textbf|textit|emph|textrm|texttt|textsf|textsc|mbox|text)\{([^}]*)\}/g, "$1")
+      .replace(/\\(?:cite|ref|label|eqref|cref|autoref)\{[^}]*\}/g, "")
+      .replace(/\\\\|\\newline/g, " ")
+      .replace(/~|\\,|\\;|\\:|\\!/g, " ")
+      .replace(/\{|\}/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  /** Parse title and abstract from LaTeX source. */
+  function parseLatexMetadata(texContent: string): { title: string | null; abstract: string | null } {
+    let extractedTitle: string | null = null;
+    let extractedAbstract: string | null = null;
+
+    // Extract \title{...} — handle nested braces
+    const titleMatch = texContent.match(/\\title\s*(?:\[[^\]]*\]\s*)?\{/);
+    if (titleMatch) {
+      const braceStart = texContent.indexOf("{", titleMatch.index!);
+      extractedTitle = extractBraced(texContent, braceStart);
+      if (extractedTitle) extractedTitle = cleanLatexText(extractedTitle);
+    }
+
+    // Extract \begin{abstract}...\end{abstract}
+    const absMatch = texContent.match(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/);
+    if (absMatch) {
+      extractedAbstract = cleanLatexText(absMatch[1]);
+    }
+
+    return { title: extractedTitle || null, abstract: extractedAbstract || null };
+  }
+
+  /** Import an arXiv archive: extract files, parse metadata, populate form. */
+  async function handleArxivImport(inputFiles: FileList | File[]) {
+    setArxivImporting(true);
+    setLatexError("");
+    setError("");
+
+    try {
+      const fileArray = Array.from(inputFiles);
+
+      // Find and extract archive
+      let archive: File | null = null;
+      let archiveType: "zip" | "gzip" | "tar" | null = null;
+      for (const f of fileArray) {
+        const head = new Uint8Array(await f.slice(0, 300).arrayBuffer());
+        const detected = detectArchiveType(f.name, head);
+        if (detected) { archive = f; archiveType = detected; break; }
+      }
+
+      let extracted: { name: string; data: Uint8Array }[];
+      if (archive && archiveType) {
+        const buf = new Uint8Array(await archive.arrayBuffer());
+        if (archiveType === "zip") extracted = extractZip(buf);
+        else if (archiveType === "gzip") extracted = extractTarGz(buf);
+        else extracted = parseTar(buf);
+      } else {
+        // Individual .tex files
+        extracted = await Promise.all(
+          fileArray.map(async (f) => ({ name: f.name, data: new Uint8Array(await f.arrayBuffer()) })),
+        );
+      }
+
+      if (extracted.length === 0) {
+        setLatexError("No files found in archive.");
+        return;
+      }
+
+      // Detect main .tex and set up latex files
+      const mainName = detectMainTex(extracted);
+      const withMain = extracted.map((f) => ({ ...f, isMain: f.name === mainName }));
+      setLatexFiles(withMain);
+
+      // Parse metadata from main .tex
+      if (mainName) {
+        const mainFile = extracted.find((f) => f.name === mainName);
+        if (mainFile) {
+          const texContent = new TextDecoder().decode(mainFile.data);
+          const { title: parsedTitle, abstract: parsedAbstract } = parseLatexMetadata(texContent);
+          if (parsedTitle) setTitle(parsedTitle);
+          if (parsedAbstract) setSummary(parsedAbstract);
+        }
+      }
+
+      // Auto-set format and type
+      setContentFormat("latex");
+      setEntryType("paper");
+      setIsCustomType(false);
+      setCustomType("");
+    } catch (err) {
+      setLatexError(`Import failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    } finally {
+      setArxivImporting(false);
+    }
+  }
+
+  const arxivInputRef = useRef<HTMLInputElement>(null);
 
   const handleRefSearch = useCallback((query: string) => {
     setRefSearch(query);
@@ -769,6 +885,50 @@ export default function PostPage() {
       </div>
 
       <Separator className="mb-10" />
+
+      {/* arXiv Import — optional quick-start */}
+      <div className="mb-10">
+        <input
+          ref={arxivInputRef}
+          type="file"
+          accept=".zip,.tar,.tar.gz,.tgz,.gz,.tex"
+          onChange={(e) => { if (e.target.files) handleArxivImport(e.target.files); e.target.value = ""; }}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => arxivInputRef.current?.click()}
+          disabled={arxivImporting}
+          onDragOver={(e) => { e.preventDefault(); setArxivDragOver(true); }}
+          onDragLeave={() => setArxivDragOver(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setArxivDragOver(false);
+            if (e.dataTransfer.files) handleArxivImport(e.dataTransfer.files);
+          }}
+          className={`flex w-full items-center gap-4 rounded-xl border border-dashed px-6 py-5 text-left transition-colors ${
+            arxivDragOver
+              ? "border-primary bg-primary/5"
+              : "border-border hover:border-muted-foreground/40"
+          }`}
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-secondary">
+            {arxivImporting ? (
+              <Loader2 className="h-5 w-5 text-secondary-foreground animate-spin" />
+            ) : (
+              <FileArchive className="h-5 w-5 text-secondary-foreground" />
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-foreground">
+              {arxivImporting ? "Extracting..." : "Import from arXiv source"}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Drop a .tar.gz / .zip from arXiv and we&apos;ll extract the title, abstract, and source files automatically.
+            </p>
+          </div>
+        </button>
+      </div>
 
       {error && (
         <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
