@@ -1084,8 +1084,14 @@ export default function EntryPage({ params }: EntryPageProps) {
                           className="text-sm leading-relaxed text-card-foreground"
                           entryId={entry.id}
                         />
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
+                      ) : loading ? null : (
+                        <p className="text-sm text-muted-foreground">
+                          No rendered content available. Browse the source under{" "}
+                          <button
+                            className="underline hover:text-foreground transition-colors"
+                            onClick={() => handleTabChange("files")}
+                          >.phiacta/content/</button>.
+                        </p>
                       )}
                     </div>
                   )}
