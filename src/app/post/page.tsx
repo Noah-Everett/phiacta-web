@@ -45,7 +45,7 @@ const ENTRY_TYPES = [
 const FORMATS = [
   { value: "markdown", label: "Markdown", note: null },
   { value: "plain", label: "Plain text", note: null },
-  { value: "latex", label: "LaTeX", note: "beta" },
+  { value: "latex", label: "LaTeX", note: null },
 ] as const;
 
 const GUIDELINES = [
