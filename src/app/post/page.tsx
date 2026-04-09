@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createEntry, getEntry, setEntryTags, putEntryFile, createReference, searchEntries, compileLatex } from "@/lib/api";
+import { createEntry, getEntry, setEntryTags, putEntryFile, postEntryFiles, createReference, searchEntries, compileLatex } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -459,10 +459,8 @@ export default function PostPage() {
         if (!repoReady) {
           setFileWarning("Entry published, but the repository wasn't ready in time. Upload files from the entry's Files tab.");
         } else {
-          const failed: string[] = [];
-
           // Build list of all files to upload
-          const uploads: { destPath: string; file: File }[] = [];
+          const bulkFiles: { path: string; data: Blob }[] = [];
 
           // LaTeX project files → .phiacta/content/ or .phiacta/content.tex
           if (hasLatexProject) {
@@ -471,33 +469,34 @@ export default function PostPage() {
               const destPath = isMultiFile
                 ? `.phiacta/content/${lf.isMain ? "main.tex" : lf.name}`
                 : ".phiacta/content.tex";
-              const blob = new Blob([lf.data.buffer as ArrayBuffer]);
-              uploads.push({ destPath, file: new window.File([blob], lf.name) });
+              bulkFiles.push({ path: destPath, data: new Blob([lf.data]) });
             }
           }
 
           // Regular attached files
           for (const { file, path } of files) {
-            uploads.push({ destPath: path, file });
+            bulkFiles.push({ path, data: file });
           }
 
-          // Upload in parallel batches (Forgejo handles per-file commits,
-          // so we limit concurrency to avoid overwhelming it)
-          const BATCH_SIZE = 5;
-          for (let i = 0; i < uploads.length; i += BATCH_SIZE) {
-            const batch = uploads.slice(i, i + BATCH_SIZE);
-            const results = await Promise.allSettled(
-              batch.map(({ destPath, file }) => putEntryFile(entry.id, destPath, file)),
-            );
-            for (let j = 0; j < results.length; j++) {
-              if (results[j].status === "rejected") {
-                failed.push(batch[j].destPath);
-              }
+          // Upload in batches — Forgejo limits commits to 1000 files,
+          // and large single requests can freeze the browser.
+          const BATCH_SIZE = 500;
+          let failedBatches = 0;
+          const totalBatches = Math.ceil(bulkFiles.length / BATCH_SIZE);
+          for (let i = 0; i < bulkFiles.length; i += BATCH_SIZE) {
+            const batch = bulkFiles.slice(i, i + BATCH_SIZE);
+            const batchNum = Math.floor(i / BATCH_SIZE) + 1;
+            const msg = totalBatches === 1
+              ? (hasLatexProject ? "Upload LaTeX project" : `Upload ${batch.length} file(s)`)
+              : `Upload batch ${batchNum}/${totalBatches} (${batch.length} files)`;
+            try {
+              await postEntryFiles(entry.id, batch, msg);
+            } catch {
+              failedBatches++;
             }
           }
-
-          if (failed.length > 0) {
-            setFileWarning(`Entry published, but ${failed.length} file${failed.length > 1 ? "s" : ""} could not be uploaded: ${failed.join(", ")}`);
+          if (failedBatches > 0) {
+            setFileWarning(`Entry published, but ${failedBatches} batch(es) of files could not be uploaded. You can retry from the entry's Files tab.`);
           }
         }
       }

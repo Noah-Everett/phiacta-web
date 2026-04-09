@@ -271,6 +271,40 @@ export async function putEntryFile(
   return res.json() as Promise<FileWriteResponse>;
 }
 
+/** Upload multiple files in a single atomic commit. */
+export async function postEntryFiles(
+  entryId: string,
+  files: { path: string; data: Blob }[],
+  message?: string,
+): Promise<FileWriteResponse> {
+  const form = new FormData();
+  for (const { path, data } of files) {
+    form.append("files", data);
+    form.append("paths", path);
+  }
+  if (message) form.append("message", message);
+
+  const res = await fetch(
+    `${API_URL}/v1/entries/${entryId}/files`,
+    {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: form,
+    },
+  );
+
+  if (res.status === 401) {
+    clearStoredToken();
+    if (typeof window !== "undefined") window.location.href = "/auth/login";
+    throw new Error("Session expired. Please log in again.");
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(res.status, body?.detail || `Upload failed: ${res.status}`);
+  }
+  return res.json() as Promise<FileWriteResponse>;
+}
+
 // --- References ---
 
 export async function createReference(
