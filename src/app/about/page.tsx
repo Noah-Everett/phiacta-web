@@ -22,6 +22,10 @@ import {
   GraduationCap,
   Wrench,
   Network,
+  FlaskConical,
+  Lightbulb,
+  Sparkles,
+  Target,
 } from "lucide-react";
 
 // ─── Data ────────────────────────────────────────────────────────────────────
@@ -100,6 +104,39 @@ const PRINCIPLES = [
     icon: Puzzle,
     title: "Built to be built on",
     body: "Everything on this website uses the same public API. The Python SDK automates workflows in a few lines. The MCP server gives AI agents full platform access.",
+  },
+];
+
+const SCENARIOS = [
+  {
+    icon: Target,
+    title: "Cite the theorem, not the paper",
+    body: "You reference Lemma 2.3 from a 2019 paper. Your citation points to 40 pages and hopes readers find the right section. With Phiacta, the lemma is its own entry — citable, versioned, permanently addressable.",
+  },
+  {
+    icon: FlaskConical,
+    title: "Publish what didn't work",
+    body: "You ran 200 experiments. None worked. That knowledge prevents others from wasting the same time — but there's no venue for it. Phiacta accepts any result worth recording.",
+  },
+  {
+    icon: Lightbulb,
+    title: "Share a small discovery",
+    body: "You found a neat algebraic identity while working on something else. Not a paper's worth of work — but genuinely useful to the right person. It used to disappear into a notebook. Now it's a citable entry.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Correct the record",
+    body: "You found an error in a widely-cited result. Before: write a correction paper, wait a year, hope people find it. Now: open an issue on the entry. The record updates.",
+  },
+  {
+    icon: Sparkles,
+    title: "Ask AI about your own research",
+    body: "You're extending six months of prior work. Connect your knowledge graph to Claude via MCP — it reads the structure, finds gaps, and surfaces connections you missed. It can't do that with PDFs.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Attach the proof",
+    body: "A theorem is claimed. In a paper, you trust the author. In Phiacta, the entry can carry a machine-checked Lean 4 proof. The verification is part of the permanent record.",
   },
 ];
 
@@ -338,9 +375,35 @@ export default function AboutPage() {
       </section>
 
       {/* ════════════════════════════════════════════════════
-          KNOWLEDGE GRAPH
+          SCENARIOS
       ════════════════════════════════════════════════════ */}
       <section className="bg-muted/30 px-6 py-24">
+        <div className="mx-auto max-w-5xl">
+          <SectionLabel>What becomes possible</SectionLabel>
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Things that weren&apos;t possible before.
+          </h2>
+          <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground">
+            Some of these were theoretically possible. Most weren&apos;t worth attempting.
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {SCENARIOS.map(({ icon: Icon, title, body }) => (
+              <div key={title} className="rounded-xl border border-border bg-card p-6">
+                <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                  <Icon className="h-4 w-4 text-secondary-foreground" />
+                </div>
+                <p className="mb-2 text-sm font-semibold text-foreground">{title}</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ════════════════════════════════════════════════════
+          KNOWLEDGE GRAPH
+      ════════════════════════════════════════════════════ */}
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>The graph</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -363,7 +426,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           WHO IT'S FOR
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-24">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>Who it&apos;s for</SectionLabel>
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -425,7 +488,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           VISION
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-28 text-center">
+      <section className="px-6 py-28 text-center">
         <div className="mx-auto max-w-3xl">
           <SectionLabel>The mission</SectionLabel>
           <blockquote className="mb-8 text-3xl font-bold leading-snug tracking-tight text-foreground sm:text-4xl">
@@ -460,7 +523,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           CORE PRINCIPLES
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-24">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>Core principles</SectionLabel>
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -485,7 +548,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           BUILD ON IT
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-24">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>For builders</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -508,7 +571,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           ARCHITECTURE + HOW ENTRIES WORK
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-24">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>How it&apos;s built</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -595,7 +658,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           WHAT IT'S NOT
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-24">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>Scope</SectionLabel>
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -615,7 +678,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           THE NAME + CONTACT
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-28 text-center">
+      <section className="bg-muted/30 px-6 py-28 text-center">
         <div className="mx-auto max-w-xl">
           <SectionLabel>The name</SectionLabel>
           <p className="mb-10 text-base leading-relaxed text-muted-foreground">
