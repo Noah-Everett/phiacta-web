@@ -392,6 +392,7 @@ export default function PostPage() {
     return text
       .replace(/\\(?:textbf|textit|emph|textrm|texttt|textsf|textsc|mbox|text)\{([^}]*)\}/g, "$1")
       .replace(/\\(?:cite|ref|label|eqref|cref|autoref)\{[^}]*\}/g, "")
+      .replace(/\\(?:boldmath|unboldmath|bfseries|itshape|rmfamily|ttfamily|sffamily|scshape|normalfont)\b/g, "")
       .replace(/\\\\|\\newline/g, " ")
       .replace(/~|\\,|\\;|\\:|\\!/g, " ")
       .replace(/\{|\}/g, "")
