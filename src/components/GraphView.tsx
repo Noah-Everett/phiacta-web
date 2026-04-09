@@ -220,7 +220,7 @@ export default function GraphView({
 
 
       // Label
-      if (showLabelsRef.current && globalScale > 0.8) {
+      if (showLabelsRef.current) {
         const label = node.title || "Untitled";
         const fontSize = Math.max(10 / globalScale, 2);
         ctx.font = `500 ${fontSize}px system-ui, sans-serif`;
