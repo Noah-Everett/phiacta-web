@@ -6,6 +6,10 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+  type MutableRefObject,
   type ReactNode,
 } from "react";
 import {
@@ -40,6 +44,9 @@ interface EntryContextValue {
   refetchEntry: () => Promise<EntryDetailResponse | undefined>;
   refetchIssues: () => void;
   refetchEdits: () => void;
+  editing: boolean;
+  setEditing: Dispatch<SetStateAction<boolean>>;
+  enterEditRef: MutableRefObject<() => void>;
 }
 
 const EntryContext = createContext<EntryContextValue | null>(null);
@@ -68,6 +75,8 @@ export function EntryProvider({
   const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [compiledInfo, setCompiledInfo] =
     useState<CompiledContentInfo | null>(null);
+  const [editing, setEditing] = useState(false);
+  const enterEditRef = useRef<() => void>(() => {});
 
   const isOwner =
     user?.id != null &&
@@ -150,6 +159,9 @@ export function EntryProvider({
         refetchEntry,
         refetchIssues,
         refetchEdits,
+        editing,
+        setEditing,
+        enterEditRef,
       }}
     >
       {children}

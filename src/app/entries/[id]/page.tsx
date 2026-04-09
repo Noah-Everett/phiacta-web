@@ -31,7 +31,6 @@ import {
   Link2,
   ArrowUpRight,
   ArrowDownLeft,
-  Pencil,
   X,
   Check,
   Plus,
@@ -377,6 +376,9 @@ export default function EntryPage() {
     refetchEntry,
     refetchIssues,
     refetchEdits,
+    editing,
+    setEditing,
+    enterEditRef,
   } = useEntryContext();
 
   const router = useRouter();
@@ -396,7 +398,6 @@ export default function EntryPage() {
   const [activityLoading, setActivityLoading] = useState(false);
 
   // --- Unified edit mode ---
-  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -506,6 +507,7 @@ export default function EntryPage() {
     setSaveError(null);
     setEditing(true);
   };
+  enterEditRef.current = enterEditMode;
 
   const exitEditMode = () => {
     setEditing(false);
@@ -772,25 +774,16 @@ export default function EntryPage() {
 
   return (
     <>
-      {/* Edit controls (only visible to owner) */}
-      {isOwner && (
+      {/* Save/Cancel controls (only visible to owner while editing) */}
+      {isOwner && editing && (
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {editing ? (
-            <>
-              <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
-                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                Save
-              </Button>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
-                Cancel
-              </Button>
-            </>
-          ) : (
-            <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
-              <Pencil className="h-3.5 w-3.5" />
-              Edit
-            </Button>
-          )}
+          <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
+            {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+            Save
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
+            Cancel
+          </Button>
         </div>
       )}
       {saveError && (

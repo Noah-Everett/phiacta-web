@@ -19,6 +19,7 @@ import {
   Link2,
   Activity,
   Tag,
+  Pencil,
 } from "lucide-react";
 import { EntryProvider, useEntryContext } from "./entry-context";
 
@@ -132,7 +133,7 @@ function EntryTabBar() {
 }
 
 function EntryHeader() {
-  const { entry, author } = useEntryContext();
+  const { entry, isOwner, editing, enterEditRef } = useEntryContext();
   if (!entry) return null;
 
   return (
@@ -142,10 +143,21 @@ function EntryHeader() {
         <VisibilityBadge visibility={entry.visibility} />
       </div>
 
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
           {entry.title || "Untitled"}
         </h1>
+        {isOwner && !editing && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 text-xs gap-1"
+            onClick={() => enterEditRef.current()}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+            Edit
+          </Button>
+        )}
       </div>
 
       {entry.summary && (
