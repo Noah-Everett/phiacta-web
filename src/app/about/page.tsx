@@ -175,7 +175,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 
 function KnowledgeGraph() {
   return (
-    <svg viewBox="0 0 700 240" className="w-full" fill="none" aria-hidden>
+    <svg viewBox="0 0 820 282" className="w-full" fill="none" aria-hidden>
       <defs>
         <marker id="arrowhead" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto">
           <polygon points="0 0, 6 2.5, 0 5" className="fill-border" />
@@ -183,40 +183,42 @@ function KnowledgeGraph() {
       </defs>
 
       {/* Connection lines */}
-      <line x1="300" y1="76" x2="140" y2="148" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
-      <line x1="350" y1="76" x2="350" y2="148" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
-      <line x1="400" y1="76" x2="555" y2="148" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
-      <path d="M 220 188 Q 350 228 480 188" className="stroke-border" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#arrowhead)" />
+      <line x1="360" y1="76" x2="130" y2="160" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
+      <line x1="410" y1="76" x2="410" y2="160" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
+      <line x1="460" y1="76" x2="670" y2="160" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
+      <line x1="240" y1="192" x2="300" y2="192" className="stroke-border" strokeWidth="1.5" markerEnd="url(#arrowhead)" />
+      <path d="M 240 212 Q 410 296 580 212" className="stroke-border" strokeWidth="1.5" strokeDasharray="4 3" markerEnd="url(#arrowhead)" />
 
       {/* Relationship labels */}
-      <text x="195" y="106" textAnchor="middle" fontSize="10" className="fill-muted-foreground">contains</text>
-      <text x="368" y="108" textAnchor="middle" fontSize="10" className="fill-muted-foreground">contains</text>
-      <text x="510" y="106" textAnchor="middle" fontSize="10" className="fill-muted-foreground">contains</text>
-      <text x="350" y="226" textAnchor="middle" fontSize="10" className="fill-muted-foreground">uses</text>
+      <text x="233" y="112" textAnchor="middle" fontSize="10" className="fill-muted-foreground">contains</text>
+      <text x="435" y="108" textAnchor="middle" fontSize="10" className="fill-muted-foreground">contains</text>
+      <text x="587" y="112" textAnchor="middle" fontSize="10" className="fill-muted-foreground">contains</text>
+      <text x="270" y="205" textAnchor="middle" fontSize="10" className="fill-muted-foreground">derives</text>
+      <text x="410" y="267" textAnchor="middle" fontSize="10" className="fill-muted-foreground">uses</text>
 
       {/* Paper node */}
-      <rect x="240" y="12" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
-      <text x="254" y="32" fontSize="10" className="fill-muted-foreground">paper</text>
-      <text x="254" y="50" fontSize="13" fontWeight="600" className="fill-foreground">Special Relativity</text>
-      <text x="254" y="65" fontSize="10" className="fill-muted-foreground">physics · Einstein · 1905</text>
+      <rect x="300" y="12" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
+      <text x="314" y="32" fontSize="10" className="fill-muted-foreground">paper</text>
+      <text x="314" y="50" fontSize="13" fontWeight="600" className="fill-foreground">Special Relativity</text>
+      <text x="314" y="65" fontSize="10" className="fill-muted-foreground">physics · Einstein · 1905</text>
 
       {/* Theorem node */}
-      <rect x="20" y="148" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
-      <text x="34" y="168" fontSize="10" className="fill-muted-foreground">theorem</text>
-      <text x="34" y="186" fontSize="13" fontWeight="600" className="fill-foreground">Lorentz Transformation</text>
-      <text x="34" y="201" fontSize="10" className="fill-muted-foreground">special-relativity · kinematics</text>
+      <rect x="20" y="160" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
+      <text x="34" y="180" fontSize="10" className="fill-muted-foreground">theorem</text>
+      <text x="34" y="198" fontSize="13" fontWeight="600" className="fill-foreground">Lorentz Transformation</text>
+      <text x="34" y="213" fontSize="10" className="fill-muted-foreground">special-relativity · kinematics</text>
 
       {/* Result node */}
-      <rect x="260" y="148" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
-      <text x="274" y="168" fontSize="10" className="fill-muted-foreground">result</text>
-      <text x="274" y="186" fontSize="13" fontWeight="600" className="fill-foreground">E = mc²</text>
-      <text x="274" y="201" fontSize="10" className="fill-muted-foreground">mass-energy · physics</text>
+      <rect x="300" y="160" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
+      <text x="314" y="180" fontSize="10" className="fill-muted-foreground">result</text>
+      <text x="314" y="198" fontSize="13" fontWeight="600" className="fill-foreground">E = mc²</text>
+      <text x="314" y="213" fontSize="10" className="fill-muted-foreground">mass-energy · physics</text>
 
       {/* Definition node */}
-      <rect x="500" y="148" width="180" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
-      <text x="514" y="168" fontSize="10" className="fill-muted-foreground">definition</text>
-      <text x="514" y="186" fontSize="13" fontWeight="600" className="fill-foreground">Spacetime Interval</text>
-      <text x="514" y="201" fontSize="10" className="fill-muted-foreground">metric · geometry</text>
+      <rect x="580" y="160" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
+      <text x="594" y="180" fontSize="10" className="fill-muted-foreground">definition</text>
+      <text x="594" y="198" fontSize="13" fontWeight="600" className="fill-foreground">Spacetime Interval</text>
+      <text x="594" y="213" fontSize="10" className="fill-muted-foreground">metric · geometry</text>
     </svg>
   );
 }
