@@ -197,26 +197,26 @@ function KnowledgeGraph() {
       {/* Paper node */}
       <rect x="240" y="12" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
       <text x="254" y="32" fontSize="10" className="fill-muted-foreground">paper</text>
-      <text x="254" y="50" fontSize="13" fontWeight="600" className="fill-foreground">QuakeFloat8</text>
-      <text x="254" y="65" fontSize="10" className="fill-muted-foreground">hardware · quantization</text>
+      <text x="254" y="50" fontSize="13" fontWeight="600" className="fill-foreground">Special Relativity</text>
+      <text x="254" y="65" fontSize="10" className="fill-muted-foreground">physics · Einstein · 1905</text>
 
       {/* Theorem node */}
       <rect x="20" y="148" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
-      <text x="34" y="168" fontSize="10" className="fill-muted-foreground">theorem · lean-verified</text>
-      <text x="34" y="186" fontSize="13" fontWeight="600" className="fill-foreground">Minimax NMSE</text>
-      <text x="34" y="201" fontSize="10" className="fill-muted-foreground">quantization · optimality</text>
+      <text x="34" y="168" fontSize="10" className="fill-muted-foreground">theorem</text>
+      <text x="34" y="186" fontSize="13" fontWeight="600" className="fill-foreground">Lorentz Transformation</text>
+      <text x="34" y="201" fontSize="10" className="fill-muted-foreground">special-relativity · kinematics</text>
 
       {/* Result node */}
       <rect x="260" y="148" width="220" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
       <text x="274" y="168" fontSize="10" className="fill-muted-foreground">result</text>
-      <text x="274" y="186" fontSize="13" fontWeight="600" className="fill-foreground">QF8 +6.6 dB SQNR</text>
-      <text x="274" y="201" fontSize="10" className="fill-muted-foreground">benchmark · hardware</text>
+      <text x="274" y="186" fontSize="13" fontWeight="600" className="fill-foreground">E = mc²</text>
+      <text x="274" y="201" fontSize="10" className="fill-muted-foreground">mass-energy · physics</text>
 
       {/* Definition node */}
       <rect x="500" y="148" width="180" height="64" rx="8" strokeWidth="1.5" className="fill-card stroke-border" />
       <text x="514" y="168" fontSize="10" className="fill-muted-foreground">definition</text>
-      <text x="514" y="186" fontSize="13" fontWeight="600" className="fill-foreground">Log-uniform</text>
-      <text x="514" y="201" fontSize="10" className="fill-muted-foreground">quantizer · decoding</text>
+      <text x="514" y="186" fontSize="13" fontWeight="600" className="fill-foreground">Spacetime Interval</text>
+      <text x="514" y="201" fontSize="10" className="fill-muted-foreground">metric · geometry</text>
     </svg>
   );
 }
@@ -312,18 +312,17 @@ export default function AboutPage() {
                 </div>
               </div>
               <p className="text-base font-semibold text-foreground">
-                Minimax NMSE Optimality of Log-Uniform Quantization
+                Pythagorean Theorem
               </p>
               <div className="mt-2.5 flex items-start gap-2">
                 <p className="flex-1 text-sm leading-relaxed text-muted-foreground">
-                  Establishes unique minimax optimality of log-uniform quantizers with formula
-                  ε²/12 + O(ε⁴) for any input distribution.
+                  In any right triangle with legs a, b and hypotenuse c: a² + b² = c².
                 </p>
                 <N n={3} />
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 <Tag className="h-3.5 w-3.5 text-muted-foreground" />
-                {["lean-verified", "minimax", "optimality", "quantization"].map((t) => (
+                {["lean-verified", "geometry", "euclidean", "triangles"].map((t) => (
                   <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
                 ))}
                 <N n={4} />
@@ -335,9 +334,9 @@ export default function AboutPage() {
                 <N n={5} />
               </div>
               <p className="font-mono text-xs leading-relaxed text-muted-foreground">
-                Among all N-level quantizers on a positive domain, the log-uniform quantizer uniquely
-                achieves NMSE* = ε²/12 + O(ε⁴) — the minimax optimum over all input distributions.
-                Proof verified in Lean 4 over 14,641 test cases.
+                For any right triangle with legs a and b and hypotenuse c, a² + b² = c².
+                One of the oldest results in mathematics, with over 370 distinct proofs.
+                Formally verified in Lean 4 via Mathlib.
               </p>
             </div>
             <div className="flex flex-wrap gap-x-6 gap-y-2 px-6 py-4 text-sm text-muted-foreground">
@@ -418,7 +417,7 @@ export default function AboutPage() {
             <KnowledgeGraph />
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Real entries from the platform — click any entry on <Link href="/explore" className="text-primary hover:opacity-70 transition-opacity underline underline-offset-2">the explore page</Link> to see its reference graph.
+            Illustrative example — click any entry on <Link href="/explore" className="text-primary hover:opacity-70 transition-opacity underline underline-offset-2">the explore page</Link> to see its reference graph.
           </p>
         </div>
       </section>
