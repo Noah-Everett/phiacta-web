@@ -209,7 +209,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           HERO
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-24 text-center">
+      <section className="px-6 py-28 text-center">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
             Research produces more<br className="hidden sm:block" /> than papers can hold.
@@ -235,7 +235,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           THE PROBLEM
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-20">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>The problem</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -265,7 +265,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           ENTRY ANATOMY
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>The entry</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -356,7 +356,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           KNOWLEDGE GRAPH
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-20">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>The graph</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -379,7 +379,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           WHO IT'S FOR
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>Who it&apos;s for</SectionLabel>
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -441,7 +441,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           VISION
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-24 text-center">
+      <section className="bg-muted/30 px-6 py-28 text-center">
         <div className="mx-auto max-w-3xl">
           <SectionLabel>The mission</SectionLabel>
           <blockquote className="mb-8 text-3xl font-bold leading-snug tracking-tight text-foreground sm:text-4xl">
@@ -476,7 +476,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           CORE PRINCIPLES
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>Core principles</SectionLabel>
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -501,7 +501,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           BUILD ON IT
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-20">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>For builders</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -559,7 +559,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           ARCHITECTURE + HOW ENTRIES WORK
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-20">
+      <section className="px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>How it&apos;s built</SectionLabel>
           <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -646,7 +646,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           WHAT IT'S NOT
       ════════════════════════════════════════════════════ */}
-      <section className="bg-muted/30 px-6 py-20">
+      <section className="bg-muted/30 px-6 py-24">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>Scope</SectionLabel>
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
@@ -666,7 +666,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           THE NAME + CONTACT
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-24 text-center">
+      <section className="px-6 py-28 text-center">
         <div className="mx-auto max-w-xl">
           <SectionLabel>The name</SectionLabel>
           <p className="mb-10 text-base leading-relaxed text-muted-foreground">
