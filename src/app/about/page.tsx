@@ -419,7 +419,7 @@ export default function AboutPage() {
             <KnowledgeGraph />
           </div>
           <p className="mt-4 text-center text-xs text-muted-foreground">
-            Illustrative example — click any entry on <Link href="/explore" className="text-primary hover:opacity-70 transition-opacity underline underline-offset-2">the explore page</Link> to see its reference graph.
+            Illustrative example — click any entry on <Link href="/explore?view=graph" className="text-primary hover:opacity-70 transition-opacity underline underline-offset-2">the explore page</Link> to see its reference graph.
           </p>
         </div>
       </section>
