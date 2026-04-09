@@ -498,17 +498,18 @@ export default function AboutPage() {
             inside static PDFs. Social platforms bury truth in noise. Encyclopedias reflect a single
             editorial perspective. None of them were designed with provability in mind.
           </p>
-          <div className="grid gap-5 text-left sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card p-6">
-              <Badge variant="secondary" className="mb-3">Near-term</Badge>
+          <div className="flex flex-col items-start gap-8 text-left sm:flex-row sm:gap-0">
+            <div className="flex-1 sm:pr-10">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Near-term</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Phiacta replaces the academic paper. Researchers publish individual entries backed
                 by data, code, and proofs — no more monolithic PDFs. Each entry is citable,
                 reviewable, and updatable without touching anything else.
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <Badge variant="secondary" className="mb-3">Long-term</Badge>
+            <div className="hidden w-px self-stretch bg-border sm:block" />
+            <div className="flex-1 sm:pl-10">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-primary">Long-term</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 A general knowledge layer for the internet — a more trustworthy, more structured
                 alternative to how knowledge is shared across X, Reddit, Wikipedia, and Stack
