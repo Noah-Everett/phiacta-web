@@ -588,12 +588,14 @@ export function getCompiledPdfUrl(entryId: string): string {
 export async function listJobs(params?: {
   status?: string;
   job_type?: string;
+  entity_id?: string;
   limit?: number;
   cursor?: string | null;
 }): Promise<JobListResponse> {
   const q = new URLSearchParams();
   if (params?.status) q.set("status", params.status);
   if (params?.job_type) q.set("job_type", params.job_type);
+  if (params?.entity_id) q.set("entity_id", params.entity_id);
   if (params?.limit) q.set("limit", String(params.limit));
   if (params?.cursor) q.set("cursor", params.cursor);
   return authFetch<JobListResponse>(`/v1/jobs?${q.toString()}`);

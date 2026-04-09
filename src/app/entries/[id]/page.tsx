@@ -38,6 +38,7 @@ import {
   Activity,
   Search,
   Expand,
+  XCircle,
 } from "lucide-react";
 import {
   getEntryFiles,
@@ -419,7 +420,9 @@ export default function EntryPage() {
 
   // Job status polling
   const [activeJobs, setActiveJobs] = useState<JobListItem[]>([]);
+  const [failedCompilationJob, setFailedCompilationJob] = useState<JobListItem | null>(null);
   const jobPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialJobCheckRef = useRef(false);
 
   // Create issue
   const [creatingIssue, setCreatingIssue] = useState(false);
@@ -474,15 +477,29 @@ export default function EntryPage() {
 
     const poll = async () => {
       try {
-        const result = await listJobs({ limit: 20 });
-        const active = result.items.filter((j) => j.entry_id === entryId);
+        const result = await listJobs({ entity_id: entryId, limit: 20 });
+        const active = result.items;
         setActiveJobs(active);
         if (active.length > 0) {
           // Still running — poll again in 2s
           jobPollRef.current = setTimeout(poll, 2000);
         } else {
-          // All done — refresh entry to pick up compiledInfo update
+          // All done — check for failures (only if no completed job exists), then refresh entry
           setActiveJobs([]);
+          try {
+            const terminalResult = await listJobs({
+              entity_id: entryId,
+              job_type: "compiled_content",
+              status: "completed,failed",
+              limit: 10,
+            });
+            const hasCompleted = terminalResult.items.some((j) => j.status === "completed");
+            const firstFailed = terminalResult.items.find((j) => j.status === "failed");
+            // Only show failure if no completed job exists (completed = retried successfully)
+            setFailedCompilationJob(!hasCompleted && firstFailed ? firstFailed : null);
+          } catch {
+            setFailedCompilationJob(null);
+          }
           await refetchEntry();
         }
       } catch {
@@ -503,6 +520,32 @@ export default function EntryPage() {
     fetchContent(resolvedId);
     fetchActivity(resolvedId);
   }, [resolvedId, entry, fetchFiles, fetchContent, fetchActivity]);
+
+  // On initial load, check for in-progress or failed compilation jobs
+  useEffect(() => {
+    if (!resolvedId || !entry || initialJobCheckRef.current) return;
+    if (compiledInfo !== null) return; // already compiled — no need to check
+    initialJobCheckRef.current = true;
+
+    (async () => {
+      try {
+        const activeResult = await listJobs({ entity_id: resolvedId, limit: 20 });
+        if (activeResult.items.length > 0) {
+          pollJobs(resolvedId);
+          return;
+        }
+        const failedResult = await listJobs({
+          entity_id: resolvedId,
+          job_type: "compiled_content",
+          status: "failed",
+          limit: 5,
+        });
+        setFailedCompilationJob(failedResult.items[0] ?? null);
+      } catch {
+        // Not authenticated or no jobs — ignore
+      }
+    })();
+  }, [resolvedId, entry, compiledInfo, pollJobs]);
 
   // Clear page-local sub-states when edit mode exits
   useEffect(() => {
@@ -726,6 +769,17 @@ export default function EntryPage() {
                         {activeJobs.some((j) => j.job_type === "compiled_content")
                           ? "PDF compiling\u2026"
                           : `Processing\u2026 (${activeJobs.length} job${activeJobs.length > 1 ? "s" : ""})`}
+                      </span>
+                    </div>
+                  )}
+                  {failedCompilationJob && !compiledInfo && (
+                    <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
+                      <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        PDF compilation failed.
+                        {failedCompilationJob.last_error && (
+                          <> Error: <code className="ml-1 font-mono text-xs">{failedCompilationJob.last_error.slice(0, 200)}</code></>
+                        )}
                       </span>
                     </div>
                   )}

@@ -318,7 +318,7 @@ export interface JobListItem {
   id: string;
   job_type: string;
   submitted_by: string;
-  entry_id: string | null;
+  entity_id: string | null;
   status: "pending" | "running" | "completed" | "failed";
   attempts: number;
   last_error: string | null;
