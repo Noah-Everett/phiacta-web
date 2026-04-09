@@ -413,7 +413,7 @@ export default function AboutPage() {
                 over a clean REST API.
               </p>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-center gap-2"><Puzzle className="h-3.5 w-3.5 text-primary shrink-0" />MCP server — Claude, Cursor, Windsurf</li>
+                <li className="flex items-center gap-2"><Puzzle className="h-3.5 w-3.5 text-primary shrink-0" />MCP server — Claude, Cursor, Codex</li>
                 <li className="flex items-center gap-2"><Network className="h-3.5 w-3.5 text-primary shrink-0" />Reference graph traversal API</li>
                 <li className="flex items-center gap-2"><Database className="h-3.5 w-3.5 text-primary shrink-0" />Full-text search over all entries</li>
               </ul>
@@ -543,7 +543,7 @@ export default function AboutPage() {
             <div className="rounded-xl border border-border bg-card p-6">
               <p className="mb-1.5 text-sm font-semibold text-foreground">MCP Server</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Connect Claude, Cursor, Windsurf, or any MCP-compatible agent — and give it
+                Connect Claude, Cursor, Codex, or any MCP-compatible agent — and give it
                 full platform access with tool schemas and documentation built in.
               </p>
             </div>
