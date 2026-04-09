@@ -143,7 +143,7 @@ const SCENARIOS = [
 const NOT_LIST = [
   {
     label: "Not a content generator",
-    body: "Phiacta does not produce summaries, papers, or visualizations. That is the job of extensions. Phiacta's job is to maintain a clean, permanent, queryable store of entries.",
+    body: "Phiacta does not produce summaries, papers, or visualizations. That is the job of extensions and tools. Phiacta's job is to maintain a clean, permanent, queryable store of entries.",
   },
   {
     label: "Not a social network",
