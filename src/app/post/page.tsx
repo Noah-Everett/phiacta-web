@@ -107,6 +107,19 @@ export default function PostPage() {
   const [latexFiles, setLatexFiles] = useState<{ name: string; data: Uint8Array; isMain: boolean }[]>([]);
   const [latexDragOver, setLatexDragOver] = useState(false);
   const [latexError, setLatexError] = useState("");
+
+  // Processing steps — shown between submit and success
+  type StepStatus = "pending" | "active" | "done" | "warning" | "error";
+  interface ProcessingStep {
+    label: string;
+    status: StepStatus;
+    detail?: string;
+  }
+  const [steps, setSteps] = useState<ProcessingStep[]>([]);
+
+  function updateStep(index: number, updates: Partial<ProcessingStep>) {
+    setSteps((prev) => prev.map((s, i) => i === index ? { ...s, ...updates } : s));
+  }
   const customInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latexInputRef = useRef<HTMLInputElement>(null);
@@ -431,9 +444,29 @@ export default function PostPage() {
     setError("");
     setSuccess(false);
     setSubmitting(true);
+
+    const hasLatexProject = contentFormat === "latex" && latexFiles.length > 0;
+    const hasFiles = files.length > 0 || hasLatexProject;
+    const hasRefs = refs.length > 0;
+    const hasTags = tags.length > 0;
+
+    // Build step list
+    const initialSteps: ProcessingStep[] = [
+      { label: "Creating entry", status: "pending" },
+    ];
+    if (hasTags) initialSteps.push({ label: "Setting tags", status: "pending" });
+    if (hasFiles) {
+      initialSteps.push({ label: "Waiting for repository", status: "pending" });
+      initialSteps.push({ label: "Uploading files", status: "pending" });
+    }
+    if (hasRefs) initialSteps.push({ label: "Creating references", status: "pending" });
+    setSteps(initialSteps);
+
+    let stepIdx = 0;
+
     try {
-      // For LaTeX with project files, don't send content body — files are the source
-      const hasLatexProject = contentFormat === "latex" && latexFiles.length > 0;
+      // Step: Create entry
+      updateStep(stepIdx, { status: "active" });
       const entry = await createEntry({
         title,
         content: hasLatexProject ? null : (content || null),
@@ -441,26 +474,39 @@ export default function PostPage() {
         entry_type: effectiveType || null,
         summary: summary || null,
       });
+      updateStep(stepIdx, { status: "done", detail: entry.id.slice(0, 8) });
+      stepIdx++;
 
-      if (tags.length > 0 && entry.id) {
+      // Step: Tags
+      if (hasTags) {
+        updateStep(stepIdx, { status: "active", detail: `${tags.length} tag${tags.length > 1 ? "s" : ""}` });
         try {
           await setEntryTags(entry.id, tags);
+          updateStep(stepIdx, { status: "done" });
         } catch {
-          setTagWarning("Entry published, but tags could not be saved. You can add them from the entry page.");
+          setTagWarning("Tags could not be saved. You can add them from the entry page.");
+          updateStep(stepIdx, { status: "warning", detail: "Failed" });
         }
+        stepIdx++;
       }
 
-      // Upload LaTeX project files and/or regular files
-      const hasFiles = files.length > 0 || hasLatexProject;
+      // Steps: Repo wait + file upload
       if (hasFiles && entry.id) {
+        // Wait for repo
+        updateStep(stepIdx, { status: "active" });
         const repoReady = await waitForRepo(entry.id);
         if (!repoReady) {
-          setFileWarning("Entry published, but the repository wasn't ready in time. Upload files from the entry's Files tab.");
+          setFileWarning("Repository wasn't ready in time. Upload files from the entry's Files tab.");
+          updateStep(stepIdx, { status: "warning", detail: "Timed out" });
+          stepIdx++;
+          updateStep(stepIdx, { status: "warning", detail: "Skipped" });
+          stepIdx++;
         } else {
-          // Build list of all files to upload
-          const bulkFiles: { path: string; data: Blob }[] = [];
+          updateStep(stepIdx, { status: "done" });
+          stepIdx++;
 
-          // LaTeX project files → .phiacta/content/ or .phiacta/content.tex
+          // Upload files
+          const bulkFiles: { path: string; data: Blob }[] = [];
           if (hasLatexProject) {
             const isMultiFile = latexFiles.length > 1;
             for (const lf of latexFiles) {
@@ -470,16 +516,16 @@ export default function PostPage() {
               bulkFiles.push({ path: destPath, data: new Blob([lf.data as BlobPart]) });
             }
           }
-
-          // Regular attached files
           for (const { file, path } of files) {
             bulkFiles.push({ path, data: file });
           }
 
-          // Upload in batches — Forgejo limits commits to 1000 files,
-          // and large single requests can freeze the browser.
+          const totalFiles = bulkFiles.length;
+          updateStep(stepIdx, { status: "active", detail: `0 / ${totalFiles} files` });
+
           const BATCH_SIZE = 500;
           let failedBatches = 0;
+          let uploadedCount = 0;
           const totalBatches = Math.ceil(bulkFiles.length / BATCH_SIZE);
           for (let i = 0; i < bulkFiles.length; i += BATCH_SIZE) {
             const batch = bulkFiles.slice(i, i + BATCH_SIZE);
@@ -489,18 +535,27 @@ export default function PostPage() {
               : `Upload batch ${batchNum}/${totalBatches} (${batch.length} files)`;
             try {
               await postEntryFiles(entry.id, batch, msg);
+              uploadedCount += batch.length;
+              updateStep(stepIdx, { detail: `${uploadedCount} / ${totalFiles} files` });
             } catch {
               failedBatches++;
+              uploadedCount += batch.length;
+              updateStep(stepIdx, { detail: `${uploadedCount} / ${totalFiles} files` });
             }
           }
           if (failedBatches > 0) {
-            setFileWarning(`Entry published, but ${failedBatches} batch(es) of files could not be uploaded. You can retry from the entry's Files tab.`);
+            setFileWarning(`${failedBatches} batch(es) of files could not be uploaded. You can retry from the entry's Files tab.`);
+            updateStep(stepIdx, { status: "warning" });
+          } else {
+            updateStep(stepIdx, { status: "done", detail: `${totalFiles} file${totalFiles > 1 ? "s" : ""}` });
           }
+          stepIdx++;
         }
       }
 
-      // Create references
-      if (refs.length > 0 && entry.id) {
+      // Step: References
+      if (hasRefs && entry.id) {
+        updateStep(stepIdx, { status: "active", detail: `${refs.length} reference${refs.length > 1 ? "s" : ""}` });
         const failedRefs: string[] = [];
         for (const ref of refs) {
           try {
@@ -510,8 +565,12 @@ export default function PostPage() {
           }
         }
         if (failedRefs.length > 0) {
-          setRefWarning(`Entry published, but ${failedRefs.length} reference${failedRefs.length > 1 ? "s" : ""} could not be created.`);
+          setRefWarning(`${failedRefs.length} reference${failedRefs.length > 1 ? "s" : ""} could not be created.`);
+          updateStep(stepIdx, { status: "warning", detail: `${refs.length - failedRefs.length}/${refs.length} created` });
+        } else {
+          updateStep(stepIdx, { status: "done" });
         }
+        stepIdx++;
       }
 
       setCreatedEntryId(entry.id);
@@ -530,6 +589,8 @@ export default function PostPage() {
       setRefs([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to submit entry.");
+      // Mark current step as error
+      setSteps((prev) => prev.map((s, i) => i === stepIdx ? { ...s, status: "error" as StepStatus } : s));
     } finally {
       setSubmitting(false);
     }
@@ -539,6 +600,80 @@ export default function PostPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <p className="text-sm text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  // Processing progress
+  if (submitting && steps.length > 0) {
+    return (
+      <div className="mx-auto max-w-lg px-6 py-16">
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+          <h1 className="mb-2 text-2xl font-bold text-foreground">Publishing your entry</h1>
+          <p className="text-sm text-muted-foreground">
+            This may take a moment while we set everything up.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {steps.map((step, i) => (
+            <div
+              key={i}
+              className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-all ${
+                step.status === "active"
+                  ? "border-primary/30 bg-primary/5"
+                  : step.status === "done"
+                  ? "border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/30"
+                  : step.status === "warning"
+                  ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/30"
+                  : step.status === "error"
+                  ? "border-destructive/20 bg-destructive/5"
+                  : "border-border bg-card opacity-50"
+              }`}
+            >
+              <div className="shrink-0">
+                {step.status === "active" && (
+                  <Loader2 className="h-4 w-4 text-primary animate-spin" />
+                )}
+                {step.status === "done" && (
+                  <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                )}
+                {step.status === "warning" && (
+                  <div className="h-4 w-4 rounded-full border-2 border-amber-500 flex items-center justify-center">
+                    <span className="text-[8px] font-bold text-amber-500">!</span>
+                  </div>
+                )}
+                {step.status === "error" && (
+                  <X className="h-4 w-4 text-destructive" />
+                )}
+                {step.status === "pending" && (
+                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
+                )}
+              </div>
+              <span className={`text-sm font-medium ${
+                step.status === "active" ? "text-foreground" :
+                step.status === "done" ? "text-green-700 dark:text-green-300" :
+                step.status === "warning" ? "text-amber-700 dark:text-amber-300" :
+                step.status === "error" ? "text-destructive" :
+                "text-muted-foreground"
+              }`}>
+                {step.label}
+              </span>
+              {step.detail && (
+                <span className="ml-auto text-xs text-muted-foreground">{step.detail}</span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {error && (
+          <div className="mt-6 rounded-lg border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        )}
       </div>
     );
   }
