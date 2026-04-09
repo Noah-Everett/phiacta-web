@@ -48,8 +48,6 @@ import {
   Activity,
   Search,
   Expand,
-  FileOutput,
-  Download,
 } from "lucide-react";
 import {
   getEntry,
@@ -1063,40 +1061,12 @@ export default function EntryPage({ params }: EntryPageProps) {
               ) : (
                 <div className="space-y-4">
                   {compiledInfo && resolvedId ? (
-                    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <FileOutput className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm font-medium text-foreground">Compiled PDF</p>
-                          <Badge
-                            variant="outline"
-                            className={
-                              compiledInfo.source_sha === entry.current_head_sha
-                                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                                : "text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-300 dark:border-amber-800 dark:bg-amber-950/50"
-                            }
-                          >
-                            {compiledInfo.source_sha === entry.current_head_sha ? "up to date" : "stale"}
-                          </Badge>
-                        </div>
-                        <a
-                          href={getCompiledPdfUrl(resolvedId)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          Download
-                        </a>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {formatBytes(compiledInfo.file_size)} &middot; compiled {new Date(compiledInfo.compiled_at).toLocaleString()}
-                      </p>
+                    <div>
                       <iframe
                         key={compiledInfo.compiled_at}
                         src={getCompiledPdfUrl(resolvedId)}
-                        className="w-full rounded-lg border border-border bg-muted/30"
-                        style={{ height: "700px" }}
+                        className="w-full rounded-xl border border-border bg-muted/30"
+                        style={{ height: "750px" }}
                         title="Compiled PDF"
                       />
                     </div>
