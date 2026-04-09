@@ -574,20 +574,7 @@ export async function createEditProposal(
   });
 }
 
-// --- LaTeX Compilation ---
-
-export interface CompileResponse {
-  success: boolean;
-  log: string;
-  file_size: number | null;
-}
-
-export async function compileLatex(entryId: string): Promise<CompileResponse> {
-  return authFetch<CompileResponse>("/v1/tools/latex/compile", {
-    method: "POST",
-    body: JSON.stringify({ entry_id: entryId }),
-  });
-}
+// --- Compiled Content ---
 
 /** URL to fetch the compiled PDF for an entry via the compiled_content extension. */
 export function getCompiledPdfUrl(entryId: string): string {

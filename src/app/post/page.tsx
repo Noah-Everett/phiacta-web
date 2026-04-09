@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
-import { createEntry, getEntry, setEntryTags, putEntryFile, postEntryFiles, createReference, searchEntries, compileLatex } from "@/lib/api";
+import { createEntry, getEntry, setEntryTags, putEntryFile, postEntryFiles, createReference, searchEntries } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -107,7 +107,6 @@ export default function PostPage() {
   const [latexFiles, setLatexFiles] = useState<{ name: string; data: Uint8Array; isMain: boolean }[]>([]);
   const [latexDragOver, setLatexDragOver] = useState(false);
   const [latexError, setLatexError] = useState("");
-  const [compileWarning, setCompileWarning] = useState("");
   const customInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const latexInputRef = useRef<HTMLInputElement>(null);
@@ -431,7 +430,6 @@ export default function PostPage() {
     e.preventDefault();
     setError("");
     setSuccess(false);
-    setCompileWarning("");
     setSubmitting(true);
     try {
       // For LaTeX with project files, don't send content body — files are the source
@@ -469,7 +467,7 @@ export default function PostPage() {
               const destPath = isMultiFile
                 ? `.phiacta/content/${lf.isMain ? "main.tex" : lf.name}`
                 : ".phiacta/content.tex";
-              bulkFiles.push({ path: destPath, data: new Blob([lf.data]) });
+              bulkFiles.push({ path: destPath, data: new Blob([lf.data as BlobPart]) });
             }
           }
 
@@ -513,18 +511,6 @@ export default function PostPage() {
         }
         if (failedRefs.length > 0) {
           setRefWarning(`Entry published, but ${failedRefs.length} reference${failedRefs.length > 1 ? "s" : ""} could not be created.`);
-        }
-      }
-
-      // Auto-compile LaTeX to PDF
-      if (contentFormat === "latex" && (hasLatexProject || content) && entry.id) {
-        try {
-          const result = await compileLatex(entry.id);
-          if (!result.success) {
-            setCompileWarning("Entry published, but PDF compilation failed. You can retry from the entry page.");
-          }
-        } catch {
-          setCompileWarning("Entry published, but PDF compilation could not be started. You can compile from the entry page.");
         }
       }
 
@@ -573,7 +559,7 @@ export default function PostPage() {
             You can add files, manage references, and accept edit proposals from the entry page.
           </p>
 
-          {(tagWarning || fileWarning || refWarning || compileWarning) && (
+          {(tagWarning || fileWarning || refWarning) && (
             <div className="mb-6 w-full space-y-2">
               {tagWarning && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
@@ -588,11 +574,6 @@ export default function PostPage() {
               {refWarning && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
                   {refWarning}
-                </div>
-              )}
-              {compileWarning && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
-                  {compileWarning}
                 </div>
               )}
             </div>
@@ -615,8 +596,7 @@ export default function PostPage() {
                 setTagWarning("");
                 setFileWarning("");
                 setRefWarning("");
-                setCompileWarning("");
-              }}
+                          }}
             >
               <Plus className="mr-2 h-4 w-4" />
               Publish another

@@ -69,7 +69,6 @@ import {
   createIssue,
   createEditProposal,
   getActivity,
-  compileLatex,
   getCompiledPdfUrl,
   ApiError,
   API_URL,
@@ -478,10 +477,7 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [issueSaving, setIssueSaving] = useState(false);
   const [issueError, setIssueError] = useState<string | null>(null);
 
-  // LaTeX compile
-  const [compiling, setCompiling] = useState(false);
-  const [compileLog, setCompileLog] = useState<string | null>(null);
-  const [compileError, setCompileError] = useState<string | null>(null);
+  // Compiled content (auto-generated on ingestion for LaTeX entries)
   const [compiledInfo, setCompiledInfo] = useState<CompiledContentInfo | null>(null);
 
   // Create edit proposal
@@ -553,6 +549,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     getEntry(resolvedId)
       .then((data) => {
         setEntry(data);
+        setCompiledInfo(data.compiled_content ?? null);
         getUser(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
       })
       .catch((err) => {
@@ -584,27 +581,6 @@ export default function EntryPage({ params }: EntryPageProps) {
     setNewTagInput("");
     setSaveError(null);
     setEditing(true);
-  };
-
-  const handleCompile = async () => {
-    if (!resolvedId) return;
-    setCompiling(true);
-    setCompileLog(null);
-    setCompileError(null);
-    try {
-      const result = await compileLatex(resolvedId);
-      setCompileLog(result.log);
-      if (result.success) {
-        // Re-fetch entry to get updated compiled_content metadata
-        await fetchEntry(resolvedId);
-      } else {
-        setCompileError("Compilation failed — see log below");
-      }
-    } catch (err) {
-      setCompileError(err instanceof Error ? err.message : "Compilation failed");
-    } finally {
-      setCompiling(false);
-    }
   };
 
   const exitEditMode = () => {
@@ -1086,112 +1062,60 @@ export default function EntryPage({ params }: EntryPageProps) {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="rounded-xl border border-border bg-card p-6">
-                    {contentText && contentFormat === "tex" ? (
-                      <LatexContent
-                        content={contentText}
-                        className="text-sm leading-relaxed text-card-foreground"
-                        entryId={entry.id}
-                      />
-                    ) : contentText ? (
-                      <MarkdownContent
-                        content={contentText}
-                        className="text-sm leading-relaxed text-card-foreground"
-                        entryId={entry.id}
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
-                    )}
-                  </div>
-
-                  {/* LaTeX compile + PDF viewer */}
-                  {contentFormat === "tex" && (
+                  {compiledInfo && resolvedId ? (
                     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <FileOutput className="h-4 w-4 text-muted-foreground" />
-                          <p className="text-sm font-medium text-foreground">PDF Output</p>
-                          {compiledInfo && (
-                            <Badge
-                              variant="outline"
-                              className={
-                                compiledInfo.source_sha === entry.current_head_sha
-                                  ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
-                                  : "text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-300 dark:border-amber-800 dark:bg-amber-950/50"
-                              }
-                            >
-                              {compiledInfo.source_sha === entry.current_head_sha ? "up to date" : "stale"}
-                            </Badge>
-                          )}
-                        </div>
-                        {isAuthenticated && (
-                          <Button
+                          <p className="text-sm font-medium text-foreground">Compiled PDF</p>
+                          <Badge
                             variant="outline"
-                            size="sm"
-                            className="gap-1.5"
-                            onClick={handleCompile}
-                            disabled={compiling}
+                            className={
+                              compiledInfo.source_sha === entry.current_head_sha
+                                ? "text-green-700 border-green-200 bg-green-50 dark:text-green-300 dark:border-green-800 dark:bg-green-950/50"
+                                : "text-amber-700 border-amber-200 bg-amber-50 dark:text-amber-300 dark:border-amber-800 dark:bg-amber-950/50"
+                            }
                           >
-                            {compiling ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <FileOutput className="h-3.5 w-3.5" />
-                            )}
-                            {compiling ? "Compiling..." : compiledInfo ? "Recompile" : "Compile PDF"}
-                          </Button>
-                        )}
+                            {compiledInfo.source_sha === entry.current_head_sha ? "up to date" : "stale"}
+                          </Badge>
+                        </div>
+                        <a
+                          href={getCompiledPdfUrl(resolvedId)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Download
+                        </a>
                       </div>
-
-                      {compiledInfo && (
-                        <p className="text-xs text-muted-foreground">
-                          {formatBytes(compiledInfo.file_size)} &middot; compiled {new Date(compiledInfo.compiled_at).toLocaleString()}
-                        </p>
-                      )}
-
-                      {compileError && (
-                        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5">
-                          <p className="text-xs text-destructive">{compileError}</p>
-                        </div>
-                      )}
-
-                      {compileLog && (
-                        <details className="text-xs">
-                          <summary className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
-                            Compilation log
-                          </summary>
-                          <pre className="mt-2 max-h-48 overflow-auto rounded-md bg-muted p-3 font-mono text-[11px] text-muted-foreground whitespace-pre-wrap">
-                            {compileLog}
-                          </pre>
-                        </details>
-                      )}
-
-                      {compiledInfo && resolvedId && (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <a
-                              href={getCompiledPdfUrl(resolvedId)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-                            >
-                              <Download className="h-3.5 w-3.5" />
-                              Download PDF
-                            </a>
-                          </div>
-                          <iframe
-                            key={compiledInfo.compiled_at}
-                            src={getCompiledPdfUrl(resolvedId)}
-                            className="w-full rounded-lg border border-border bg-muted/30"
-                            style={{ height: "700px" }}
-                            title="Compiled PDF"
-                          />
-                        </div>
-                      )}
-
-                      {!compiledInfo && !compiling && !compileError && (
-                        <p className="text-xs text-muted-foreground">
-                          No compiled PDF yet.{isAuthenticated ? " Click Compile PDF to generate one." : " Sign in to compile."}
-                        </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatBytes(compiledInfo.file_size)} &middot; compiled {new Date(compiledInfo.compiled_at).toLocaleString()}
+                      </p>
+                      <iframe
+                        key={compiledInfo.compiled_at}
+                        src={getCompiledPdfUrl(resolvedId)}
+                        className="w-full rounded-lg border border-border bg-muted/30"
+                        style={{ height: "700px" }}
+                        title="Compiled PDF"
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-border bg-card p-6">
+                      {contentText && contentFormat === "tex" ? (
+                        <LatexContent
+                          content={contentText}
+                          className="text-sm leading-relaxed text-card-foreground"
+                          entryId={entry.id}
+                        />
+                      ) : contentText ? (
+                        <MarkdownContent
+                          content={contentText}
+                          className="text-sm leading-relaxed text-card-foreground"
+                          entryId={entry.id}
+                        />
+                      ) : (
+                        <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
                       )}
                     </div>
                   )}
