@@ -473,7 +473,7 @@ export default function PostPage() {
         }
       }
 
-      // Auto-set format and type
+      // Auto-set format, mode, and type
       setContentFormat("latex");
       setEntryType("paper");
       setIsCustomType(false);
@@ -870,18 +870,18 @@ export default function PostPage() {
               setArxivDragOver(false);
               if (e.dataTransfer.files) handleArxivImport(e.dataTransfer.files);
             }}
-            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`inline-flex items-center gap-2 rounded-md border px-5 py-2 text-sm font-medium transition-colors ${
               arxivDragOver
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-foreground hover:bg-accent"
             }`}
           >
             {arxivImporting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <FileArchive className="h-3.5 w-3.5" />
+              <FileArchive className="h-4 w-4" />
             )}
-            {arxivImporting ? "Importing..." : "Import arXiv"}
+            {arxivImporting ? "Importing..." : "Import from arXiv"}
           </button>
         </div>
       </div>
@@ -1009,7 +1009,7 @@ export default function PostPage() {
                     setLatexDragOver(false);
                     if (e.dataTransfer.files) processLatexFiles(e.dataTransfer.files);
                   }}
-                  className={`flex w-full flex-col items-center justify-center gap-2 rounded-md border border-dashed py-10 text-sm transition-colors ${
+                  className={`flex w-full flex-col items-center justify-center gap-1.5 rounded-md border border-dashed py-8 text-sm transition-colors ${
                     latexDragOver
                       ? "border-primary bg-primary/5 text-foreground"
                       : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
@@ -1022,86 +1022,75 @@ export default function PostPage() {
               )}
 
               {latexFiles.length > 0 && (
-                <div className="rounded-md border border-border">
-                  <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
-                    <div className="flex items-center gap-2">
-                      <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="text-xs font-medium text-foreground">
-                        {latexFiles.length} file{latexFiles.length !== 1 ? "s" : ""}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {latexFiles.filter((f) => f.name.endsWith(".tex")).length} .tex
-                        {latexFiles.some((f) => f.name.endsWith(".bib")) && ", .bib"}
-                        {latexFiles.some((f) => /\.(png|jpg|jpeg|pdf|eps|svg)$/i.test(f.name)) && ", figures"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => latexInputRef.current?.click()}
-                      className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      + Add files
-                    </button>
-                  </div>
-                  <div className="divide-y divide-border">
-                    {latexFiles
-                      .sort((a, b) => {
-                        if (a.isMain) return -1;
-                        if (b.isMain) return 1;
-                        const aIsTex = a.name.endsWith(".tex") ? 0 : 1;
-                        const bIsTex = b.name.endsWith(".tex") ? 0 : 1;
-                        if (aIsTex !== bIsTex) return aIsTex - bIsTex;
-                        return a.name.localeCompare(b.name);
-                      })
-                      .map((f) => (
-                        <div key={f.name} className="flex items-center gap-2 px-3 py-1.5">
-                          <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
-                          <span className="min-w-0 flex-1 truncate text-xs font-mono text-foreground">{f.name}</span>
-                          {f.isMain && (
-                            <Badge variant="secondary" className="shrink-0 h-4 text-[10px] px-1.5">main</Badge>
-                          )}
-                          {f.name.endsWith(".tex") && !f.isMain && (
-                            <button
-                              type="button"
-                              onClick={() => setMainTexFile(f.name)}
-                              className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                            >
-                              set as main
-                            </button>
-                          )}
-                          <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
-                            {formatFileSize(f.data.length)}
+                    <div className="rounded-md border border-border">
+                      <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+                          <span className="text-xs font-medium text-foreground">
+                            {latexFiles.length} file{latexFiles.length !== 1 ? "s" : ""}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => removeLatexFile(f.name)}
-                            className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
+                          <span className="text-xs text-muted-foreground">
+                            {latexFiles.filter((f) => f.name.endsWith(".tex")).length} .tex
+                            {latexFiles.some((f) => f.name.endsWith(".bib")) && ", .bib"}
+                            {latexFiles.some((f) => /\.(png|jpg|jpeg|pdf|eps|svg)$/i.test(f.name)) && ", figures"}
+                          </span>
                         </div>
-                      ))}
-                  </div>
-                  {!latexFiles.some((f) => f.isMain) && (
-                    <div className="border-t border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/50">
-                      <p className="text-xs text-amber-800 dark:text-amber-300">
-                        No main .tex file detected. Click &quot;set as main&quot; on the file with \documentclass.
-                      </p>
+                        <button
+                          type="button"
+                          onClick={() => latexInputRef.current?.click()}
+                          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                          + Add files
+                        </button>
+                      </div>
+                      <div className="divide-y divide-border">
+                        {latexFiles
+                          .sort((a, b) => {
+                            if (a.isMain) return -1;
+                            if (b.isMain) return 1;
+                            const aIsTex = a.name.endsWith(".tex") ? 0 : 1;
+                            const bIsTex = b.name.endsWith(".tex") ? 0 : 1;
+                            if (aIsTex !== bIsTex) return aIsTex - bIsTex;
+                            return a.name.localeCompare(b.name);
+                          })
+                          .map((f) => (
+                            <div key={f.name} className="flex items-center gap-2 px-3 py-1.5">
+                              <FileText className="h-3 w-3 shrink-0 text-muted-foreground" />
+                              <span className="min-w-0 flex-1 truncate text-xs font-mono text-foreground">{f.name}</span>
+                              {f.isMain && (
+                                <Badge variant="secondary" className="shrink-0 h-4 text-[10px] px-1.5">main</Badge>
+                              )}
+                              {f.name.endsWith(".tex") && !f.isMain && (
+                                <button
+                                  type="button"
+                                  onClick={() => setMainTexFile(f.name)}
+                                  className="shrink-0 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                                >
+                                  set as main
+                                </button>
+                              )}
+                              <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+                                {formatFileSize(f.data.length)}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeLatexFile(f.name)}
+                                className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                      </div>
+                      {!latexFiles.some((f) => f.isMain) && (
+                        <div className="border-t border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800 dark:bg-amber-950/50">
+                          <p className="text-xs text-amber-800 dark:text-amber-300">
+                            No main .tex file detected. Click &quot;set as main&quot; on the file with \documentclass.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
-
-              {latexFiles.length === 0 && (
-                <textarea
-                  id="content"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={10}
-                  placeholder={"\\documentclass{article}\n\\begin{document}\n\nYour content here...\n\n\\end{document}"}
-                  className="w-full resize-y rounded-md border border-input bg-background px-3 py-2.5 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20 font-mono"
-                />
-              )}
             </div>
           ) : (
             <textarea
