@@ -235,7 +235,7 @@ export default function AboutPage() {
       <section className="px-6 py-28 text-center">
         <div className="mx-auto max-w-3xl">
           <h1 className="mb-5 text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-            Research produces more<br className="hidden sm:block" /> than papers can hold.
+            Share what you know,<br className="hidden sm:block" /> not just what you can publish.
           </h1>
           <p className="mb-8 text-lg leading-relaxed text-muted-foreground">
             Phiacta is an open platform where knowledge is stored as versioned, citable entries —
