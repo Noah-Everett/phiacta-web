@@ -27,6 +27,8 @@ import type {
   PluginInfo,
   DocListItem,
   DocDetail,
+  JobListItem,
+  JobListResponse,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -579,6 +581,22 @@ export async function createEditProposal(
 /** URL to fetch the compiled PDF for an entry via the compiled_content extension. */
 export function getCompiledPdfUrl(entryId: string): string {
   return `${API_URL}/v1/extensions/compiled_content/${entryId}?format=pdf`;
+}
+
+// --- Jobs ---
+
+export async function listJobs(params?: {
+  status?: string;
+  job_type?: string;
+  limit?: number;
+  cursor?: string | null;
+}): Promise<JobListResponse> {
+  const q = new URLSearchParams();
+  if (params?.status) q.set("status", params.status);
+  if (params?.job_type) q.set("job_type", params.job_type);
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  return authFetch<JobListResponse>(`/v1/jobs?${q.toString()}`);
 }
 
 // --- Plugins ---

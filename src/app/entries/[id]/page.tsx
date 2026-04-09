@@ -52,6 +52,7 @@ import {
   createEditProposal,
   getActivity,
   getCompiledPdfUrl,
+  listJobs,
   API_URL,
   getStoredToken,
 } from "@/lib/api";
@@ -62,6 +63,7 @@ import type {
   FileListItem,
   ActivityItem,
   SearchResultItem,
+  JobListItem,
 } from "@/lib/types";
 import GraphPanel from "@/components/GraphPanel";
 import { useEntryContext } from "./entry-context";
@@ -415,6 +417,10 @@ export default function EntryPage() {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Job status polling
+  const [activeJobs, setActiveJobs] = useState<JobListItem[]>([]);
+  const jobPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Create issue
   const [creatingIssue, setCreatingIssue] = useState(false);
   const [issueTitle, setIssueTitle] = useState("");
@@ -462,6 +468,32 @@ export default function EntryPage() {
       .finally(() => setActivityLoading(false));
   }, []);
 
+  // Poll jobs for this entry until none are pending/running, then refresh compiledInfo
+  const pollJobs = useCallback((entryId: string) => {
+    if (jobPollRef.current) clearTimeout(jobPollRef.current);
+
+    const poll = async () => {
+      try {
+        const result = await listJobs({ limit: 20 });
+        const active = result.items.filter((j) => j.entry_id === entryId);
+        setActiveJobs(active);
+        if (active.length > 0) {
+          // Still running — poll again in 2s
+          jobPollRef.current = setTimeout(poll, 2000);
+        } else {
+          // All done — refresh entry to pick up compiledInfo update
+          setActiveJobs([]);
+          await refetchEntry();
+        }
+      } catch {
+        // Not authenticated or error — stop polling silently
+        setActiveJobs([]);
+      }
+    };
+
+    poll();
+  }, [refetchEntry]);
+
   // Fetch page-specific data when entry is available
   useEffect(() => {
     if (!resolvedId || !entry) return;
@@ -489,6 +521,13 @@ export default function EntryPage() {
       setDragOver(false);
     }
   }, [editing]);
+
+  // Clean up poll timer on unmount
+  useEffect(() => {
+    return () => {
+      if (jobPollRef.current) clearTimeout(jobPollRef.current);
+    };
+  }, []);
 
   // --- Action handlers ---
 
@@ -601,6 +640,8 @@ export default function EntryPage() {
       setUploadingFile(false);
       setUploadFiles([]);
       setUploadMessage("");
+      // Start polling for any jobs triggered by the upload (e.g. LaTeX compilation)
+      pollJobs(resolvedId);
     }
     setFileSaving(false);
   };
@@ -678,6 +719,16 @@ export default function EntryPage() {
                 </p>
               )}
               <div className="space-y-4">
+                  {activeJobs.length > 0 && (
+                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                      <span>
+                        {activeJobs.some((j) => j.job_type === "compiled_content")
+                          ? "PDF compiling\u2026"
+                          : `Processing\u2026 (${activeJobs.length} job${activeJobs.length > 1 ? "s" : ""})`}
+                      </span>
+                    </div>
+                  )}
                   {compiledInfo && resolvedId ? (
                     <div>
                       <iframe

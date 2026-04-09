@@ -312,3 +312,20 @@ export interface ActivityItem {
 }
 
 export type ActivityFeedResponse = CursorPage<ActivityItem>;
+
+// Job types — mirrors core/schemas/job.py
+export interface JobListItem {
+  id: string;
+  job_type: string;
+  submitted_by: string;
+  entry_id: string | null;
+  status: "pending" | "running" | "completed" | "failed";
+  attempts: number;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export type JobListResponse = CursorPage<JobListItem>;
