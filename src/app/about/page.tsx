@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BuildOnItTabs } from "@/components/BuildOnItTabs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -116,23 +117,6 @@ const NOT_LIST = [
     body: "Entries are for knowledge assertions. Versioned repositories inside entries hold supporting materials (data, proofs, scripts), not software projects.",
   },
 ];
-
-const SDK_SNIPPET = `from phiacta import PhiactaClient
-
-client = PhiactaClient(token="pat_...")
-
-# Full-text search across all entries
-results = await client.tools.search("log-uniform quantization")
-
-# Traverse the reference graph from any entry
-graph = await client.tools.graph(seed=[entry_id], depth=2)
-
-# Create an entry programmatically
-entry = await client.entries.create(
-    title="Gradient Descent Convergence on Convex Loss",
-    entry_type="theorem",
-    content_format="markdown",
-)`;
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -512,42 +496,7 @@ export default function AboutPage() {
             Query the knowledge graph, build ingestion pipelines, or connect AI agents in minutes.
           </p>
 
-          {/* Code snippet */}
-          <div className="mb-8 overflow-hidden rounded-xl border border-border">
-            <div className="flex items-center gap-2 border-b border-border bg-zinc-950/90 px-5 py-3">
-              <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
-              <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
-              <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
-              <span className="ml-2 text-xs text-zinc-500">Python SDK</span>
-            </div>
-            <pre className="overflow-x-auto bg-zinc-950 px-6 py-5 text-xs font-mono leading-relaxed text-zinc-300">
-              <code>{SDK_SNIPPET}</code>
-            </pre>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card p-6">
-              <p className="mb-1.5 text-sm font-semibold text-foreground">REST API</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Full OpenAPI spec. Create entries, manage references, search, traverse the
-                knowledge graph — every operation the website uses is a documented endpoint.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <p className="mb-1.5 text-sm font-semibold text-foreground">Python SDK</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Async client with typed models. Automate ingestion pipelines, build analysis
-                tools, or integrate Phiacta into existing research workflows.
-              </p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-6">
-              <p className="mb-1.5 text-sm font-semibold text-foreground">MCP Server</p>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                Connect Claude, Cursor, Codex, or any MCP-compatible agent — and give it
-                full platform access with tool schemas and documentation built in.
-              </p>
-            </div>
-          </div>
+          <BuildOnItTabs />
           <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
             The plugin framework is open too. Extensions add new data to entries, tools add new
             query endpoints — both hook into the same lifecycle and discovery system the built-in
