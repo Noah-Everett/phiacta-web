@@ -67,6 +67,7 @@ import type {
   ActivityItem,
   SearchResultItem,
 } from "@/lib/types";
+import GraphPanel from "@/components/GraphPanel";
 import { useEntryContext } from "./entry-context";
 
 function formatBytes(n: number) {
@@ -1187,6 +1188,12 @@ export default function EntryPage() {
                   </Button>
                 )}
               </div>
+              {/* Reference graph */}
+              {resolvedId && (
+                <div className="mb-4">
+                  <GraphPanel seedIds={[resolvedId]} height={320} />
+                </div>
+              )}
               {addingReference && (
                 <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
                   <div className="flex items-center gap-2">
