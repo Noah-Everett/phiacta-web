@@ -101,13 +101,13 @@ export function BuildOnItTabs() {
 
       {/* Code block */}
       <div className="overflow-hidden rounded-xl border border-border">
-        <div className="flex items-center gap-2 border-b border-border bg-zinc-950/90 px-5 py-3">
+        <div className="flex items-center gap-2 border-b border-border bg-muted/60 px-5 py-3">
           <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
           <div className="h-2.5 w-2.5 rounded-full bg-green-500/70" />
-          <span className="ml-2 text-xs text-zinc-500">{tab.lang}</span>
+          <span className="ml-2 text-xs text-muted-foreground">{tab.lang}</span>
         </div>
-        <pre className="overflow-x-auto bg-zinc-950 px-6 py-5 text-xs font-mono leading-relaxed text-zinc-300">
+        <pre className="overflow-x-auto bg-muted/40 px-6 py-5 text-xs font-mono leading-relaxed text-foreground/80">
           <code>{tab.code}</code>
         </pre>
       </div>
