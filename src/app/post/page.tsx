@@ -665,6 +665,10 @@ export default function PostPage() {
           if (hasLatexProject) {
             const isMultiFile = latexFiles.length > 1;
             for (const lf of latexFiles) {
+              const oversized = lf.name + (lf.data.length > MAX_FILE_SIZE ? ` (${(lf.data.length / 1024 / 1024).toFixed(1)} MB)` : "");
+              if (lf.data.length > MAX_FILE_SIZE) {
+                throw new Error(`File ${oversized} exceeds the ${MAX_FILE_SIZE / 1024 / 1024} MB size limit.`);
+              }
               const destPath = isMultiFile
                 ? `.phiacta/content/${lf.isMain ? "main.tex" : lf.name}`
                 : ".phiacta/content.tex";
@@ -678,31 +682,15 @@ export default function PostPage() {
           const totalFiles = bulkFiles.length;
           updateStep(stepIdx, { status: "active", detail: `0 / ${totalFiles} files` });
 
-          const BATCH_SIZE = 500;
-          let failedBatches = 0;
-          let uploadedCount = 0;
-          const totalBatches = Math.ceil(bulkFiles.length / BATCH_SIZE);
-          for (let i = 0; i < bulkFiles.length; i += BATCH_SIZE) {
-            const batch = bulkFiles.slice(i, i + BATCH_SIZE);
-            const batchNum = Math.floor(i / BATCH_SIZE) + 1;
-            const msg = totalBatches === 1
-              ? (hasLatexProject ? "Upload LaTeX project" : `Upload ${batch.length} file(s)`)
-              : `Upload batch ${batchNum}/${totalBatches} (${batch.length} files)`;
-            try {
-              await postEntryFiles(entry.id, batch, msg);
-              uploadedCount += batch.length;
-              updateStep(stepIdx, { detail: `${uploadedCount} / ${totalFiles} files` });
-            } catch {
-              failedBatches++;
-              uploadedCount += batch.length;
-              updateStep(stepIdx, { detail: `${uploadedCount} / ${totalFiles} files` });
-            }
-          }
-          if (failedBatches > 0) {
-            setFileWarning(`${failedBatches} batch(es) of files could not be uploaded. You can retry from the entry's Files tab.`);
-            updateStep(stepIdx, { status: "warning" });
-          } else {
+          const msg = hasLatexProject
+            ? "Upload LaTeX project"
+            : `Upload ${totalFiles} file(s)`;
+          try {
+            await postEntryFiles(entry.id, bulkFiles, msg);
             updateStep(stepIdx, { status: "done", detail: `${totalFiles} file${totalFiles > 1 ? "s" : ""}` });
+          } catch (err) {
+            setFileWarning("Files could not be uploaded. You can retry from the entry's Files tab.");
+            updateStep(stepIdx, { status: "warning" });
           }
           stepIdx++;
         }
