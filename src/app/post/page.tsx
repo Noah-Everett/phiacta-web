@@ -399,21 +399,27 @@ export default function PostPage() {
       .trim();
   }
 
+  /** Strip LaTeX comments (% to end of line), preserving escaped \%. */
+  function stripLatexComments(text: string): string {
+    return text.replace(/^((?:[^%\\]|\\.)*)%.*$/gm, "$1");
+  }
+
   /** Parse title and abstract from LaTeX source. */
   function parseLatexMetadata(texContent: string): { title: string | null; abstract: string | null } {
+    const stripped = stripLatexComments(texContent);
     let extractedTitle: string | null = null;
     let extractedAbstract: string | null = null;
 
     // Extract \title{...} — handle nested braces
-    const titleMatch = texContent.match(/\\title\s*(?:\[[^\]]*\]\s*)?\{/);
+    const titleMatch = stripped.match(/\\title\s*(?:\[[^\]]*\]\s*)?\{/);
     if (titleMatch) {
-      const braceStart = texContent.indexOf("{", titleMatch.index!);
-      extractedTitle = extractBraced(texContent, braceStart);
+      const braceStart = stripped.indexOf("{", titleMatch.index!);
+      extractedTitle = extractBraced(stripped, braceStart);
       if (extractedTitle) extractedTitle = cleanLatexText(extractedTitle);
     }
 
     // Extract \begin{abstract}...\end{abstract}
-    const absMatch = texContent.match(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/);
+    const absMatch = stripped.match(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/);
     if (absMatch) {
       extractedAbstract = cleanLatexText(absMatch[1]);
     }
