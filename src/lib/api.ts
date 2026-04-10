@@ -544,7 +544,7 @@ export async function deleteEntryFile(
   message?: string,
 ): Promise<FileWriteResponse> {
   return authFetch<FileWriteResponse>(
-    `/v1/entries/${entryId}/files/${encodeURIComponent(path)}`,
+    `/v1/entries/${entryId}/files/${path.split("/").map(encodeURIComponent).join("/")}`,
     {
       method: "DELETE",
       body: message ? JSON.stringify({ message }) : undefined,
