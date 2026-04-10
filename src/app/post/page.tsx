@@ -641,7 +641,10 @@ export default function PostPage() {
             ? "Upload LaTeX project"
             : `Upload ${totalFiles} file(s)`;
           try {
-            await postEntryFiles(entry.id, bulkFiles, msg);
+            await postEntryFiles(entry.id, bulkFiles, msg, (loaded, total) => {
+              const pct = Math.round((loaded / total) * 100);
+              updateStep(stepIdx, { detail: `${pct}%` });
+            });
             updateStep(stepIdx, { status: "done", detail: `${totalFiles} file${totalFiles > 1 ? "s" : ""}` });
           } catch (err) {
             setFileWarning("Files could not be uploaded. You can retry from the entry's Files tab.");

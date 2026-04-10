@@ -273,11 +273,16 @@ export async function putEntryFile(
   return res.json() as Promise<FileWriteResponse>;
 }
 
-/** Upload multiple files in a single atomic commit. */
-export async function postEntryFiles(
+/** Upload multiple files in a single atomic commit.
+ *
+ * Uses XMLHttpRequest instead of fetch() to support upload progress
+ * reporting via the optional `onProgress` callback.
+ */
+export function postEntryFiles(
   entryId: string,
   files: { path: string; data: Blob }[],
   message?: string,
+  onProgress?: (loaded: number, total: number) => void,
 ): Promise<FileWriteResponse> {
   const form = new FormData();
   for (const { path, data } of files) {
@@ -286,25 +291,42 @@ export async function postEntryFiles(
   }
   if (message) form.append("message", message);
 
-  const res = await fetch(
-    `${API_URL}/v1/entries/${entryId}/files`,
-    {
-      method: "POST",
-      headers: getAuthHeaders(),
-      body: form,
-    },
-  );
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/v1/entries/${entryId}/files`);
 
-  if (res.status === 401) {
-    clearStoredToken();
-    if (typeof window !== "undefined") window.location.href = "/auth/login";
-    throw new Error("Session expired. Please log in again.");
-  }
-  if (!res.ok) {
-    const body = await res.json().catch(() => null);
-    throw new ApiError(res.status, body?.detail || `Upload failed: ${res.status}`);
-  }
-  return res.json() as Promise<FileWriteResponse>;
+    const headers = getAuthHeaders();
+    for (const [key, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(key, value);
+    }
+
+    if (onProgress) {
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) onProgress(e.loaded, e.total);
+      });
+    }
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status === 401) {
+        clearStoredToken();
+        if (typeof window !== "undefined") window.location.href = "/auth/login";
+        reject(new Error("Session expired. Please log in again."));
+        return;
+      }
+      let body: Record<string, unknown> | null = null;
+      try { body = JSON.parse(xhr.responseText); } catch {}
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new ApiError(xhr.status, (body?.detail as string) || `Upload failed: ${xhr.status}`));
+        return;
+      }
+      resolve(body as unknown as FileWriteResponse);
+    });
+
+    xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+    xhr.addEventListener("timeout", () => reject(new Error("Upload timed out")));
+
+    xhr.send(form);
+  });
 }
 
 // --- References ---
