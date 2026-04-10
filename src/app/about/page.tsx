@@ -238,7 +238,7 @@ export default function AboutPage() {
       <section className="bg-muted/30 px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>The problem</SectionLabel>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             The paper was never the right container.
           </h2>
           <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground">
@@ -246,7 +246,7 @@ export default function AboutPage() {
             It was designed for print distribution, not for an age where knowledge should be
             searchable, queryable, verifiable, and composable.
           </p>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-2">
             {PAIN_POINTS.map(({ icon: Icon, title, body }) => (
               <div key={title} className="flex gap-4 rounded-xl border border-border bg-card p-6">
                 <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary">
@@ -268,7 +268,7 @@ export default function AboutPage() {
       <section className="px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>The entry</SectionLabel>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             One idea. One entry.
           </h2>
           <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground">
@@ -339,7 +339,7 @@ export default function AboutPage() {
           </div>
 
           {/* Callout legend */}
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
             {CALLOUT_LEGEND.map(({ n, label, desc }) => (
               <div key={n} className="flex gap-2">
                 <N n={n} />
@@ -359,7 +359,7 @@ export default function AboutPage() {
       <section className="bg-muted/30 px-6 py-20">
         <div className="mx-auto max-w-5xl">
           <SectionLabel>The graph</SectionLabel>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Entries don&apos;t exist in isolation.
           </h2>
           <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground">
@@ -452,7 +452,7 @@ export default function AboutPage() {
             inside static PDFs. Social platforms bury truth in noise. Encyclopedias reflect a single
             editorial perspective. None of them were designed with provability in mind.
           </p>
-          <div className="grid gap-4 text-left sm:grid-cols-2">
+          <div className="grid gap-5 text-left sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-card p-6">
               <Badge variant="secondary" className="mb-3">Near-term</Badge>
               <p className="text-sm leading-relaxed text-muted-foreground">
@@ -504,7 +504,7 @@ export default function AboutPage() {
       <section className="bg-muted/30 px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>For builders</SectionLabel>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             A platform, not just a website.
           </h2>
           <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground">
@@ -513,7 +513,7 @@ export default function AboutPage() {
           </p>
 
           {/* Code snippet */}
-          <div className="mb-6 overflow-hidden rounded-xl border border-border">
+          <div className="mb-8 overflow-hidden rounded-xl border border-border">
             <div className="flex items-center gap-2 border-b border-border bg-zinc-950/90 px-5 py-3">
               <div className="h-2.5 w-2.5 rounded-full bg-red-500/70" />
               <div className="h-2.5 w-2.5 rounded-full bg-yellow-500/70" />
@@ -525,22 +525,22 @@ export default function AboutPage() {
             </pre>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-border bg-card p-5">
+          <div className="grid gap-5 sm:grid-cols-3">
+            <div className="rounded-xl border border-border bg-card p-6">
               <p className="mb-1.5 text-sm font-semibold text-foreground">REST API</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Full OpenAPI spec. Create entries, manage references, search, traverse the
                 knowledge graph — every operation the website uses is a documented endpoint.
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-card p-6">
               <p className="mb-1.5 text-sm font-semibold text-foreground">Python SDK</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Async client with typed models. Automate ingestion pipelines, build analysis
                 tools, or integrate Phiacta into existing research workflows.
               </p>
             </div>
-            <div className="rounded-xl border border-border bg-card p-5">
+            <div className="rounded-xl border border-border bg-card p-6">
               <p className="mb-1.5 text-sm font-semibold text-foreground">MCP Server</p>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Connect Claude, Cursor, Windsurf, or any MCP-compatible agent — and give it
@@ -548,7 +548,7 @@ export default function AboutPage() {
               </p>
             </div>
           </div>
-          <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+          <p className="mt-6 text-sm leading-relaxed text-muted-foreground">
             The plugin framework is open too. Extensions add new data to entries, tools add new
             query endpoints — both hook into the same lifecycle and discovery system the built-in
             features use.
@@ -562,7 +562,7 @@ export default function AboutPage() {
       <section className="px-6 py-20">
         <div className="mx-auto max-w-4xl">
           <SectionLabel>How it&apos;s built</SectionLabel>
-          <h2 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             Three layers. One clear separation.
           </h2>
           <p className="mb-10 max-w-2xl text-base leading-relaxed text-muted-foreground">
@@ -652,7 +652,7 @@ export default function AboutPage() {
           <h2 className="mb-10 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             What Phiacta is not.
           </h2>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-5 sm:grid-cols-3">
             {NOT_LIST.map(({ label, body }) => (
               <div key={label} className="rounded-xl border border-border bg-card p-6">
                 <p className="mb-2 text-sm font-semibold text-foreground">{label}</p>
@@ -666,7 +666,7 @@ export default function AboutPage() {
       {/* ════════════════════════════════════════════════════
           THE NAME + CONTACT
       ════════════════════════════════════════════════════ */}
-      <section className="px-6 py-20 text-center">
+      <section className="px-6 py-24 text-center">
         <div className="mx-auto max-w-xl">
           <SectionLabel>The name</SectionLabel>
           <p className="mb-10 text-base leading-relaxed text-muted-foreground">
@@ -678,7 +678,7 @@ export default function AboutPage() {
             with the same elegance that phi embodies.
           </p>
 
-          <div className="mb-8 h-px w-16 bg-border mx-auto" />
+          <div className="my-10 h-px w-16 bg-border mx-auto" />
 
           <h2 className="mb-4 text-2xl font-bold tracking-tight text-foreground">
             Ready to start?
