@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { createEntry, getEntry, setEntryTags, putEntryFile, postEntryFiles, createReference, searchEntries, listJobs } from "@/lib/api";
@@ -94,11 +94,8 @@ export default function PostPage() {
   const [showRefs, setShowRefs] = useState(false);
   const [showFiles, setShowFiles] = useState(false);
 
-  // Compilation polling — shown on success screen for LaTeX entries
-  const [compilationEntryId, setCompilationEntryId] = useState<string | null>(null);
-  const [compilationStatus, setCompilationStatus] = useState<"compiling" | "done" | "failed" | null>(null);
+  // Compilation error — set during processing, shown on success screen
   const [compilationError, setCompilationError] = useState<string | null>(null);
-  const compilationPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Processing steps — shown between submit and success
   type StepStatus = "pending" | "active" | "done" | "warning" | "error";
@@ -121,49 +118,6 @@ export default function PostPage() {
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
   const effectiveType = isCustomType ? customType.trim() : entryType;
-
-  // Poll for compilation status on the success screen
-  useEffect(() => {
-    if (!compilationEntryId || !success) return;
-
-    let cancelled = false;
-    const poll = async () => {
-      try {
-        const result = await listJobs({
-          entity_id: compilationEntryId,
-          job_type: "compiled_content",
-          status: "pending,running,completed,failed",
-          limit: 10,
-        });
-        if (cancelled) return;
-
-        const active = result.items.filter((j) => j.status === "pending" || j.status === "running");
-        const completed = result.items.filter((j) => j.status === "completed");
-        const failed = result.items.filter((j) => j.status === "failed");
-
-        if (active.length > 0) {
-          setCompilationStatus("compiling");
-          compilationPollRef.current = setTimeout(poll, 2000);
-        } else if (completed.length > 0) {
-          // A completed job takes priority — any failed jobs are from earlier retries
-          setCompilationStatus("done");
-        } else if (failed.length > 0) {
-          setCompilationStatus("failed");
-          setCompilationError(failed[0].last_error ?? null);
-        } else {
-          setCompilationStatus("done");
-        }
-      } catch {
-        // Not authenticated or fetch error — stop polling
-      }
-    };
-
-    poll();
-    return () => {
-      cancelled = true;
-      if (compilationPollRef.current) clearTimeout(compilationPollRef.current);
-    };
-  }, [compilationEntryId, success]);
 
   function addTag() {
     const tag = tagInput.trim().toLowerCase();
@@ -615,6 +569,7 @@ export default function PostPage() {
       initialSteps.push({ label: "Uploading files", status: "pending" });
     }
     if (hasRefs) initialSteps.push({ label: "Creating references", status: "pending" });
+    if (hasLatexProject) initialSteps.push({ label: "Compiling PDF", status: "pending" });
     setSteps(initialSteps);
 
     let stepIdx = 0;
@@ -716,13 +671,51 @@ export default function PostPage() {
         stepIdx++;
       }
 
+      // Step: Compile PDF (poll until done)
+      if (hasLatexProject && entry.id) {
+        updateStep(stepIdx, { status: "active" });
+        const compileResult = await new Promise<"done" | "failed">((resolve) => {
+          const poll = async () => {
+            try {
+              const result = await listJobs({
+                entity_id: entry.id,
+                job_type: "compiled_content",
+                status: "pending,running,completed,failed",
+                limit: 10,
+              });
+              const active = result.items.filter((j: { status: string }) => j.status === "pending" || j.status === "running");
+              const completed = result.items.filter((j: { status: string }) => j.status === "completed");
+              if (active.length > 0) {
+                setTimeout(poll, 2000);
+              } else if (completed.length > 0) {
+                resolve("done");
+              } else {
+                // All failed or no jobs yet — check if jobs exist at all
+                const failed = result.items.filter((j: { status: string }) => j.status === "failed");
+                if (failed.length > 0) {
+                  setCompilationError(failed[0].last_error ?? null);
+                  resolve("failed");
+                } else {
+                  // No jobs yet, keep polling (webhook may not have fired yet)
+                  setTimeout(poll, 2000);
+                }
+              }
+            } catch {
+              resolve("failed");
+            }
+          };
+          poll();
+        });
+        if (compileResult === "done") {
+          updateStep(stepIdx, { status: "done" });
+        } else {
+          updateStep(stepIdx, { status: "warning", detail: "Failed" });
+        }
+        stepIdx++;
+      }
+
       setCreatedEntryId(entry.id);
       setSuccess(true);
-      // Start compilation polling if this was a LaTeX entry with files
-      if (contentFormat === "latex" && latexFiles.length > 0) {
-        setCompilationEntryId(entry.id);
-        setCompilationStatus("compiling");
-      }
       setTitle("");
       setContent("");
       setSummary("");
@@ -862,31 +855,15 @@ export default function PostPage() {
             </div>
           )}
 
-          {compilationEntryId && compilationStatus && (
+          {compilationError && (
             <div className="mb-6 w-full">
-              {compilationStatus === "compiling" && (
-                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                  <span>PDF compiling\u2026</span>
-                </div>
-              )}
-              {compilationStatus === "done" && (
-                <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/50 dark:text-green-300">
-                  <CheckCircle2 className="h-4 w-4 shrink-0" />
-                  <span>PDF compiled successfully.</span>
-                </div>
-              )}
-              {compilationStatus === "failed" && (
-                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
-                  <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    PDF compilation failed.
-                    {compilationError && (
-                      <> Error: <code className="ml-1 font-mono text-xs">{compilationError.slice(0, 200)}</code></>
-                    )}
-                  </span>
-                </div>
-              )}
+              <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>
+                  PDF compilation failed.
+                  <code className="ml-1 font-mono text-xs">{compilationError.slice(0, 200)}</code>
+                </span>
+              </div>
             </div>
           )}
 
@@ -907,8 +884,6 @@ export default function PostPage() {
                 setTagWarning("");
                 setFileWarning("");
                 setRefWarning("");
-                setCompilationEntryId(null);
-                setCompilationStatus(null);
                 setCompilationError(null);
               }}
             >
