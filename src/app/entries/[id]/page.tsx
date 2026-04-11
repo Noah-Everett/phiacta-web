@@ -35,7 +35,6 @@ import {
   Plus,
   Trash2,
   Upload,
-  Activity,
   Search,
   Expand,
   XCircle,
@@ -51,7 +50,6 @@ import {
   searchEntries,
   createIssue,
   createEditProposal,
-  getActivity,
   getCompiledPdfUrl,
   listJobs,
   API_URL,
@@ -62,7 +60,6 @@ import type {
   CommitListItem,
   CommitDiffResponse,
   FileListItem,
-  ActivityItem,
   SearchResultItem,
   JobListItem,
 } from "@/lib/types";
@@ -362,7 +359,7 @@ function IssueRow({ issue, entryId }: { issue: { number: number; title: string; 
   );
 }
 
-const VALID_TABS = ["content", "issues", "edits", "history", "files", "references", "activity"] as const;
+const VALID_TABS = ["content", "issues", "edits", "history", "files", "references"] as const;
 
 export default function EntryPage() {
   const {
@@ -392,9 +389,6 @@ export default function EntryPage() {
   const [contentText, setContentText] = useState<string | null>(null);
   const [contentFormat, setContentFormat] = useState<string>("md");
 
-  // Activity state
-  const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
 
   // Reference adding
   const [addingReference, setAddingReference] = useState(false);
@@ -463,13 +457,6 @@ export default function EntryPage() {
     }
   }, []);
 
-  const fetchActivity = useCallback((id: string) => {
-    setActivityLoading(true);
-    getActivity({ entity: id })
-      .then((data) => setActivityItems(data.items))
-      .catch((err) => console.warn("Failed to load activity:", err))
-      .finally(() => setActivityLoading(false));
-  }, []);
 
   // Poll jobs for this entry until none are pending/running, then refresh compiledInfo
   const pollJobs = useCallback((entryId: string) => {
@@ -518,8 +505,7 @@ export default function EntryPage() {
     fetchFiles(resolvedId);
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
     fetchContent(resolvedId);
-    fetchActivity(resolvedId);
-  }, [resolvedId, entry, fetchFiles, fetchContent, fetchActivity]);
+  }, [resolvedId, entry, fetchFiles, fetchContent]);
 
   // On initial load, check for in-progress or failed compilation jobs
   useEffect(() => {
@@ -1228,72 +1214,6 @@ export default function EntryPage() {
             </>
           )}
 
-          {/* Activity */}
-          {activeTab === "activity" && (
-            <>
-              <div className="mb-3">
-                <p className="text-sm text-muted-foreground">
-                  Chronological log of actions on this entry.
-                </p>
-              </div>
-              {activityLoading ? (
-                <div className="flex items-center justify-center py-8 gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading activity...
-                </div>
-              ) : activityItems.length > 0 ? (
-                <div className="space-y-2">
-                  {activityItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
-                    >
-                      <Activity className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {item.action}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground">
-                            {item.entity_type}
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          <EntityLink id={item.entity_id} className="text-sm text-primary hover:underline" />
-                        </div>
-                        {item.parent_id && (
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            Parent: <EntityLink id={item.parent_id} className="text-primary hover:underline" />
-                          </div>
-                        )}
-                        {item.metadata && Object.keys(item.metadata).length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {Object.entries(item.metadata).map(([key, val]) => (
-                              <span key={key} className="text-[10px] text-muted-foreground bg-secondary rounded px-1.5 py-0.5">
-                                {key}: {val}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
-                        {new Date(item.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}{" "}
-                        {new Date(item.created_at).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
-              )}
-            </>
-          )}
       </div>
     </>
   );

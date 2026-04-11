@@ -25,7 +25,6 @@ import {
   History,
   FileCode2,
   Link2,
-  Activity,
   Tag,
   Pencil,
   Check,
@@ -43,7 +42,6 @@ const VALID_TABS = [
   "history",
   "files",
   "references",
-  "activity",
 ] as const;
 
 function EntryTabBar() {
@@ -105,12 +103,6 @@ function EntryTabBar() {
       href: `/entries/${resolvedId}?tab=references`,
       icon: Link2,
       count: entry?.references?.length || 0,
-    },
-    {
-      value: "activity",
-      label: "Activity",
-      href: `/entries/${resolvedId}?tab=activity`,
-      icon: Activity,
     },
   ];
 
