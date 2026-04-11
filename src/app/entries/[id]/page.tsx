@@ -915,10 +915,13 @@ export default function EntryPage() {
                   </div>
                   {editError && <p className="text-xs text-destructive">{editError}</p>}
                   <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleEditProposalSubmit} disabled={editSaving || !editTitle.trim()}>
+                    <Button size="sm" onClick={handleEditProposalSubmit} disabled={editSaving || !editTitle.trim() || editProposalContent === (contentText || "")}>
                       {editSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
                       Submit Proposal
                     </Button>
+                    {editTitle.trim() && editProposalContent === (contentText || "") && (
+                      <span className="text-xs text-muted-foreground">Change content to submit</span>
+                    )}
                     <Button size="sm" variant="ghost" onClick={() => { setCreatingEdit(false); setEditTitle(""); setEditBody(""); setEditProposalContent(""); setEditError(null); }} disabled={editSaving}>
                       Cancel
                     </Button>
