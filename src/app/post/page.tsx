@@ -692,25 +692,19 @@ export default function PostPage() {
               const result = await listJobs({
                 entity_id: entry.id,
                 job_type: "compiled_content",
-                status: "pending,running,completed,failed",
-                limit: 10,
+                limit: 1,
               });
-              const active = result.items.filter((j: { status: string }) => j.status === "pending" || j.status === "running");
-              const completed = result.items.filter((j: { status: string }) => j.status === "completed");
-              if (active.length > 0) {
+              const latest = result.items[0] as { status: string; last_error?: string } | undefined;
+              if (!latest) {
+                // No job yet, keep polling (webhook may not have fired yet)
                 setTimeout(poll, 2000);
-              } else if (completed.length > 0) {
+              } else if (latest.status === "pending" || latest.status === "running") {
+                setTimeout(poll, 2000);
+              } else if (latest.status === "completed") {
                 resolve("done");
               } else {
-                // All failed or no jobs yet — check if jobs exist at all
-                const failed = result.items.filter((j: { status: string }) => j.status === "failed");
-                if (failed.length > 0) {
-                  setCompilationError(failed[0].last_error ?? null);
-                  resolve("failed");
-                } else {
-                  // No jobs yet, keep polling (webhook may not have fired yet)
-                  setTimeout(poll, 2000);
-                }
+                setCompilationError(latest.last_error ?? null);
+                resolve("failed");
               }
             } catch {
               resolve("failed");
