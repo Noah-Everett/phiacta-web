@@ -634,7 +634,7 @@ export async function listJobs(params?: {
   if (params?.entity_id) q.set("entity_id", params.entity_id);
   if (params?.limit) q.set("limit", String(params.limit));
   if (params?.cursor) q.set("cursor", params.cursor);
-  return authFetch<JobListResponse>(`/v1/jobs?${q.toString()}`);
+  return request<JobListResponse>(`/v1/jobs?${q.toString()}`);
 }
 
 // --- Plugins ---
