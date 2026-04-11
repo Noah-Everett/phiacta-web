@@ -38,7 +38,7 @@ import MarkdownContent from "@/components/MarkdownContent";
 const VALID_TABS = [
   "content",
   "issues",
-  "edits",
+  "proposals",
   "history",
   "files",
   "references",
@@ -53,7 +53,7 @@ function EntryTabBar() {
     const entryPrefix = `/entries/${resolvedId}`;
     const subPath = pathname.slice(entryPrefix.length);
     if (subPath.startsWith("/files")) return "files";
-    if (subPath.startsWith("/edits")) return "edits";
+    if (subPath.startsWith("/edits")) return "proposals";
     if (subPath.startsWith("/issues")) return "issues";
     if (subPath.startsWith("/history")) return "history";
     const tab = searchParams.get("tab");
@@ -79,9 +79,9 @@ function EntryTabBar() {
       count: issues.filter((i) => i.state === "open").length,
     },
     {
-      value: "edits",
-      label: "Edits",
-      href: `/entries/${resolvedId}?tab=edits`,
+      value: "proposals",
+      label: "Proposals",
+      href: `/entries/${resolvedId}?tab=proposals`,
       icon: GitBranch,
       count: edits.filter((e) => e.state === "open").length,
     },
