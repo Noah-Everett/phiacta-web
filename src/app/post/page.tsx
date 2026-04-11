@@ -560,14 +560,13 @@ export default function PostPage() {
     const hasTags = tags.length > 0;
 
     // Build step list
+    const needsRepo = hasTags || hasFiles;
     const initialSteps: ProcessingStep[] = [
       { label: "Creating entry", status: "pending" },
     ];
+    if (needsRepo) initialSteps.push({ label: "Waiting for repository", status: "pending" });
     if (hasTags) initialSteps.push({ label: "Setting tags", status: "pending" });
-    if (hasFiles) {
-      initialSteps.push({ label: "Waiting for repository", status: "pending" });
-      initialSteps.push({ label: "Uploading files", status: "pending" });
-    }
+    if (hasFiles) initialSteps.push({ label: "Uploading files", status: "pending" });
     if (hasRefs) initialSteps.push({ label: "Creating references", status: "pending" });
     if (hasLatexProject) initialSteps.push({ label: "Compiling PDF", status: "pending" });
     setSteps(initialSteps);
@@ -587,8 +586,32 @@ export default function PostPage() {
       updateStep(stepIdx, { status: "done", detail: entry.id.slice(0, 8) });
       stepIdx++;
 
-      // Step: Tags
-      if (hasTags) {
+      // Step: Wait for repo (needed by tags + files)
+      let repoReady = false;
+      if (needsRepo && entry.id) {
+        updateStep(stepIdx, { status: "active" });
+        repoReady = await waitForRepo(entry.id);
+        if (!repoReady) {
+          updateStep(stepIdx, { status: "warning", detail: "Timed out" });
+          stepIdx++;
+          if (hasTags) {
+            setTagWarning("Tags could not be saved. You can add them from the entry page.");
+            updateStep(stepIdx, { status: "warning", detail: "Skipped" });
+            stepIdx++;
+          }
+          if (hasFiles) {
+            setFileWarning("Repository wasn't ready in time. Upload files from the entry's Files tab.");
+            updateStep(stepIdx, { status: "warning", detail: "Skipped" });
+            stepIdx++;
+          }
+        } else {
+          updateStep(stepIdx, { status: "done" });
+          stepIdx++;
+        }
+      }
+
+      // Step: Tags (repo is ready)
+      if (hasTags && repoReady) {
         updateStep(stepIdx, { status: "active", detail: `${tags.length} tag${tags.length > 1 ? "s" : ""}` });
         try {
           await setEntryTags(entry.id, tags);
@@ -600,21 +623,8 @@ export default function PostPage() {
         stepIdx++;
       }
 
-      // Steps: Repo wait + file upload
-      if (hasFiles && entry.id) {
-        // Wait for repo
-        updateStep(stepIdx, { status: "active" });
-        const repoReady = await waitForRepo(entry.id);
-        if (!repoReady) {
-          setFileWarning("Repository wasn't ready in time. Upload files from the entry's Files tab.");
-          updateStep(stepIdx, { status: "warning", detail: "Timed out" });
-          stepIdx++;
-          updateStep(stepIdx, { status: "warning", detail: "Skipped" });
-          stepIdx++;
-        } else {
-          updateStep(stepIdx, { status: "done" });
-          stepIdx++;
-
+      // Step: Upload files (repo is ready)
+      if (hasFiles && repoReady && entry.id) {
           // Upload files
           const bulkFiles: { path: string; data: Blob }[] = [];
           if (hasLatexProject) {
@@ -651,7 +661,6 @@ export default function PostPage() {
             updateStep(stepIdx, { status: "warning" });
           }
           stepIdx++;
-        }
       }
 
       // Step: References
