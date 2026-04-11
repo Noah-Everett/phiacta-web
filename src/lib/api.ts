@@ -77,7 +77,21 @@ const TOKEN_KEY = "phiacta_token";
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+
+  // Clear expired JWTs proactively so stale tokens are never sent.
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+  } catch {
+    // Not a valid JWT (e.g. a PAT) — let the server decide.
+  }
+
+  return token;
 }
 
 export function setStoredToken(token: string): void {
