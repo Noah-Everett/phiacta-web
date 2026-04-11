@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
 import GraphPanel from "@/components/GraphPanel";
+import MarkdownContent from "@/components/MarkdownContent";
 import { getInitials } from "@/lib/utils";
 import { listEntries, searchEntries, findEntriesByTags, getUser } from "@/lib/api";
 import type { EntryListItem, PublicUserResponse, SearchResultItem, EntryTagItem } from "@/lib/types";
@@ -587,9 +588,10 @@ function ExploreContent() {
                       {entry.title || "Untitled"}
                     </p>
                     {entry.summary && (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                        {entry.summary}
-                      </p>
+                      <MarkdownContent
+                        content={entry.summary}
+                        className="mt-1 text-xs text-muted-foreground line-clamp-2 [&_p]:m-0 [&_p]:inline"
+                      />
                     )}
                   </div>
 

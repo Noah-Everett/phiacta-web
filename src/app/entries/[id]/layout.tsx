@@ -34,6 +34,7 @@ import {
   Plus,
 } from "lucide-react";
 import { EntryProvider, useEntryContext } from "./entry-context";
+import MarkdownContent from "@/components/MarkdownContent";
 
 const VALID_TABS = [
   "content",
@@ -231,7 +232,10 @@ function EntryHeader() {
           className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-muted-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y mb-4"
         />
       ) : entry.summary ? (
-        <p className="mb-4 text-sm text-muted-foreground">{entry.summary}</p>
+        <MarkdownContent
+          content={entry.summary}
+          className="mb-4 text-sm text-muted-foreground [&_p]:text-justify"
+        />
       ) : null}
     </div>
   );
