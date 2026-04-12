@@ -31,7 +31,7 @@ interface EditPageProps {
 
 export default function EditPage({ params }: EditPageProps) {
   const router = useRouter();
-  const { resolvedId: entryId, isAuthenticated, refetchEdits } = useEntryContext();
+  const { resolvedId: entryId, isOwner, isAuthenticated, refetchEdits } = useEntryContext();
   const [editNumber, setEditNumber] = useState<number | null>(null);
   const [edit, setEdit] = useState<EditProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,7 +179,7 @@ export default function EditPage({ params }: EditPageProps) {
       {actionError && (
         <p className="mb-3 text-xs text-red-600 dark:text-red-400">{actionError}</p>
       )}
-      {edit.state === "open" && isAuthenticated && (
+      {edit.state === "open" && isOwner && (
         <div className="flex items-center gap-2 pt-4 border-t border-border">
           <Button
             onClick={handleMerge}
