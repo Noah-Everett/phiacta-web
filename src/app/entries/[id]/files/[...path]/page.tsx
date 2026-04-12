@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ChevronRight, Download, FileIcon as FileIconLucide, Pencil, Loader2, X, Check, Eye, Code, ArrowLeft, GitBranch } from "lucide-react";
+import { ChevronRight, Download, FileIcon as FileIconLucide, Pencil, Loader2, X, Check, Eye, Code } from "lucide-react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 import FileIcon from "@/components/FileIcon";
@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
 import ContentDiff from "@/components/ContentDiff";
 const ContentEditor = dynamic(() => import("@/components/ContentEditor"), { ssr: false });
-import { putEntryFile, createEditProposal, API_URL, getStoredToken } from "@/lib/api";
+import { putEntryFile, API_URL, getStoredToken } from "@/lib/api";
 import { highlightCode, getLanguageFromPath, type HighlightToken } from "@/lib/highlighter";
 import type { FileListItem } from "@/lib/types";
 import { useEntryContext } from "../../entry-context";
@@ -84,7 +84,7 @@ interface FilePageProps {
 }
 
 export default function FilePage({ params }: FilePageProps) {
-  const { resolvedId: entryId, isOwner, isAuthenticated, refetchEdits } = useEntryContext();
+  const { resolvedId: entryId, isOwner } = useEntryContext();
   const [filePath, setFilePath] = useState<string>("");
   const [content, setContent] = useState<string | null>(null);
   const [dirItems, setDirItems] = useState<FileListItem[] | null>(null);
@@ -98,12 +98,7 @@ export default function FilePage({ params }: FilePageProps) {
   const [editMessage, setEditMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [editStep, setEditStep] = useState<"editing" | "diff-preview" | "proposal-form">("editing");
-  const [editorViewMode, setEditorViewMode] = useState<"edit" | "preview">("edit");
-  const [proposalTitle, setProposalTitle] = useState("");
-  const [proposalBody, setProposalBody] = useState("");
-  const [proposalSaving, setProposalSaving] = useState(false);
-  const [proposalError, setProposalError] = useState<string | null>(null);
+  const [editorViewMode, setEditorViewMode] = useState<"edit" | "preview" | "changes">("edit");
 
   // Line selection state for PHI-132
   const [selectedLines, setSelectedLines] = useState<{ start: number; end: number } | null>(null);
@@ -230,21 +225,15 @@ export default function FilePage({ params }: FilePageProps) {
 
   const exitEditing = () => {
     setEditing(false);
-    setEditStep("editing");
     setEditorViewMode("edit");
     setEditMessage("");
     setSaveError(null);
-    setProposalTitle("");
-    setProposalBody("");
-    setProposalError(null);
   };
 
   const enterEditing = () => {
     setEditText(content || "");
-    setEditStep("editing");
     setEditorViewMode("edit");
     setSaveError(null);
-    setProposalError(null);
     setEditing(true);
   };
 
@@ -265,23 +254,6 @@ export default function FilePage({ params }: FilePageProps) {
     }
   };
 
-  const handleProposalSubmit = async () => {
-    if (!entryId || !filePath || !proposalTitle.trim()) return;
-    setProposalSaving(true);
-    setProposalError(null);
-    try {
-      await createEditProposal(entryId, proposalTitle.trim(), proposalBody.trim() || undefined, [
-        { path: filePath, content: editText },
-      ]);
-      refetchEdits();
-      exitEditing();
-    } catch (err) {
-      setProposalError(err instanceof Error ? err.message : "Failed to create proposal");
-    } finally {
-      setProposalSaving(false);
-    }
-  };
-
   const fileName = filePath.split("/").pop() || filePath;
   const isMarkdown = filePath.endsWith(".md");
   const isImage = isImageFile(filePath);
@@ -291,7 +263,6 @@ export default function FilePage({ params }: FilePageProps) {
   const isImmutable = filePath === ".phiacta/entry.yaml";
   const editorFormat = getFileExtension(filePath).replace(".", "") || "txt";
   const canEdit = isOwner && !isImmutable && !isDir && !isImage && !isPdf && !isBinary && content !== null;
-  const canSuggestEdit = isAuthenticated && !isOwner && !isImmutable && !isDir && !isImage && !isPdf && !isBinary && content !== null;
 
   // Breadcrumb segments
   const segments = filePath.split("/");
@@ -425,12 +396,6 @@ export default function FilePage({ params }: FilePageProps) {
                   Edit
                 </Button>
               )}
-              {canSuggestEdit && !editing && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={enterEditing}>
-                  <Pencil className="h-3.5 w-3.5" />
-                  Suggest Edit
-                </Button>
-              )}
               <a
                 href={fileUrl}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -447,9 +412,9 @@ export default function FilePage({ params }: FilePageProps) {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1 rounded-lg bg-muted p-[3px]">
                   <button
-                    onClick={() => { setEditorViewMode("edit"); if (editStep !== "editing") setEditStep("editing"); }}
+                    onClick={() => setEditorViewMode("edit")}
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      editorViewMode === "edit" && editStep === "editing"
+                      editorViewMode === "edit"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -458,9 +423,9 @@ export default function FilePage({ params }: FilePageProps) {
                     Edit
                   </button>
                   <button
-                    onClick={() => { setEditorViewMode("preview"); if (editStep !== "editing") setEditStep("editing"); }}
+                    onClick={() => setEditorViewMode("preview")}
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      editorViewMode === "preview" && editStep === "editing"
+                      editorViewMode === "preview"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -469,9 +434,9 @@ export default function FilePage({ params }: FilePageProps) {
                     Preview
                   </button>
                   <button
-                    onClick={() => setEditStep("diff-preview")}
+                    onClick={() => setEditorViewMode("changes")}
                     className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                      editStep === "diff-preview"
+                      editorViewMode === "changes"
                         ? "bg-background text-foreground shadow-sm"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
@@ -480,29 +445,18 @@ export default function FilePage({ params }: FilePageProps) {
                   </button>
                 </div>
                 <div className="flex items-center gap-2">
-                  {isOwner ? (
-                    <Button size="sm" onClick={handleSave} disabled={saving || editText === content} className="gap-1.5">
-                      {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                      Save
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => setEditStep("proposal-form")}
-                      disabled={proposalSaving || editText === content}
-                    >
-                      Submit Proposal
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={exitEditing} disabled={saving || proposalSaving} className="gap-1.5">
+                  <Button size="sm" onClick={handleSave} disabled={saving || editText === content} className="gap-1.5">
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Save
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={exitEditing} disabled={saving} className="gap-1.5">
                     <X className="h-3.5 w-3.5" />
                     Cancel
                   </Button>
                 </div>
               </div>
 
-              {/* Owner: commit message */}
-              {isOwner && editStep === "editing" && (
+              {editorViewMode === "edit" && (
                 <Input
                   value={editMessage}
                   onChange={(e) => setEditMessage(e.target.value)}
@@ -512,10 +466,9 @@ export default function FilePage({ params }: FilePageProps) {
               )}
 
               {saveError && <p className="text-xs text-destructive">{saveError}</p>}
-              {proposalError && <p className="text-xs text-destructive">{proposalError}</p>}
 
               {/* Editor */}
-              {editStep === "editing" && editorViewMode === "edit" && (
+              {editorViewMode === "edit" && (
                 <ContentEditor
                   value={editText}
                   onChange={setEditText}
@@ -524,7 +477,7 @@ export default function FilePage({ params }: FilePageProps) {
               )}
 
               {/* Preview */}
-              {editStep === "editing" && editorViewMode === "preview" && (
+              {editorViewMode === "preview" && (
                 <div className="rounded-lg border border-border p-6">
                   {isMarkdown ? (
                     <MarkdownContent
@@ -538,41 +491,9 @@ export default function FilePage({ params }: FilePageProps) {
                 </div>
               )}
 
-              {/* Diff preview */}
-              {editStep === "diff-preview" && (
+              {/* Changes */}
+              {editorViewMode === "changes" && (
                 <ContentDiff original={content} modified={editText} path={filePath} />
-              )}
-
-              {/* Proposal form (non-owner) */}
-              {editStep === "proposal-form" && (
-                <div className="rounded-lg border border-border bg-background p-4 space-y-3">
-                  <h3 className="text-sm font-medium text-foreground">Submit Edit Proposal</h3>
-                  <Input
-                    value={proposalTitle}
-                    onChange={(e) => setProposalTitle(e.target.value)}
-                    placeholder="Title (required)"
-                    className="text-sm"
-                    autoFocus
-                  />
-                  <textarea
-                    value={proposalBody}
-                    onChange={(e) => setProposalBody(e.target.value)}
-                    placeholder="Description (optional)"
-                    rows={3}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                  />
-                  <ContentDiff original={content} modified={editText} path={filePath} />
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleProposalSubmit} disabled={proposalSaving || !proposalTitle.trim()}>
-                      {proposalSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <GitBranch className="h-3.5 w-3.5 mr-1" />}
-                      Submit Proposal
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditStep("editing")} disabled={proposalSaving}>
-                      <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                      Back to Editor
-                    </Button>
-                  </div>
-                </div>
               )}
             </div>
           ) : (

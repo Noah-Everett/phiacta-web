@@ -18,9 +18,7 @@ import LatexContent from "@/components/LatexContent";
 import EntityLink from "@/components/EntityLink";
 import FileIcon from "@/components/FileIcon";
 import DiffBlock from "@/components/DiffBlock";
-import dynamic from "next/dynamic";
-const ContentEditor = dynamic(() => import("@/components/ContentEditor"), { ssr: false });
-import ContentDiff from "@/components/ContentDiff";
+import ProposalWorkspace from "@/components/ProposalWorkspace";
 import {
   GitBranch,
   ChevronRight,
@@ -41,10 +39,6 @@ import {
   Search,
   Expand,
   XCircle,
-  Pencil,
-  Eye,
-  Code,
-  ArrowLeft,
 } from "lucide-react";
 import {
   getEntryFiles,
@@ -56,7 +50,6 @@ import {
   deleteReference,
   searchEntries,
   createIssue,
-  createEditProposal,
   getCompiledPdfUrl,
   listJobs,
   API_URL,
@@ -432,15 +425,8 @@ export default function EntryPage() {
   const [issueSaving, setIssueSaving] = useState(false);
   const [issueError, setIssueError] = useState<string | null>(null);
 
-  // Content editing
-  const [editingContent, setEditingContent] = useState(false);
-  const [editorText, setEditorText] = useState("");
-  const [editorStep, setEditorStep] = useState<"editing" | "diff-preview" | "proposal-form">("editing");
-  const [proposalTitle, setProposalTitle] = useState("");
-  const [proposalBody, setProposalBody] = useState("");
-  const [contentSaving, setContentSaving] = useState(false);
-  const [contentError, setContentError] = useState<string | null>(null);
-  const [editorViewMode, setEditorViewMode] = useState<"edit" | "preview" | "split">("edit");
+  // Proposal workspace
+  const [creatingProposal, setCreatingProposal] = useState(false);
 
   // --- Data fetching helpers ---
 
@@ -714,65 +700,6 @@ export default function EntryPage() {
     }
   };
 
-  const enterContentEditMode = () => {
-    // Exit metadata editing if active
-    if (editing) exitEditMode();
-    setEditorText(contentText || "");
-    setEditorStep("editing");
-    setEditorViewMode("edit");
-    setContentError(null);
-    setProposalTitle("");
-    setProposalBody("");
-    setEditingContent(true);
-  };
-
-  const exitContentEditMode = () => {
-    setEditingContent(false);
-    setEditorText("");
-    setEditorStep("editing");
-    setEditorViewMode("edit");
-    setContentError(null);
-    setProposalTitle("");
-    setProposalBody("");
-  };
-
-  const handleContentSave = async () => {
-    if (!resolvedId) return;
-    setContentSaving(true);
-    setContentError(null);
-    try {
-      const fileName = `.phiacta/content.${contentFormat || "md"}`;
-      const blob = new Blob([editorText], { type: "text/plain" });
-      const file = new globalThis.File([blob], fileName, { type: "text/plain" });
-      await putEntryFile(resolvedId, fileName, file, "Update content");
-      setContentText(editorText);
-      exitContentEditMode();
-      await refetchEntry();
-      pollJobs(resolvedId);
-    } catch (err) {
-      setContentError(err instanceof Error ? err.message : "Failed to save");
-    } finally {
-      setContentSaving(false);
-    }
-  };
-
-  const handleProposalSubmit = async () => {
-    if (!resolvedId || !proposalTitle.trim()) return;
-    setContentSaving(true);
-    setContentError(null);
-    try {
-      const files = editorText !== (contentText || "")
-        ? [{ path: `.phiacta/content.${contentFormat || "md"}`, content: editorText }]
-        : [];
-      await createEditProposal(resolvedId, proposalTitle.trim(), proposalBody.trim() || undefined, files);
-      refetchEdits();
-      exitContentEditMode();
-    } catch (err) {
-      setContentError(err instanceof Error ? err.message : "Failed to create proposal");
-    } finally {
-      setContentSaving(false);
-    }
-  };
 
   // Layout handles loading/error — if entry is null, we're still loading
   if (!entry) return null;
@@ -782,224 +709,64 @@ export default function EntryPage() {
       <div>
           {/* Content */}
           {activeTab === "content" && (
-            <>
-              {/* Edit / Suggest Edit button */}
-              {!editingContent && (
-                <div className="mb-3 flex items-center justify-end">
-                  {isOwner && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={enterContentEditMode}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Edit
-                    </Button>
-                  )}
-                  {isAuthenticated && !isOwner && (
-                    <Button variant="outline" size="sm" className="gap-1.5" onClick={enterContentEditMode}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Suggest Edit
-                    </Button>
-                  )}
+            <div className="space-y-4">
+              {activeJobs.length > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                  <span>
+                    {activeJobs.some((j) => j.job_type === "compiled_content")
+                      ? "PDF compiling\u2026"
+                      : `Processing\u2026 (${activeJobs.length} job${activeJobs.length > 1 ? "s" : ""})`}
+                  </span>
                 </div>
               )}
-
-              {/* Editor mode */}
-              {editingContent && (
-                <div className="space-y-3">
-                  {/* Toolbar */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 rounded-lg bg-muted p-[3px]">
-                      <button
-                        onClick={() => { setEditorViewMode("edit"); if (editorStep !== "editing") setEditorStep("editing"); }}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                          editorViewMode === "edit" && editorStep === "editing"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Code className="h-3 w-3" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => { setEditorViewMode("preview"); if (editorStep !== "editing") setEditorStep("editing"); }}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                          editorViewMode === "preview" && editorStep === "editing"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        <Eye className="h-3 w-3" />
-                        Preview
-                      </button>
-                      <button
-                        onClick={() => setEditorStep("diff-preview")}
-                        className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                          editorStep === "diff-preview"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Changes
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isOwner ? (
-                        <Button
-                          size="sm"
-                          onClick={handleContentSave}
-                          disabled={contentSaving || editorText === (contentText || "")}
-                        >
-                          {contentSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : null}
-                          Save
-                        </Button>
-                      ) : (
-                        <Button
-                          size="sm"
-                          onClick={() => setEditorStep("proposal-form")}
-                          disabled={contentSaving || editorText === (contentText || "")}
-                        >
-                          Submit Proposal
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={exitContentEditMode} disabled={contentSaving}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-
-                  {contentError && <p className="text-xs text-destructive">{contentError}</p>}
-
-                  {/* Editor / Preview / Diff */}
-                  {editorStep === "editing" && editorViewMode === "edit" && (
-                    <ContentEditor
-                      value={editorText}
-                      onChange={setEditorText}
-                      format={contentFormat}
-                    />
-                  )}
-                  {editorStep === "editing" && editorViewMode === "preview" && (
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      {editorText && contentFormat === "tex" ? (
-                        <LatexContent
-                          content={editorText}
-                          className="text-sm leading-relaxed text-card-foreground"
-                          entryId={entry.id}
-                        />
-                      ) : editorText ? (
-                        <MarkdownContent
-                          content={editorText}
-                          className="text-sm leading-relaxed text-card-foreground"
-                          entryId={entry.id}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground">Nothing to preview.</p>
-                      )}
-                    </div>
-                  )}
-                  {editorStep === "diff-preview" && (
-                    <ContentDiff
-                      original={contentText || ""}
-                      modified={editorText}
-                      path={`.phiacta/content.${contentFormat || "md"}`}
-                    />
-                  )}
-                  {editorStep === "proposal-form" && (
-                    <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-                      <h3 className="text-sm font-medium text-foreground">Submit Edit Proposal</h3>
-                      <Input
-                        value={proposalTitle}
-                        onChange={(e) => setProposalTitle(e.target.value)}
-                        placeholder="Title (required)"
-                        className="text-sm"
-                        autoFocus
-                      />
-                      <textarea
-                        value={proposalBody}
-                        onChange={(e) => setProposalBody(e.target.value)}
-                        placeholder="Description (optional)"
-                        rows={3}
-                        className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                      />
-                      <ContentDiff
-                        original={contentText || ""}
-                        modified={editorText}
-                        path={`.phiacta/content.${contentFormat || "md"}`}
-                      />
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={handleProposalSubmit} disabled={contentSaving || !proposalTitle.trim()}>
-                          {contentSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <GitBranch className="h-3.5 w-3.5 mr-1" />}
-                          Submit Proposal
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditorStep("editing")} disabled={contentSaving}>
-                          <ArrowLeft className="h-3.5 w-3.5 mr-1" />
-                          Back to Editor
-                        </Button>
-                      </div>
-                    </div>
-                  )}
+              {failedCompilationJob && !compiledInfo && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
+                  <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    PDF compilation failed.
+                    {failedCompilationJob.last_error && (
+                      <> Error: <code className="ml-1 font-mono text-xs">{failedCompilationJob.last_error.slice(0, 200)}</code></>
+                    )}
+                  </span>
                 </div>
               )}
-
-              {/* Read-only content view */}
-              {!editingContent && (
-                <div className="space-y-4">
-                  {activeJobs.length > 0 && (
-                    <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
-                      <span>
-                        {activeJobs.some((j) => j.job_type === "compiled_content")
-                          ? "PDF compiling\u2026"
-                          : `Processing\u2026 (${activeJobs.length} job${activeJobs.length > 1 ? "s" : ""})`}
-                      </span>
-                    </div>
-                  )}
-                  {failedCompilationJob && !compiledInfo && (
-                    <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
-                      <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                      <span>
-                        PDF compilation failed.
-                        {failedCompilationJob.last_error && (
-                          <> Error: <code className="ml-1 font-mono text-xs">{failedCompilationJob.last_error.slice(0, 200)}</code></>
-                        )}
-                      </span>
-                    </div>
-                  )}
-                  {compiledInfo && resolvedId ? (
-                    <div>
-                      <iframe
-                        key={compiledInfo.compiled_at}
-                        src={getCompiledPdfUrl(resolvedId)}
-                        className="w-full rounded-xl border border-border bg-muted/30"
-                        style={{ height: "750px" }}
-                        title="Compiled PDF"
-                      />
-                    </div>
+              {compiledInfo && resolvedId ? (
+                <div>
+                  <iframe
+                    key={compiledInfo.compiled_at}
+                    src={getCompiledPdfUrl(resolvedId)}
+                    className="w-full rounded-xl border border-border bg-muted/30"
+                    style={{ height: "750px" }}
+                    title="Compiled PDF"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-xl border border-border bg-card p-6">
+                  {contentText && contentFormat === "tex" ? (
+                    <LatexContent
+                      content={contentText}
+                      className="text-sm leading-relaxed text-card-foreground"
+                      entryId={entry.id}
+                    />
+                  ) : contentText ? (
+                    <MarkdownContent
+                      content={contentText}
+                      className="text-sm leading-relaxed text-card-foreground"
+                      entryId={entry.id}
+                    />
                   ) : (
-                    <div className="rounded-xl border border-border bg-card p-6">
-                      {contentText && contentFormat === "tex" ? (
-                        <LatexContent
-                          content={contentText}
-                          className="text-sm leading-relaxed text-card-foreground"
-                          entryId={entry.id}
-                        />
-                      ) : contentText ? (
-                        <MarkdownContent
-                          content={contentText}
-                          className="text-sm leading-relaxed text-card-foreground"
-                          entryId={entry.id}
-                        />
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          No rendered content available. Browse the source under{" "}
-                          <button
-                            className="underline hover:text-foreground transition-colors"
-                            onClick={() => router.push(`/entries/${resolvedId}?tab=files`)}
-                          >.phiacta/content/</button>.
-                        </p>
-                      )}
-                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      No rendered content available. Browse the source under{" "}
+                      <button
+                        className="underline hover:text-foreground transition-colors"
+                        onClick={() => router.push(`/entries/${resolvedId}?tab=files`)}
+                      >.phiacta/content/</button>.
+                    </p>
                   )}
                 </div>
               )}
-            </>
+            </div>
           )}
 
           {/* Issues */}
@@ -1057,19 +824,41 @@ export default function EntryPage() {
           {/* Proposals */}
           {activeTab === "proposals" && (
             <>
-              <div className="mb-3">
-                <p className="text-sm text-muted-foreground">
-                  Edit proposals are content changes — like pull requests on the entry&apos;s repository.
-                </p>
-              </div>
-              <div className="space-y-2">
-                {edits.map((edit) => (
-                  <EditRow key={edit.number} edit={edit} entryId={entry.id} />
-                ))}
-                {edits.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No proposals yet.</p>
-                )}
-              </div>
+              {!creatingProposal ? (
+                <>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Edit proposals are content changes — like pull requests on the entry&apos;s repository.
+                    </p>
+                    {isAuthenticated && (
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setCreatingProposal(true)}>
+                        <Plus className="h-3.5 w-3.5" />
+                        New Proposal
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {edits.map((edit) => (
+                      <EditRow key={edit.number} edit={edit} entryId={entry.id} />
+                    ))}
+                    {edits.length === 0 && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">No proposals yet.</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <ProposalWorkspace
+                  entryId={resolvedId}
+                  isOwner={isOwner}
+                  entryFiles={entryFiles}
+                  onComplete={() => {
+                    setCreatingProposal(false);
+                    refetchEdits();
+                    refetchEntry();
+                  }}
+                  onCancel={() => setCreatingProposal(false)}
+                />
+              )}
             </>
           )}
 
