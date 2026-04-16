@@ -598,6 +598,17 @@ export async function addIssueComment(
   );
 }
 
+export async function addEditProposalComment(
+  entryId: string,
+  editNumber: number,
+  body: string,
+): Promise<IssueCommentResponse> {
+  return authFetch<IssueCommentResponse>(
+    `/v1/entries/${entryId}/edits/${editNumber}/comments`,
+    { method: "POST", body: JSON.stringify({ body }) },
+  );
+}
+
 // --- Edit Proposal Creation ---
 
 export async function createEditProposal(

@@ -150,6 +150,7 @@ export interface EditProposalFileDiff {
 
 export interface EditProposalDetail extends EditProposalListItem {
   diff: EditProposalFileDiff[];
+  comments: IssueCommentResponse[];
 }
 
 // History types — mirrors entry_history.py
