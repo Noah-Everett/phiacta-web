@@ -904,6 +904,28 @@ export default function PostPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
+      {/* Auth gate — gray out the form until signed in */}
+      {!user && (
+        <div className="mb-8 flex items-center justify-between rounded-lg border border-border bg-card px-5 py-4 shadow-sm">
+          <div>
+            <p className="text-sm font-medium text-foreground">Sign in to publish</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Create an account to start publishing entries.</p>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/auth/login">
+                <LogIn className="mr-1.5 h-3.5 w-3.5" />
+                Log in
+              </Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/auth/signup">Sign up</Link>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className={!user ? "pointer-events-none select-none opacity-50" : undefined}>
       {/* Header */}
       <div className="mb-10 flex items-end justify-between">
         <div>
@@ -1373,31 +1395,13 @@ export default function PostPage() {
           </div>
         </div>
 
-        {/* Submit / Auth gate */}
+        {/* Submit */}
         <div className="pt-4">
-          {!user ? (
-            <div className="flex items-center justify-between rounded-md border border-border bg-card px-4 py-3.5">
-              <p className="text-sm text-muted-foreground">Sign in to publish</p>
-              <div className="flex gap-2">
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/auth/login">
-                    <LogIn className="mr-1.5 h-3.5 w-3.5" />
-                    Log in
-                  </Link>
-                </Button>
-                <Button asChild size="sm">
-                  <Link href="/auth/signup">
-                    Sign up
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          ) : (
             <div className="flex items-center justify-between gap-6">
               <p className="text-xs text-muted-foreground/80">
                 Entries are permanent. You can update content after publishing.
               </p>
-              <Button type="submit" disabled={submitting} className="shrink-0">
+              <Button type="submit" disabled={submitting || !user} className="shrink-0">
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1411,9 +1415,9 @@ export default function PostPage() {
                 )}
               </Button>
             </div>
-          )}
         </div>
       </form>
+      </div>
     </div>
   );
 }
