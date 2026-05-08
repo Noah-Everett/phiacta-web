@@ -8,7 +8,7 @@ import ProposalFileBrowser from "@/components/ProposalFileBrowser";
 import ProposalFileEditor from "@/components/ProposalFileEditor";
 import ProposalStagedChanges from "@/components/ProposalStagedChanges";
 import ProposalSubmitForm from "@/components/ProposalSubmitForm";
-import { createEditProposal, putEntryFile, API_URL, getStoredToken } from "@/lib/api";
+import { createEditProposal, postEntryFiles, API_URL, getStoredToken } from "@/lib/api";
 import type { FileListItem } from "@/lib/types";
 
 // --- State types ---
@@ -219,21 +219,26 @@ export default function ProposalWorkspace({
     if (state.stagedFiles.size === 0) return;
     dispatch({ type: "SET_SUBMITTING", submitting: true });
     dispatch({ type: "SET_ERROR", error: null });
-    const failures: string[] = [];
-    for (const staged of state.stagedFiles.values()) {
-      try {
-        const blob = new Blob([staged.modifiedContent], { type: "text/plain" });
-        const file = new globalThis.File([blob], staged.path.split("/").pop() || "file", { type: "text/plain" });
-        await putEntryFile(entryId, staged.path, file, state.proposalTitle.trim() || "Update files");
-      } catch (err) {
-        failures.push(`${staged.path}: ${err instanceof Error ? err.message : "failed"}`);
-      }
-    }
-    if (failures.length > 0) {
-      dispatch({ type: "SET_ERROR", error: `Failed: ${failures.join("; ")}` });
-      dispatch({ type: "SET_SUBMITTING", submitting: false });
-    } else {
+    try {
+      // One atomic commit via the bulk endpoint. Previously we issued one
+      // PUT per staged file, which produced N separate commits and left
+      // the workspace in an indeterminate state on partial failure.
+      const files = Array.from(state.stagedFiles.values()).map((staged) => ({
+        path: staged.path,
+        data: new Blob([staged.modifiedContent], { type: "text/plain" }),
+      }));
+      await postEntryFiles(
+        entryId,
+        files,
+        state.proposalTitle.trim() || "Update files",
+      );
       onComplete();
+    } catch (err) {
+      dispatch({
+        type: "SET_ERROR",
+        error: err instanceof Error ? err.message : "Failed to commit changes",
+      });
+      dispatch({ type: "SET_SUBMITTING", submitting: false });
     }
   }, [entryId, state.stagedFiles, state.proposalTitle, onComplete]);
 
