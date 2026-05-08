@@ -325,7 +325,6 @@ describe("getStoredToken — JWT expiry check", () => {
 
 describe("listJobs — no redirect on 401", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
-  const originalHref = window.location.href;
 
   beforeEach(() => {
     clearStoredToken();
@@ -333,12 +332,10 @@ describe("listJobs — no redirect on 401", () => {
     vi.stubGlobal("fetch", fetchMock);
   });
 
-  afterEach(() => {
-    // Restore location in case it was changed
-    if (window.location.href !== originalHref) {
-      window.location.href = originalHref;
-    }
-  });
+  // No afterEach URL restore: listJobs uses request() which never sets
+  // window.location.href. Earlier defensive cleanup crashed jsdom because
+  // assigning window.location.href is blocked. The 401-non-redirect contract
+  // is asserted directly below.
 
   it("throws ApiError on 401 instead of redirecting to login", async () => {
     fetchMock.mockResolvedValueOnce({
