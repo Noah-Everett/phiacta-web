@@ -151,37 +151,36 @@ export default function PostPage() {
     setTimeout(() => customInputRef.current?.focus(), 0);
   }
 
-  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
-    const selected = e.target.files;
-    if (!selected) return;
+  function _addFiles(incoming: FileList) {
     const newFiles: { file: File; path: string }[] = [];
-    for (let i = 0; i < selected.length; i++) {
-      const f = selected[i];
-      if (f.size > MAX_FILE_SIZE) continue; // silently skip oversized
-      // Deduplicate by name
+    const skipped: string[] = [];
+    for (let i = 0; i < incoming.length; i++) {
+      const f = incoming[i];
+      if (f.size > MAX_FILE_SIZE) {
+        skipped.push(`${f.name} (${formatFileSize(f.size)} exceeds ${formatFileSize(MAX_FILE_SIZE)} limit)`);
+        continue;
+      }
       if (!files.some((existing) => existing.file.name === f.name) && !newFiles.some((n) => n.file.name === f.name)) {
         newFiles.push({ file: f, path: f.name });
       }
     }
+    if (skipped.length > 0) {
+      setFileWarning(`Skipped: ${skipped.join(", ")}`);
+    }
     setFiles((prev) => [...prev, ...newFiles]);
-    // Reset input so the same file can be re-added after removal
+  }
+
+  function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!e.target.files) return;
+    _addFiles(e.target.files);
     e.target.value = "";
   }
 
   function handleFilesDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragOver(false);
-    const dropped = e.dataTransfer.files;
-    if (!dropped) return;
-    const newFiles: { file: File; path: string }[] = [];
-    for (let i = 0; i < dropped.length; i++) {
-      const f = dropped[i];
-      if (f.size > MAX_FILE_SIZE) continue;
-      if (!files.some((existing) => existing.file.name === f.name) && !newFiles.some((n) => n.file.name === f.name)) {
-        newFiles.push({ file: f, path: f.name });
-      }
-    }
-    setFiles((prev) => [...prev, ...newFiles]);
+    if (!e.dataTransfer.files) return;
+    _addFiles(e.dataTransfer.files);
   }
 
   function removeFile(name: string) {
@@ -1361,6 +1360,10 @@ export default function PostPage() {
                   <Upload className="h-4 w-4" />
                   Choose files or drag and drop
                 </button>
+
+                {fileWarning && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400">{fileWarning}</p>
+                )}
 
                 {files.length > 0 && (
                   <div className="space-y-1">
