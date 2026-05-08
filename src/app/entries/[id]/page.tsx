@@ -459,7 +459,14 @@ export default function EntryPage() {
 
     const poll = async () => {
       try {
-        const result = await listJobs({ entity_id: entryId, limit: 20 });
+        // Only count pending/running jobs as "active". Without this filter
+        // listJobs returns completed/failed jobs too, and active.length stays
+        // > 0 forever — UI shows "compiling…" indefinitely.
+        const result = await listJobs({
+          entity_id: entryId,
+          status: "pending,running",
+          limit: 20,
+        });
         const active = result.items;
         setActiveJobs(active);
         if (active.length > 0) {
@@ -510,7 +517,12 @@ export default function EntryPage() {
 
     (async () => {
       try {
-        const activeResult = await listJobs({ entity_id: resolvedId, limit: 20 });
+        // Only check for pending/running jobs — see comment in pollJobs.
+        const activeResult = await listJobs({
+          entity_id: resolvedId,
+          status: "pending,running",
+          limit: 20,
+        });
         if (activeResult.items.length > 0) {
           pollJobs(resolvedId);
           return;
