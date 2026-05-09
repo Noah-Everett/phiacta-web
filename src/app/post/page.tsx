@@ -422,10 +422,19 @@ export default function PostPage() {
       if (extractedTitle) extractedTitle = cleanLatexText(extractedTitle);
     }
 
-    // Extract \begin{abstract}...\end{abstract}
-    const absMatch = stripped.match(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/);
-    if (absMatch) {
-      extractedAbstract = cleanLatexText(absMatch[1]);
+    // Extract abstract — two common forms:
+    //   \begin{abstract}...\end{abstract}  (standard LaTeX)
+    //   \abstract{...}                      (JHEP, revtex, etc.)
+    const absEnvMatch = stripped.match(/\\begin\{abstract\}([\s\S]*?)\\end\{abstract\}/);
+    if (absEnvMatch) {
+      extractedAbstract = cleanLatexText(absEnvMatch[1]);
+    } else {
+      const absCmdMatch = stripped.match(/\\abstract\s*\{/);
+      if (absCmdMatch) {
+        const braceStart = stripped.indexOf("{", absCmdMatch.index!);
+        extractedAbstract = extractBraced(stripped, braceStart);
+        if (extractedAbstract) extractedAbstract = cleanLatexText(extractedAbstract);
+      }
     }
 
     return { title: extractedTitle || null, abstract: extractedAbstract || null };
