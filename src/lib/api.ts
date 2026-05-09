@@ -27,6 +27,8 @@ import type {
   PluginInfo,
   DocListItem,
   DocDetail,
+  JobListItem,
+  JobListResponse,
 } from "./types";
 
 // Server-side (SSR) uses the Docker-internal URL; browser uses the public URL
@@ -75,7 +77,21 @@ const TOKEN_KEY = "phiacta_token";
 
 export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(TOKEN_KEY);
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (!token) return null;
+
+  // Clear expired JWTs proactively so stale tokens are never sent.
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    if (typeof payload.exp === "number" && payload.exp * 1000 < Date.now()) {
+      localStorage.removeItem(TOKEN_KEY);
+      return null;
+    }
+  } catch {
+    // Not a valid JWT (e.g. a PAT) — let the server decide.
+  }
+
+  return token;
 }
 
 export function setStoredToken(token: string): void {
@@ -251,7 +267,7 @@ export async function putEntryFile(
   if (message) form.append("message", message);
 
   const res = await fetch(
-    `${API_URL}/v1/entries/${entryId}/files/${encodeURIComponent(path)}`,
+    `${API_URL}/v1/entries/${entryId}/files/${path.split("/").map(encodeURIComponent).join("/")}`,
     {
       method: "PUT",
       headers: getAuthHeaders(),
@@ -269,6 +285,62 @@ export async function putEntryFile(
     throw new ApiError(res.status, body?.detail || `Upload failed: ${res.status}`);
   }
   return res.json() as Promise<FileWriteResponse>;
+}
+
+/** Upload multiple files in a single atomic commit.
+ *
+ * Uses XMLHttpRequest instead of fetch() to support upload progress
+ * reporting via the optional `onProgress` callback.
+ */
+export function postEntryFiles(
+  entryId: string,
+  files: { path: string; data: Blob }[],
+  message?: string,
+  onProgress?: (loaded: number, total: number) => void,
+): Promise<FileWriteResponse> {
+  const form = new FormData();
+  for (const { path, data } of files) {
+    form.append("files", data);
+    form.append("paths", path);
+  }
+  if (message) form.append("message", message);
+
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/v1/entries/${entryId}/files`);
+
+    const headers = getAuthHeaders();
+    for (const [key, value] of Object.entries(headers)) {
+      xhr.setRequestHeader(key, value);
+    }
+
+    if (onProgress) {
+      xhr.upload.addEventListener("progress", (e) => {
+        if (e.lengthComputable) onProgress(e.loaded, e.total);
+      });
+    }
+
+    xhr.addEventListener("load", () => {
+      if (xhr.status === 401) {
+        clearStoredToken();
+        if (typeof window !== "undefined") window.location.href = "/auth/login";
+        reject(new Error("Session expired. Please log in again."));
+        return;
+      }
+      let body: Record<string, unknown> | null = null;
+      try { body = JSON.parse(xhr.responseText); } catch {}
+      if (xhr.status < 200 || xhr.status >= 300) {
+        reject(new ApiError(xhr.status, (body?.detail as string) || `Upload failed: ${xhr.status}`));
+        return;
+      }
+      resolve(body as unknown as FileWriteResponse);
+    });
+
+    xhr.addEventListener("error", () => reject(new Error("Network error during upload")));
+    xhr.addEventListener("timeout", () => reject(new Error("Upload timed out")));
+
+    xhr.send(form);
+  });
 }
 
 // --- References ---
@@ -486,7 +558,7 @@ export async function deleteEntryFile(
   message?: string,
 ): Promise<FileWriteResponse> {
   return authFetch<FileWriteResponse>(
-    `/v1/entries/${entryId}/files/${encodeURIComponent(path)}`,
+    `/v1/entries/${entryId}/files/${path.split("/").map(encodeURIComponent).join("/")}`,
     {
       method: "DELETE",
       body: message ? JSON.stringify({ message }) : undefined,
@@ -526,6 +598,17 @@ export async function addIssueComment(
   );
 }
 
+export async function addEditProposalComment(
+  entryId: string,
+  editNumber: number,
+  body: string,
+): Promise<IssueCommentResponse> {
+  return authFetch<IssueCommentResponse>(
+    `/v1/entries/${entryId}/edits/${editNumber}/comments`,
+    { method: "POST", body: JSON.stringify({ body }) },
+  );
+}
+
 // --- Edit Proposal Creation ---
 
 export async function createEditProposal(
@@ -538,6 +621,31 @@ export async function createEditProposal(
     method: "POST",
     body: JSON.stringify({ title, body: body || null, files: files || [] }),
   });
+}
+
+// --- Compiled Content ---
+
+/** URL to fetch the compiled PDF for an entry via the compiled_content extension. */
+export function getCompiledPdfUrl(entryId: string): string {
+  return `${API_URL}/v1/extensions/compiled_content/${entryId}?format=pdf`;
+}
+
+// --- Jobs ---
+
+export async function listJobs(params?: {
+  status?: string;
+  job_type?: string;
+  entity_id?: string;
+  limit?: number;
+  cursor?: string | null;
+}): Promise<JobListResponse> {
+  const q = new URLSearchParams();
+  if (params?.status) q.set("status", params.status);
+  if (params?.job_type) q.set("job_type", params.job_type);
+  if (params?.entity_id) q.set("entity_id", params.entity_id);
+  if (params?.limit) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  return request<JobListResponse>(`/v1/jobs?${q.toString()}`);
 }
 
 // --- Plugins ---

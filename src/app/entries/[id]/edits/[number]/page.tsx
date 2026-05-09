@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
 import DiffBlock from "@/components/DiffBlock";
 import {
-  ChevronRight,
   GitBranch,
   GitMerge,
   CircleDot,
@@ -17,16 +16,15 @@ import {
   X,
 } from "lucide-react";
 import {
-  getEntry,
   getEntryEditDetail,
   mergeEditProposal,
   closeEditProposal,
-  getStoredToken,
+  addEditProposalComment,
 } from "@/lib/api";
 import type {
-  EntryDetailResponse,
   EditProposalDetail,
 } from "@/lib/types";
+import { useEntryContext } from "../../entry-context";
 
 interface EditPageProps {
   params: Promise<{ id: string; number: string }>;
@@ -34,20 +32,20 @@ interface EditPageProps {
 
 export default function EditPage({ params }: EditPageProps) {
   const router = useRouter();
-  const [entryId, setEntryId] = useState<string | null>(null);
+  const { resolvedId: entryId, isOwner, isAuthenticated, refetchEdits } = useEntryContext();
   const [editNumber, setEditNumber] = useState<number | null>(null);
-  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
   const [edit, setEdit] = useState<EditProposalDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [merging, setMerging] = useState(false);
   const [closing, setClosing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const isLoggedIn = typeof window !== "undefined" && !!getStoredToken();
+  const [commentBody, setCommentBody] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
 
   useEffect(() => {
     params.then((p) => {
-      setEntryId(p.id);
       setEditNumber(parseInt(p.number));
     });
   }, [params]);
@@ -55,12 +53,8 @@ export default function EditPage({ params }: EditPageProps) {
   const loadData = useCallback(() => {
     if (!entryId || !editNumber) return;
     setLoading(true);
-    Promise.all([
-      getEntry(entryId),
-      getEntryEditDetail(entryId, editNumber),
-    ])
-      .then(([entryData, editData]) => {
-        setEntry(entryData);
+    getEntryEditDetail(entryId, editNumber)
+      .then((editData) => {
         setEdit(editData);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load"))
@@ -79,7 +73,7 @@ export default function EditPage({ params }: EditPageProps) {
     setMerging(true);
     setActionError(null);
     mergeEditProposal(entryId, editNumber)
-      .then(() => loadData())
+      .then(() => { loadData(); refetchEdits(); })
       .catch((err) => setActionError(err instanceof Error ? err.message : "Merge failed"))
       .finally(() => setMerging(false));
   };
@@ -89,26 +83,40 @@ export default function EditPage({ params }: EditPageProps) {
     setClosing(true);
     setActionError(null);
     closeEditProposal(entryId, editNumber)
-      .then(() => loadData())
+      .then(() => { loadData(); refetchEdits(); })
       .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
       .finally(() => setClosing(false));
   };
 
+  const handleComment = () => {
+    if (!entryId || !editNumber || !commentBody.trim()) return;
+    setSubmittingComment(true);
+    setCommentError(null);
+    addEditProposalComment(entryId, editNumber, commentBody.trim())
+      .then(() => {
+        setCommentBody("");
+        loadData();
+      })
+      .catch((err) =>
+        setCommentError(err instanceof Error ? err.message : "Failed to add comment"),
+      )
+      .finally(() => setSubmittingComment(false));
+  };
+
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-8">
-        <Skeleton className="h-4 w-48 mb-6" />
+      <div className="max-w-4xl">
         <Skeleton className="h-8 w-2/3 mb-4" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
 
-  if (error || !entry || !edit) {
+  if (error || !edit) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-foreground">Edit proposal not found</h1>
-        <p className="mb-4 text-sm text-muted-foreground">{error || "This edit proposal does not exist."}</p>
+      <div className="max-w-4xl">
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Edit not found</h1>
+        <p className="mb-4 text-sm text-muted-foreground">{error || "This edit does not exist."}</p>
         <Button variant="outline" onClick={() => router.back()}>Go back</Button>
       </div>
     );
@@ -120,18 +128,7 @@ export default function EditPage({ params }: EditPageProps) {
     : "text-violet-700 border-violet-200 bg-violet-50 dark:text-violet-300 dark:border-violet-800 dark:bg-violet-950/50";
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
-      {/* Breadcrumb */}
-      <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link href="/explore" className="hover:text-foreground transition-colors">Explore</Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors truncate max-w-[200px]">
-          {entry.title || "Untitled"}
-        </Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground">Edit #{edit.number}</span>
-      </nav>
-
+    <div className="max-w-4xl">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-start gap-3 mb-3">
@@ -194,15 +191,15 @@ export default function EditPage({ params }: EditPageProps) {
         </div>
       )}
       {edit.diff.length === 0 && (
-        <p className="mb-6 text-sm text-muted-foreground">No file changes in this proposal.</p>
+        <p className="mb-6 text-sm text-muted-foreground">No file changes in this edit.</p>
       )}
 
       {/* Actions */}
       {actionError && (
         <p className="mb-3 text-xs text-red-600 dark:text-red-400">{actionError}</p>
       )}
-      {edit.state === "open" && isLoggedIn && (
-        <div className="flex items-center gap-2 pt-4 border-t border-border">
+      {edit.state === "open" && isOwner && (
+        <div className="flex items-center gap-2 pt-4 border-t border-border mb-6">
           <Button
             onClick={handleMerge}
             disabled={merging || closing}
@@ -220,6 +217,60 @@ export default function EditPage({ params }: EditPageProps) {
             {closing ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
             Close
           </Button>
+        </div>
+      )}
+
+      {/* Comments */}
+      {edit.comments.length > 0 && (
+        <div className="space-y-4 mb-6">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            {edit.comments.length} comment{edit.comments.length !== 1 ? "s" : ""}
+          </h2>
+          {edit.comments.map((c) => (
+            <div key={c.id} className="rounded-xl border border-border bg-card overflow-hidden">
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-border bg-muted/50">
+                <span className="text-sm font-medium text-foreground">{c.author.username}</span>
+                <span className="text-xs text-muted-foreground">
+                  {new Date(c.created_at).toLocaleDateString("en-US", {
+                    year: "numeric", month: "short", day: "numeric",
+                  })}
+                </span>
+              </div>
+              <div className="px-5 py-4">
+                <MarkdownContent content={c.body} className="text-sm" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add comment */}
+      {isAuthenticated && (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Add a comment
+          </h2>
+          <textarea
+            value={commentBody}
+            onChange={(e) => setCommentBody(e.target.value)}
+            placeholder="Leave a comment..."
+            rows={4}
+            className="w-full rounded-lg border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">Markdown supported</span>
+            <Button
+              onClick={handleComment}
+              disabled={submittingComment || !commentBody.trim()}
+              className="gap-1.5"
+            >
+              {submittingComment && <Loader2 className="h-4 w-4 animate-spin" />}
+              Comment
+            </Button>
+          </div>
+          {commentError && (
+            <p className="mt-2 text-xs text-red-600 dark:text-red-400">{commentError}</p>
+          )}
         </div>
       )}
     </div>

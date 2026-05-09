@@ -220,7 +220,7 @@ export default function GraphView({
 
 
       // Label
-      if (showLabelsRef.current && globalScale > 0.8) {
+      if (showLabelsRef.current) {
         const label = node.title || "Untitled";
         const fontSize = Math.max(10 / globalScale, 2);
         ctx.font = `500 ${fontSize}px system-ui, sans-serif`;
@@ -294,7 +294,7 @@ export default function GraphView({
   );
 
   return (
-    <div ref={containerRef} className="relative h-[500px] w-full rounded-xl border border-border bg-card">
+    <div ref={containerRef} className="relative h-full w-full bg-card">
       {data.truncated && (
         <div className="absolute left-3 top-3 z-10 rounded-md bg-amber-50 px-2.5 py-1 text-xs text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
           Graph capped at {data.nodes.length} nodes. Narrow filters or reduce depth.

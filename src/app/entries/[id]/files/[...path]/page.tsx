@@ -2,16 +2,20 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { ChevronRight, Download, FileIcon as FileIconLucide, Pencil, Loader2, X, Check } from "lucide-react";
+import { ChevronRight, Download, FileIcon as FileIconLucide, Pencil, Loader2, X, Check, Eye, Code } from "lucide-react";
 import { useTheme } from "next-themes";
+import dynamic from "next/dynamic";
 import FileIcon from "@/components/FileIcon";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
-import { useAuth } from "@/lib/auth-context";
-import { getEntry, putEntryFile, API_URL, getStoredToken } from "@/lib/api";
+import ContentDiff from "@/components/ContentDiff";
+const ContentEditor = dynamic(() => import("@/components/ContentEditor"), { ssr: false });
+import { putEntryFile, API_URL, getStoredToken } from "@/lib/api";
 import { highlightCode, getLanguageFromPath, type HighlightToken } from "@/lib/highlighter";
 import type { FileListItem } from "@/lib/types";
+import { useEntryContext } from "../../entry-context";
 
 const TEXT_EXTENSIONS = new Set([
   ".md", ".txt", ".yaml", ".yml", ".json", ".toml", ".csv", ".tex",
@@ -80,8 +84,7 @@ interface FilePageProps {
 }
 
 export default function FilePage({ params }: FilePageProps) {
-  const { user } = useAuth();
-  const [entryId, setEntryId] = useState<string>("");
+  const { resolvedId: entryId, isOwner } = useEntryContext();
   const [filePath, setFilePath] = useState<string>("");
   const [content, setContent] = useState<string | null>(null);
   const [dirItems, setDirItems] = useState<FileListItem[] | null>(null);
@@ -90,12 +93,12 @@ export default function FilePage({ params }: FilePageProps) {
   const [fileSize, setFileSize] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isOwner, setIsOwner] = useState(false);
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState("");
   const [editMessage, setEditMessage] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [editorViewMode, setEditorViewMode] = useState<"edit" | "preview" | "changes">("edit");
 
   // Line selection state for PHI-132
   const [selectedLines, setSelectedLines] = useState<{ start: number; end: number } | null>(null);
@@ -108,7 +111,6 @@ export default function FilePage({ params }: FilePageProps) {
 
   useEffect(() => {
     params.then((p) => {
-      setEntryId(p.id);
       setFilePath(p.path.map((seg) => decodeURIComponent(seg)).join("/"));
     });
   }, [params]);
@@ -202,12 +204,6 @@ export default function FilePage({ params }: FilePageProps) {
       .finally(() => setLoading(false));
   }, [entryId, filePath]);
 
-  // Check ownership
-  useEffect(() => {
-    if (!entryId || !user) { setIsOwner(false); return; }
-    getEntry(entryId).then((e) => setIsOwner(e.created_by === user.id)).catch(() => setIsOwner(false));
-  }, [entryId, user]);
-
   // Syntax highlighting (PHI-131)
   useEffect(() => {
     if (!content || !filePath || filePath.endsWith(".md")) {
@@ -227,17 +223,30 @@ export default function FilePage({ params }: FilePageProps) {
     return () => { cancelled = true; };
   }, [content, filePath, resolvedTheme]);
 
+  const exitEditing = () => {
+    setEditing(false);
+    setEditorViewMode("edit");
+    setEditMessage("");
+    setSaveError(null);
+  };
+
+  const enterEditing = () => {
+    setEditText(content || "");
+    setEditorViewMode("edit");
+    setSaveError(null);
+    setEditing(true);
+  };
+
   const handleSave = async () => {
     if (!entryId || !filePath) return;
     setSaving(true);
     setSaveError(null);
     try {
       const blob = new Blob([editText], { type: "text/plain" });
-      const file = new File([blob], filePath.split("/").pop() || "file");
+      const file = new globalThis.File([blob], filePath.split("/").pop() || "file");
       await putEntryFile(entryId, filePath, file, editMessage || undefined);
       setContent(editText);
-      setEditing(false);
-      setEditMessage("");
+      exitEditing();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Failed to save");
     } finally {
@@ -252,6 +261,7 @@ export default function FilePage({ params }: FilePageProps) {
   const encodedFilePath = filePath.split("/").map((seg) => encodeURIComponent(seg)).join("/");
   const fileUrl = `${API_URL}/v1/entries/${entryId}/files/${encodedFilePath}`;
   const isImmutable = filePath === ".phiacta/entry.yaml";
+  const editorFormat = getFileExtension(filePath).replace(".", "") || "txt";
   const canEdit = isOwner && !isImmutable && !isDir && !isImage && !isPdf && !isBinary && content !== null;
 
   // Breadcrumb segments
@@ -259,7 +269,7 @@ export default function FilePage({ params }: FilePageProps) {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
+      <div>
         <Skeleton className="h-6 w-48 mb-4" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -267,14 +277,10 @@ export default function FilePage({ params }: FilePageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      {/* Breadcrumb */}
+    <div>
+      {/* File path breadcrumb */}
       <nav className="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground flex-wrap">
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors">
-          Entry
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5" />
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors">
+        <Link href={`/entries/${entryId}?tab=files`} className="hover:text-foreground transition-colors">
           Files
         </Link>
         {segments.map((seg, i) => {
@@ -385,12 +391,7 @@ export default function FilePage({ params }: FilePageProps) {
             <code className="font-mono text-sm text-muted-foreground">{fileName}</code>
             <div className="flex items-center gap-2">
               {canEdit && !editing && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => { setEditText(content); setEditing(true); setSaveError(null); }}
-                >
+                <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={enterEditing}>
                   <Pencil className="h-3.5 w-3.5" />
                   Edit
                 </Button>
@@ -407,29 +408,93 @@ export default function FilePage({ params }: FilePageProps) {
           </div>
           {editing ? (
             <div className="p-4 space-y-3">
-              <textarea
-                value={editText}
-                onChange={(e) => setEditText(e.target.value)}
-                className="w-full min-h-[400px] rounded-lg border border-border bg-background px-4 py-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              <input
-                type="text"
-                placeholder="Commit message (optional)"
-                value={editMessage}
-                onChange={(e) => setEditMessage(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-              {saveError && <p className="text-xs text-destructive">{saveError}</p>}
-              <div className="flex items-center gap-2">
-                <Button size="sm" onClick={handleSave} disabled={saving} className="gap-1.5">
-                  {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                  Save
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => { setEditing(false); setSaveError(null); }} disabled={saving} className="gap-1.5">
-                  <X className="h-3.5 w-3.5" />
-                  Cancel
-                </Button>
+              {/* Toolbar */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1 rounded-lg bg-muted p-[3px]">
+                  <button
+                    onClick={() => setEditorViewMode("edit")}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                      editorViewMode === "edit"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Code className="h-3 w-3" />
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setEditorViewMode("preview")}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                      editorViewMode === "preview"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Eye className="h-3 w-3" />
+                    Preview
+                  </button>
+                  <button
+                    onClick={() => setEditorViewMode("changes")}
+                    className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                      editorViewMode === "changes"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Changes
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button size="sm" onClick={handleSave} disabled={saving || editText === content} className="gap-1.5">
+                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Save
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={exitEditing} disabled={saving} className="gap-1.5">
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
+
+              {editorViewMode === "edit" && (
+                <Input
+                  value={editMessage}
+                  onChange={(e) => setEditMessage(e.target.value)}
+                  placeholder="Commit message (optional)"
+                  className="text-sm"
+                />
+              )}
+
+              {saveError && <p className="text-xs text-destructive">{saveError}</p>}
+
+              {/* Editor */}
+              {editorViewMode === "edit" && (
+                <ContentEditor
+                  value={editText}
+                  onChange={setEditText}
+                  format={editorFormat}
+                />
+              )}
+
+              {/* Preview */}
+              {editorViewMode === "preview" && (
+                <div className="rounded-lg border border-border p-6">
+                  {isMarkdown ? (
+                    <MarkdownContent
+                      content={editText}
+                      className="text-sm leading-relaxed text-card-foreground"
+                      entryId={entryId}
+                    />
+                  ) : (
+                    <pre className="text-xs font-mono leading-5 whitespace-pre-wrap text-foreground">{editText}</pre>
+                  )}
+                </div>
+              )}
+
+              {/* Changes */}
+              {editorViewMode === "changes" && (
+                <ContentDiff original={content} modified={editText} path={filePath} />
+              )}
             </div>
           ) : (
             <>

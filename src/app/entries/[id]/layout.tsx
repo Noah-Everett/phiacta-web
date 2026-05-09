@@ -2,11 +2,19 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { getEntry } from "@/lib/api";
 import { SITE_URL, DEFAULT_DESCRIPTION } from "@/lib/seo";
+import EntryLayoutClient from "./EntryLayoutClient";
+
+interface LayoutProps {
+  children: ReactNode;
+  params: Promise<{ id: string }>;
+}
 
 /**
- * Server-component layout around the client entry page. Its only job is
- * to expose server-side generateMetadata so crawlers and link previews
- * see the actual entry title/summary instead of the root metadata.
+ * The entry UI (tabs, header, sidebar) is client-side and provides the
+ * EntryContext consumed by every nested page, so it stays in
+ * EntryLayoutClient. This wrapper exists purely to expose server-side
+ * generateMetadata — server components can't live in the same file as a
+ * "use client" module.
  */
 export async function generateMetadata({
   params,
@@ -58,6 +66,6 @@ export async function generateMetadata({
   }
 }
 
-export default function EntryLayout({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+export default function EntryLayout({ children, params }: LayoutProps) {
+  return <EntryLayoutClient params={params}>{children}</EntryLayoutClient>;
 }

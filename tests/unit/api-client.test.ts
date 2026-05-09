@@ -7,10 +7,13 @@ import {
   registerApi,
   loginApi,
   listEntries,
+  listJobs,
   getEntry,
   createEntry,
   getMeApi,
+  getStoredToken,
   setStoredToken,
+  clearStoredToken,
 } from "@/lib/api";
 
 describe("API Client — endpoint URLs", () => {
@@ -272,5 +275,79 @@ describe("API Client — request bodies", () => {
     expect(body).toHaveProperty("username", "testuser");
     expect(body).toHaveProperty("password", "password");
     expect(body).not.toHaveProperty("email");
+  });
+});
+
+// Helper: build a fake JWT with the given exp (seconds since epoch)
+function fakeJwt(exp: number): string {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload = btoa(JSON.stringify({ sub: "user-id", exp }));
+  return `${header}.${payload}.fake-signature`;
+}
+
+describe("getStoredToken — JWT expiry check", () => {
+  beforeEach(() => {
+    clearStoredToken();
+  });
+
+  it("returns null and clears localStorage for expired JWT", () => {
+    const expired = fakeJwt(Math.floor(Date.now() / 1000) - 3600);
+    setStoredToken(expired);
+
+    const result = getStoredToken();
+
+    expect(result).toBeNull();
+    expect(localStorage.getItem("phiacta_token")).toBeNull();
+  });
+
+  it("returns valid JWT when not expired", () => {
+    const valid = fakeJwt(Math.floor(Date.now() / 1000) + 3600);
+    setStoredToken(valid);
+
+    const result = getStoredToken();
+
+    expect(result).toBe(valid);
+  });
+
+  it("returns PAT unchanged (non-JWT token)", () => {
+    const pat = "pat_abc123def456";
+    setStoredToken(pat);
+
+    const result = getStoredToken();
+
+    expect(result).toBe(pat);
+  });
+
+  it("returns null when no token stored", () => {
+    expect(getStoredToken()).toBeNull();
+  });
+});
+
+describe("listJobs — no redirect on 401", () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    clearStoredToken();
+    fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  // No afterEach URL restore: listJobs uses request() which never sets
+  // window.location.href. Earlier defensive cleanup crashed jsdom because
+  // assigning window.location.href is blocked. The 401-non-redirect contract
+  // is asserted directly below.
+
+  it("throws ApiError on 401 instead of redirecting to login", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: false,
+      status: 401,
+      statusText: "Unauthorized",
+      json: () => Promise.resolve({ detail: "Not authenticated" }),
+    });
+
+    await expect(listJobs()).rejects.toThrow();
+
+    // Must NOT redirect to login — that was the bug
+    expect(window.location.href).not.toContain("/auth/login");
   });
 });

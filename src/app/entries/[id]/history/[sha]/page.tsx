@@ -7,22 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import DiffBlock from "@/components/DiffBlock";
 import {
-  ChevronRight,
   History,
   Plus,
   Minus,
   ArrowLeft,
 } from "lucide-react";
 import {
-  getEntry,
   getEntryCommitDiff,
   getEntryHistory,
 } from "@/lib/api";
 import type {
-  EntryDetailResponse,
   CommitDiffResponse,
   CommitListItem,
 } from "@/lib/types";
+import { useEntryContext } from "../../entry-context";
 
 interface CommitPageProps {
   params: Promise<{ id: string; sha: string }>;
@@ -30,9 +28,8 @@ interface CommitPageProps {
 
 export default function CommitPage({ params }: CommitPageProps) {
   const router = useRouter();
-  const [entryId, setEntryId] = useState<string | null>(null);
+  const { resolvedId: entryId } = useEntryContext();
   const [sha, setSha] = useState<string | null>(null);
-  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
   const [commit, setCommit] = useState<CommitListItem | null>(null);
   const [diff, setDiff] = useState<CommitDiffResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,7 +37,6 @@ export default function CommitPage({ params }: CommitPageProps) {
 
   useEffect(() => {
     params.then((p) => {
-      setEntryId(p.id);
       setSha(p.sha);
     });
   }, [params]);
@@ -49,12 +45,10 @@ export default function CommitPage({ params }: CommitPageProps) {
     if (!entryId || !sha) return;
     setLoading(true);
     Promise.all([
-      getEntry(entryId),
       getEntryCommitDiff(entryId, sha),
       getEntryHistory(entryId),
     ])
-      .then(([entryData, diffData, historyData]) => {
-        setEntry(entryData);
+      .then(([diffData, historyData]) => {
         setDiff(diffData);
         const found = historyData.find((c) => c.sha === sha);
         setCommit(found ?? null);
@@ -71,17 +65,16 @@ export default function CommitPage({ params }: CommitPageProps) {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-8">
-        <Skeleton className="h-4 w-48 mb-6" />
+      <div className="max-w-4xl">
         <Skeleton className="h-8 w-2/3 mb-4" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
 
-  if (error || !entry || !diff) {
+  if (error || !diff) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-8">
+      <div className="max-w-4xl">
         <h1 className="mb-2 text-2xl font-bold text-foreground">Commit not found</h1>
         <p className="mb-4 text-sm text-muted-foreground">{error || "This commit does not exist."}</p>
         <Button variant="outline" onClick={() => router.back()}>Go back</Button>
@@ -90,22 +83,7 @@ export default function CommitPage({ params }: CommitPageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
-      {/* Breadcrumb */}
-      <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link href="/explore" className="hover:text-foreground transition-colors">Explore</Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors truncate max-w-[200px]">
-          {entry.title || "Untitled"}
-        </Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link href={`/entries/${entryId}?tab=history`} className="hover:text-foreground transition-colors">
-          History
-        </Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground font-mono">{sha!.slice(0, 7)}</span>
-      </nav>
-
+    <div className="max-w-4xl">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-start gap-3 mb-3">
@@ -202,7 +180,7 @@ export default function CommitPage({ params }: CommitPageProps) {
           onClick={() => router.push(`/entries/${entryId}?tab=history`)}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to entry
+          Back to history
         </Button>
       </div>
     </div>

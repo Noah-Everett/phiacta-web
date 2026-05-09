@@ -71,9 +71,18 @@ export interface ReferenceItem {
   created_at: string;
 }
 
+// Compiled content metadata (detail-only, from compiled_content extension)
+export interface CompiledContentInfo {
+  format: string;
+  file_size: number;
+  compiled_at: string;
+  source_sha: string;
+}
+
 // Detail includes references (auto-composed, detail-only by default)
 export interface EntryDetailResponse extends EntryListItem {
   references?: ReferenceItem[];
+  compiled_content?: CompiledContentInfo | null;
 }
 
 export interface EntryCreate {
@@ -141,6 +150,7 @@ export interface EditProposalFileDiff {
 
 export interface EditProposalDetail extends EditProposalListItem {
   diff: EditProposalFileDiff[];
+  comments: IssueCommentResponse[];
 }
 
 // History types — mirrors entry_history.py
@@ -303,3 +313,20 @@ export interface ActivityItem {
 }
 
 export type ActivityFeedResponse = CursorPage<ActivityItem>;
+
+// Job types — mirrors core/schemas/job.py
+export interface JobListItem {
+  id: string;
+  job_type: string;
+  submitted_by: string;
+  entity_id: string | null;
+  status: "pending" | "running" | "completed" | "failed";
+  attempts: number;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+  started_at: string | null;
+  completed_at: string | null;
+}
+
+export type JobListResponse = CursorPage<JobListItem>;

@@ -5,11 +5,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import MarkdownContent from "@/components/MarkdownContent";
 import {
-  ChevronRight,
   CircleDot,
   MessageCircle,
   Loader2,
@@ -18,19 +16,15 @@ import {
   RotateCcw,
 } from "lucide-react";
 import {
-  getEntry,
   getEntryIssueDetail,
   getEntryEdits,
   closeIssue,
   addIssueComment,
-  ApiError,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 import type {
-  EntryDetailResponse,
   IssueDetail,
-  EditProposalListItem,
 } from "@/lib/types";
+import { useEntryContext } from "../../entry-context";
 
 interface IssuePageProps {
   params: Promise<{ id: string; number: string }>;
@@ -38,9 +32,8 @@ interface IssuePageProps {
 
 export default function IssuePage({ params }: IssuePageProps) {
   const router = useRouter();
-  const [entryId, setEntryId] = useState<string | null>(null);
+  const { resolvedId: entryId, isAuthenticated, refetchIssues } = useEntryContext();
   const [issueNumber, setIssueNumber] = useState<number | null>(null);
-  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
   const [issue, setIssue] = useState<IssueDetail | null>(null);
   const [linkedPrs, setLinkedPrs] = useState<{ number: number; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -50,12 +43,9 @@ export default function IssuePage({ params }: IssuePageProps) {
   const [commentBody, setCommentBody] = useState("");
   const [submittingComment, setSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
-  const { user } = useAuth();
-  const isLoggedIn = !!user;
 
   useEffect(() => {
     params.then((p) => {
-      setEntryId(p.id);
       setIssueNumber(parseInt(p.number));
     });
   }, [params]);
@@ -64,12 +54,10 @@ export default function IssuePage({ params }: IssuePageProps) {
     if (!entryId || !issueNumber) return;
     setLoading(true);
     Promise.all([
-      getEntry(entryId),
       getEntryIssueDetail(entryId, issueNumber),
       getEntryEdits(entryId),
     ])
-      .then(([entryData, issueData, edits]) => {
-        setEntry(entryData);
+      .then(([issueData, edits]) => {
         setIssue(issueData);
         // Find PRs that reference this issue
         const linked = edits
@@ -88,7 +76,7 @@ export default function IssuePage({ params }: IssuePageProps) {
     setClosing(true);
     setActionError(null);
     closeIssue(entryId, issueNumber)
-      .then(() => loadData())
+      .then(() => { loadData(); refetchIssues(); })
       .catch((err) => setActionError(err instanceof Error ? err.message : "Close failed"))
       .finally(() => setClosing(false));
   };
@@ -110,17 +98,16 @@ export default function IssuePage({ params }: IssuePageProps) {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-8">
-        <Skeleton className="h-4 w-48 mb-6" />
+      <div className="max-w-4xl">
         <Skeleton className="h-8 w-2/3 mb-4" />
         <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
 
-  if (error || !entry || !issue) {
+  if (error || !issue) {
     return (
-      <div className="mx-auto max-w-4xl px-6 py-8">
+      <div className="max-w-4xl">
         <h1 className="mb-2 text-2xl font-bold text-foreground">Issue not found</h1>
         <p className="mb-4 text-sm text-muted-foreground">{error || "This issue does not exist."}</p>
         <Button variant="outline" onClick={() => router.back()}>Go back</Button>
@@ -129,18 +116,7 @@ export default function IssuePage({ params }: IssuePageProps) {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-8">
-      {/* Breadcrumb */}
-      <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link href="/explore" className="hover:text-foreground transition-colors">Explore</Link>
-        <ChevronRight className="h-3 w-3" />
-        <Link href={`/entries/${entryId}`} className="hover:text-foreground transition-colors truncate max-w-[200px]">
-          {entry.title || "Untitled"}
-        </Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground">Issue #{issue.number}</span>
-      </nav>
-
+    <div className="max-w-4xl">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-start gap-3 mb-3">
@@ -216,7 +192,7 @@ export default function IssuePage({ params }: IssuePageProps) {
       )}
 
       {/* Comment Form */}
-      {isLoggedIn && (
+      {isAuthenticated && (
         <div className="rounded-xl border border-border bg-card p-5 mb-6">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Add a comment
@@ -249,7 +225,7 @@ export default function IssuePage({ params }: IssuePageProps) {
       {actionError && (
         <p className="mb-3 text-xs text-red-600 dark:text-red-400">{actionError}</p>
       )}
-      {isLoggedIn && (
+      {isAuthenticated && (
         <div className="flex items-center gap-2 pt-4 border-t border-border">
           {issue.state === "open" && (
             <Button

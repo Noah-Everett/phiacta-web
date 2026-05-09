@@ -447,7 +447,7 @@ export default function AboutPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-center gap-2"><XCircle className="h-3.5 w-3.5 text-primary shrink-0" />Null and negative results count</li>
                 <li className="flex items-center gap-2"><ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />Attach formal proofs or data</li>
-                <li className="flex items-center gap-2"><MessageSquare className="h-3.5 w-3.5 text-primary shrink-0" />Issues and edit proposals</li>
+                <li className="flex items-center gap-2"><MessageSquare className="h-3.5 w-3.5 text-primary shrink-0" />Issues and edits</li>
               </ul>
             </div>
             <div className="rounded-xl border border-border bg-card p-6">
@@ -641,7 +641,7 @@ export default function AboutPage() {
                 {[
                   ["Repository", "Entry"],
                   ["Commit", "Update / version"],
-                  ["Branch + pull request", "Edit proposal"],
+                  ["Branch + pull request", "Edit"],
                   ["Issue", "Issue"],
                   ["Merge PR", "Accept edit"],
                   ["Fork", "Derive (creates a new entry)"],

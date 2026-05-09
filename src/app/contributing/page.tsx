@@ -100,6 +100,51 @@ export default function ContributingPage() {
         </p>
       </div>
 
+      {/* Feature contributions callout */}
+      <div className="mb-10 rounded-xl border border-primary/20 bg-primary/5 p-6">
+        <h2 className="mb-2 text-base font-semibold text-foreground">Have an idea? We&apos;d love your help.</h2>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          Phiacta is built on a plugin architecture, which means adding new features is
+          genuinely straightforward — the same framework that powers search, tags, and LaTeX
+          compilation is available to everyone. If there&apos;s something you want to see on
+          the platform, you&apos;re totally free to build it. Open an issue to discuss your idea,
+          or jump straight into a pull request. I&apos;m happy to help you get oriented in
+          the codebase and answer questions along the way — reach out
+          at{" "}
+          <a href="mailto:contact@phiacta.com" className="text-foreground underline underline-offset-2 hover:opacity-70">
+            contact@phiacta.com
+          </a>.
+        </p>
+      </div>
+
+      {/* Feature ideas */}
+      <section className="mb-10">
+        <h2 className="mb-2 text-xl font-semibold text-foreground">Feature ideas</h2>
+        <p className="mb-6 text-sm text-muted-foreground">
+          Here are some features we&apos;ve been thinking about but haven&apos;t built yet.
+          Any of these would make a great contribution — or bring your own idea.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {[
+            { title: "Automated review papers", desc: "Agents that read related entries and synthesize them into survey or review papers \u2014 using the reference graph and semantic search to find connections." },
+            { title: "Podcast generation", desc: "Turn entries into audio \u2014 AI-generated podcast episodes that explain and discuss the content, tailored to different audiences." },
+            { title: "User expertise profiles", desc: "Build a private knowledge profile from a user\u2019s publications, comments, and edits. Only visible to the user \u2014 agents can use it to generate better explanations tailored to the reader\u2019s background." },
+            { title: "Personalized reading feeds", desc: "Surface relevant entries based on what you\u2019ve published, read, and cited. Built on expertise profiles and the reference graph." },
+            { title: "Community reviews", desc: "Open, transparent quality signals. Anyone can leave a structured review with ratings on dimensions like clarity, rigor, and reproducibility. No gatekeeping \u2014 just public signal that helps readers evaluate entries." },
+            { title: "Verification (coming soon)", desc: "Sandboxed execution of code that users mark for verification \u2014 reproduce empirical results and generate cryptographically signed reports." },
+            { title: "Semantic search", desc: "Use pgvector embeddings to find entries by meaning, not just keywords. Makes agent-driven discovery and contradiction detection much more powerful." },
+{ title: "Citation export", desc: "Generate BibTeX, RIS, or other citation formats from entry metadata and references." },
+            { title: "DOI integration", desc: "Register DOIs for entries or link to existing DOIs for cross-referencing with external literature." },
+            { title: "Version comparison", desc: "Side-by-side diff between any two commits in an entry\u2019s history." },
+          ].map(({ title, desc }) => (
+            <div key={title} className="rounded-lg border border-border bg-card px-4 py-3">
+              <p className="text-sm font-medium text-foreground">{title}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <Separator className="mb-10" />
 
       {/* Project overview */}
@@ -248,6 +293,7 @@ export default function ContributingPage() {
           </p>
         </div>
       </section>
+
     </div>
   );
 }

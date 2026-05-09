@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { EntryTypeBadge } from "@/components/EntryBadges";
+import MarkdownContent from "@/components/MarkdownContent";
 import type { EntryListItem } from "@/lib/types";
 
 export function EntryCarousel({ entries }: { entries: EntryListItem[] }) {
@@ -66,9 +67,10 @@ export function EntryCarousel({ entries }: { entries: EntryListItem[] }) {
             {entry.title || "Untitled"}
           </p>
           {entry.summary && (
-            <p className="line-clamp-2 text-xs text-muted-foreground">
-              {entry.summary}
-            </p>
+            <MarkdownContent
+              content={entry.summary}
+              className="line-clamp-2 text-xs text-muted-foreground [&_p]:m-0 [&_p]:inline"
+            />
           )}
           <p className="mt-auto text-xs text-muted-foreground">
             {new Date(entry.created_at).toLocaleDateString("en-US", {

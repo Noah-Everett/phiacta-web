@@ -90,8 +90,13 @@ export default async function Home() {
 
         <div className="flex flex-wrap justify-center gap-3">
           <Button asChild size="lg">
+            <Link href="/about">
+              Learn more <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
             <Link href="/explore">
-              Browse entries <ArrowRight className="ml-2 h-4 w-4" />
+              Browse entries
             </Link>
           </Button>
           <Button asChild size="lg" variant="outline">

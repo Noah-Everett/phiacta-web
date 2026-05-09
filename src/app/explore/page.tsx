@@ -16,12 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
-import GraphView from "@/components/GraphView";
-import GraphConfigPanel from "@/components/GraphConfigPanel";
-import type { GraphConfig } from "@/components/GraphConfigPanel";
+import GraphPanel from "@/components/GraphPanel";
+import MarkdownContent from "@/components/MarkdownContent";
 import { getInitials } from "@/lib/utils";
-import { listEntries, searchEntries, findEntriesByTags, fetchGraph, getUser } from "@/lib/api";
-import type { EntryListItem, PublicUserResponse, SearchResultItem, EntryTagItem, GraphResponse } from "@/lib/types";
+import { listEntries, searchEntries, findEntriesByTags, getUser } from "@/lib/api";
+import type { EntryListItem, PublicUserResponse, SearchResultItem, EntryTagItem } from "@/lib/types";
 import {
   Search,
   ChevronLeft,
@@ -168,70 +167,6 @@ function ExploreContent() {
     setSearch(value);
     updateUrl(viewMode, value);
   }, [viewMode, updateUrl]);
-  const [graphData, setGraphData] = useState<GraphResponse | null>(null);
-  const [graphLoading, setGraphLoading] = useState(false);
-  const [graphError, setGraphError] = useState<string | null>(null);
-  const [graphConfig, setGraphConfig] = useState<GraphConfig>({
-    depth: 2,
-    direction: "both",
-    limit: 50,
-    showLabels: true,
-    scaleByConnections: true,
-    centerForce: 0.3,
-    repulsion: -350,
-    linkForce: 0.3,
-    linkDistance: 60,
-  });
-  const graphAbortRef = useRef<AbortController | null>(null);
-
-  // Fetch graph data from entry IDs (seeds)
-  const EMPTY_GRAPH: GraphResponse = { nodes: [], edges: [], truncated: false, seed_ids: [], mode: "ref" };
-  const fetchGraphData = useCallback(async (seedIds: string[]) => {
-    if (seedIds.length === 0) {
-      setGraphData(EMPTY_GRAPH);
-      setGraphLoading(false);
-      return;
-    }
-    // Cancel previous request
-    graphAbortRef.current?.abort();
-    const controller = new AbortController();
-    graphAbortRef.current = controller;
-
-    setGraphLoading(true);
-    setGraphError(null);
-    try {
-      const res = await fetchGraph({
-        entry_ids: seedIds,
-        depth: graphConfig.depth,
-        direction: graphConfig.direction,
-        limit: graphConfig.limit,
-      });
-      if (!controller.signal.aborted) {
-        setGraphData(res);
-      }
-    } catch (err) {
-      if (!controller.signal.aborted) {
-        setGraphError(err instanceof Error ? err.message : "Failed to load graph");
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setGraphLoading(false);
-      }
-    }
-  }, [graphConfig.depth, graphConfig.direction, graphConfig.limit]);
-
-  // When view mode switches to graph or entries change, fetch graph
-  useEffect(() => {
-    if (viewMode !== "graph") return;
-    if (loading) return; // still fetching entries, wait
-    const ids = entries.map((e) => e.id);
-    fetchGraphData(ids); // handles empty ids by setting graphData=null
-  }, [viewMode, entries, loading, fetchGraphData]);
-
-  const handleGraphRecenter = useCallback((entryId: string) => {
-    fetchGraphData([entryId]);
-  }, [fetchGraphData]);
-
   const resolveAuthors = useCallback(async (ids: string[]) => {
     const newIds = ids.filter((id) => !authorsRef.current[id]);
     if (newIds.length === 0) return;
@@ -584,40 +519,11 @@ function ExploreContent() {
 
       {/* Graph view */}
       {viewMode === "graph" && (
-        <>
-          <div className="mb-3">
-            <p className="text-sm text-muted-foreground">
-              {graphLoading || loading
-                ? "Loading graph..."
-                : graphData
-                  ? `${graphData.nodes.length} node${graphData.nodes.length !== 1 ? "s" : ""}, ${graphData.edges.length} edge${graphData.edges.length !== 1 ? "s" : ""}`
-                  : "0 nodes, 0 edges"}
-            </p>
-          </div>
-          {(graphLoading || loading) && !graphData && (
-            <div className="flex h-[500px] items-center justify-center rounded-xl border border-border bg-card">
-              <p className="text-sm text-muted-foreground">Loading graph...</p>
-            </div>
-          )}
-          {graphError && (
-            <div className="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {graphError}
-            </div>
-          )}
-          {!graphLoading && !graphError && graphData && (
-            <GraphView
-              data={graphData}
-              onRecenter={handleGraphRecenter}
-              centerForce={graphConfig.centerForce}
-              repulsion={graphConfig.repulsion}
-              linkForce={graphConfig.linkForce}
-              linkDistance={graphConfig.linkDistance}
-              showLabels={graphConfig.showLabels}
-              scaleByConnections={graphConfig.scaleByConnections}
-              configPanel={<GraphConfigPanel config={graphConfig} onChange={setGraphConfig} />}
-            />
-          )}
-        </>
+        <GraphPanel
+          seedIds={entries.map((e) => e.id)}
+          loading={loading}
+          height={500}
+        />
       )}
 
       {/* List view */}
@@ -682,9 +588,10 @@ function ExploreContent() {
                       {entry.title || "Untitled"}
                     </p>
                     {entry.summary && (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                        {entry.summary}
-                      </p>
+                      <MarkdownContent
+                        content={entry.summary}
+                        className="mt-1 text-xs text-muted-foreground line-clamp-2 [&_p]:m-0 [&_p]:inline"
+                      />
                     )}
                   </div>
 

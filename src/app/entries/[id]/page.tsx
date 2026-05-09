@@ -5,9 +5,6 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -16,22 +13,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { EntryTypeBadge, VisibilityBadge } from "@/components/EntryBadges";
 import MarkdownContent from "@/components/MarkdownContent";
 import LatexContent from "@/components/LatexContent";
 import EntityLink from "@/components/EntityLink";
 import FileIcon from "@/components/FileIcon";
 import DiffBlock from "@/components/DiffBlock";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getInitials } from "@/lib/utils";
+import ProposalWorkspace from "@/components/ProposalWorkspace";
 import {
   GitBranch,
-  History,
   ChevronRight,
   ChevronDown,
   FileCode2,
   File,
-  Tag,
   Loader2,
   MessageCircle,
   CircleDot,
@@ -39,54 +32,39 @@ import {
   Link2,
   ArrowUpRight,
   ArrowDownLeft,
-  Pencil,
   X,
-  Check,
   Plus,
   Trash2,
   Upload,
-  Activity,
   Search,
   Expand,
+  XCircle,
 } from "lucide-react";
 import {
-  getEntry,
-  getUser,
   getEntryFiles,
-  getEntryEdits,
   getEntryHistory,
   getEntryCommitDiff,
-  getEntryIssues,
-  updateEntry,
-  setEntryTags,
   putEntryFile,
   deleteEntryFile,
   createReference,
   deleteReference,
   searchEntries,
   createIssue,
-  createEditProposal,
-  getActivity,
-  ApiError,
+  getCompiledPdfUrl,
+  listJobs,
   API_URL,
   getStoredToken,
 } from "@/lib/api";
-import { useAuth } from "@/lib/auth-context";
 import type {
-  EntryDetailResponse,
   EditProposalListItem,
   CommitListItem,
   CommitDiffResponse,
   FileListItem,
-  PublicUserResponse,
-  IssueListItem,
-  ActivityItem,
   SearchResultItem,
+  JobListItem,
 } from "@/lib/types";
-
-interface EntryPageProps {
-  params: Promise<{ id: string }>;
-}
+import GraphPanel from "@/components/GraphPanel";
+import { useEntryContext } from "./entry-context";
 
 function formatBytes(n: number) {
   if (n < 1024) return `${n} B`;
@@ -344,7 +322,7 @@ function FileRow({ file, entryId }: { file: FileListItem; entryId: string }) {
 }
 
 // Issue row — links to full page
-function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string }) {
+function IssueRow({ issue, entryId }: { issue: { number: number; title: string; state: string; author: { username: string }; created_at: string; comments_count: number }; entryId: string }) {
   return (
     <Link
       href={`/entries/${entryId}/issues/${issue.number}`}
@@ -381,66 +359,36 @@ function IssueRow({ issue, entryId }: { issue: IssueListItem; entryId: string })
   );
 }
 
-const VALID_TABS = ["content", "issues", "edits", "history", "files", "references", "activity"] as const;
+const VALID_TABS = ["content", "issues", "edits", "history", "files", "references"] as const;
 
-export default function EntryPage({ params }: EntryPageProps) {
-  const { user } = useAuth();
+export default function EntryPage() {
+  const {
+    entry,
+    isOwner,
+    isAuthenticated,
+    resolvedId,
+    issues,
+    edits,
+    compiledInfo,
+    refetchEntry,
+    refetchIssues,
+    refetchEdits,
+    editing,
+    exitEditMode,
+  } = useEntryContext();
+
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const tabParam = searchParams.get("tab");
-  const initialTab = tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : "content";
-  const [activeTab, setActiveTab] = useState(initialTab);
+  const activeTab = tabParam && (VALID_TABS as readonly string[]).includes(tabParam) ? tabParam : "content";
 
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    const url = new URL(window.location.href);
-    if (value === "content") {
-      url.searchParams.delete("tab");
-    } else {
-      url.searchParams.set("tab", value);
-    }
-    router.replace(url.pathname + url.search, { scroll: false });
-  };
-
-  const [resolvedId, setResolvedId] = useState<string | null>(null);
-  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
-  const [author, setAuthor] = useState<PublicUserResponse | null>(null);
+  // Page-specific data
   const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
-  const [edits, setEdits] = useState<EditProposalListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
-  const [issues, setIssues] = useState<IssueListItem[]>([]);
   const [contentText, setContentText] = useState<string | null>(null);
   const [contentFormat, setContentFormat] = useState<string>("md");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [notFound, setNotFound] = useState(false);
 
-  // Activity state
-  const [activityItems, setActivityItems] = useState<ActivityItem[]>([]);
-  const [activityLoading, setActivityLoading] = useState(false);
-
-  // Ownership
-  const isOwner = user?.id != null && entry?.created_by != null && user.id === entry.created_by;
-  const isAuthenticated = user != null;
-
-  // --- Unified edit mode ---
-  const [editing, setEditing] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
-
-  // Metadata form state
-  const [metaTitle, setMetaTitle] = useState("");
-  const [metaSummary, setMetaSummary] = useState("");
-  const [metaType, setMetaType] = useState("");
-
-  // Content form state
-  const [editContentText, setEditContentText] = useState("");
-  const [editContentMessage, setEditContentMessage] = useState("");
-
-  // Tags form state
-  const [editTags, setEditTags] = useState<string[]>([]);
-  const [newTagInput, setNewTagInput] = useState("");
 
   // Reference adding
   const [addingReference, setAddingReference] = useState(false);
@@ -464,7 +412,11 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Status actions
+  // Job status polling
+  const [activeJobs, setActiveJobs] = useState<JobListItem[]>([]);
+  const [failedCompilationJob, setFailedCompilationJob] = useState<JobListItem | null>(null);
+  const jobPollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialJobCheckRef = useRef(false);
 
   // Create issue
   const [creatingIssue, setCreatingIssue] = useState(false);
@@ -473,33 +425,13 @@ export default function EntryPage({ params }: EntryPageProps) {
   const [issueSaving, setIssueSaving] = useState(false);
   const [issueError, setIssueError] = useState<string | null>(null);
 
-  // Create edit proposal
-  const [creatingEdit, setCreatingEdit] = useState(false);
-  const [editTitle, setEditTitle] = useState("");
-  const [editBody, setEditBody] = useState("");
-  const [editProposalContent, setEditProposalContent] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-  const [editError, setEditError] = useState<string | null>(null);
+  // Proposal workspace
+  const [creatingProposal, setCreatingProposal] = useState(false);
 
   // --- Data fetching helpers ---
 
-  const fetchEntry = useCallback((id: string) => {
-    return getEntry(id).then((data) => {
-      setEntry(data);
-      return data;
-    });
-  }, []);
-
   const fetchFiles = useCallback((id: string) => {
     getEntryFiles(id).then(setEntryFiles).catch((err) => console.warn("Failed to load files:", err));
-  }, []);
-
-  const fetchEdits = useCallback((id: string) => {
-    getEntryEdits(id).then(setEdits).catch((err) => console.warn("Failed to load edits:", err));
-  }, []);
-
-  const fetchIssues = useCallback((id: string) => {
-    getEntryIssues(id).then(setIssues).catch((err) => console.warn("Failed to load issues:", err));
   }, []);
 
   const fetchContent = useCallback(async (id: string) => {
@@ -520,162 +452,127 @@ export default function EntryPage({ params }: EntryPageProps) {
     }
   }, []);
 
-  const fetchActivity = useCallback((id: string) => {
-    setActivityLoading(true);
-    getActivity({ entity: id })
-      .then((data) => setActivityItems(data.items))
-      .catch((err) => console.warn("Failed to load activity:", err))
-      .finally(() => setActivityLoading(false));
-  }, []);
 
-  useEffect(() => {
-    params.then((p) => setResolvedId(p.id));
-  }, [params]);
+  // Poll jobs for this entry until none are pending/running, then refresh compiledInfo
+  const pollJobs = useCallback((entryId: string) => {
+    if (jobPollRef.current) clearTimeout(jobPollRef.current);
 
-  useEffect(() => {
-    if (!resolvedId) return;
-
-    setLoading(true);
-    setError(null);
-
-    getEntry(resolvedId)
-      .then((data) => {
-        setEntry(data);
-        getUser(data.created_by).then(setAuthor).catch((err) => console.warn("Failed to load author:", err));
-      })
-      .catch((err) => {
-        if (err instanceof ApiError && err.status === 404) {
-          setNotFound(true);
+    const poll = async () => {
+      try {
+        // Only count pending/running jobs as "active". Without this filter
+        // listJobs returns completed/failed jobs too, and active.length stays
+        // > 0 forever — UI shows "compiling…" indefinitely.
+        const result = await listJobs({
+          entity_id: entryId,
+          status: "pending,running",
+          limit: 20,
+        });
+        const active = result.items;
+        setActiveJobs(active);
+        if (active.length > 0) {
+          // Still running — poll again
+          jobPollRef.current = setTimeout(poll, 1000);
+        } else {
+          // All done — check for failures (only if no completed job exists), then refresh entry
+          setActiveJobs([]);
+          try {
+            const terminalResult = await listJobs({
+              entity_id: entryId,
+              job_type: "compiled_content",
+              status: "completed,failed",
+              limit: 10,
+            });
+            const hasCompleted = terminalResult.items.some((j) => j.status === "completed");
+            const firstFailed = terminalResult.items.find((j) => j.status === "failed");
+            // Only show failure if no completed job exists (completed = retried successfully)
+            setFailedCompilationJob(!hasCompleted && firstFailed ? firstFailed : null);
+          } catch {
+            setFailedCompilationJob(null);
+          }
+          await refetchEntry();
         }
-        setError(err instanceof Error ? err.message : "Failed to load entry");
-      })
-      .finally(() => setLoading(false));
+      } catch {
+        // Not authenticated or error — stop polling silently
+        setActiveJobs([]);
+      }
+    };
+
+    poll();
+  }, [refetchEntry]);
+
+  // Fetch page-specific data when entry is available
+  useEffect(() => {
+    if (!resolvedId || !entry) return;
 
     fetchFiles(resolvedId);
-    fetchEdits(resolvedId);
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
-    fetchIssues(resolvedId);
     fetchContent(resolvedId);
-    fetchActivity(resolvedId);
-  }, [resolvedId, fetchFiles, fetchEdits, fetchContent, fetchActivity]);
+  }, [resolvedId, entry, fetchFiles, fetchContent]);
+
+  // On initial load, check for in-progress or failed compilation jobs.
+  // Depends only on resolvedId (not entry) so it fires in parallel with
+  // the entry fetch instead of waiting for it to complete.
+  useEffect(() => {
+    if (!resolvedId || initialJobCheckRef.current) return;
+    initialJobCheckRef.current = true;
+
+    (async () => {
+      try {
+        // Only check for pending/running jobs — see comment in pollJobs.
+        const activeResult = await listJobs({
+          entity_id: resolvedId,
+          status: "pending,running",
+          limit: 20,
+        });
+        if (activeResult.items.length > 0) {
+          pollJobs(resolvedId);
+          return;
+        }
+        const failedResult = await listJobs({
+          entity_id: resolvedId,
+          job_type: "compiled_content",
+          status: "failed",
+          limit: 5,
+        });
+        setFailedCompilationJob(failedResult.items[0] ?? null);
+      } catch {
+        // Not authenticated or no jobs — ignore
+      }
+    })();
+  }, [resolvedId, pollJobs]);
+
+  // Clear page-local sub-states when edit mode exits
+  useEffect(() => {
+    if (!editing) {
+      setAddingReference(false);
+      setRefSearchQuery("");
+      setRefSearchResults([]);
+      setRefSelectedEntry(null);
+      setRefRel("cites");
+      setRefNote("");
+      setRefError(null);
+      setUploadingFile(false);
+      setUploadFiles([]);
+      setUploadMessage("");
+      setFileError(null);
+      setDragOver(false);
+    }
+  }, [editing]);
+
+  // Clean up poll timer on unmount
+  useEffect(() => {
+    return () => {
+      if (jobPollRef.current) clearTimeout(jobPollRef.current);
+    };
+  }, []);
 
   // --- Action handlers ---
-
-  const enterEditMode = () => {
-    if (!entry) return;
-    setMetaTitle(entry.title || "");
-    setMetaSummary(entry.summary || "");
-    setMetaType(entry.entry_type || "");
-    setEditContentText(contentText || "");
-    setEditContentMessage("");
-    setEditTags(entry.tags ? [...entry.tags] : []);
-    setNewTagInput("");
-    setSaveError(null);
-    setEditing(true);
-  };
-
-  const exitEditMode = () => {
-    setEditing(false);
-    setSaveError(null);
-    setEditContentMessage("");
-    setAddingReference(false);
-    setRefSearchQuery("");
-    setRefSearchResults([]);
-    setRefSelectedEntry(null);
-    setRefRel("cites");
-    setRefNote("");
-    setRefError(null);
-    setUploadingFile(false);
-    setUploadFiles([]);
-    setUploadMessage("");
-    setFileError(null);
-    setDragOver(false);
-  };
-
-  const handleSaveAll = async () => {
-    if (!resolvedId || !entry) return;
-    setSaving(true);
-    setSaveError(null);
-
-    const metadataChanged =
-      metaTitle !== (entry.title || "") ||
-      metaSummary !== (entry.summary || "") ||
-      metaType !== (entry.entry_type || "");
-    const contentChanged = editContentText !== (contentText || "");
-    const tagsChanged =
-      JSON.stringify([...editTags].sort()) !== JSON.stringify([...(entry.tags || [])].sort());
-
-    const errors: string[] = [];
-    const promises: Promise<void>[] = [];
-
-    if (metadataChanged) {
-      promises.push(
-        updateEntry(resolvedId, {
-          title: metaTitle,
-          summary: metaSummary || null,
-          entry_type: metaType || null,
-        }).then(() => {}).catch((err) => {
-          errors.push(`Metadata: ${err instanceof Error ? err.message : "failed"}`);
-        })
-      );
-    }
-
-    if (contentChanged) {
-      promises.push(
-        (async () => {
-          const blob = new Blob([editContentText], { type: "text/plain" });
-          const file = new window.File([blob], `content.${contentFormat}`, { type: "text/plain" });
-          await putEntryFile(resolvedId, `.phiacta/content.${contentFormat}`, file, editContentMessage || undefined);
-        })().catch((err) => {
-          errors.push(`Content: ${err instanceof Error ? err.message : "failed"}`);
-        })
-      );
-    }
-
-    if (tagsChanged) {
-      promises.push(
-        setEntryTags(resolvedId, editTags).then(() => {}).catch((err) => {
-          errors.push(`Tags: ${err instanceof Error ? err.message : "failed"}`);
-        })
-      );
-    }
-
-    await Promise.all(promises);
-
-    if (errors.length > 0) {
-      setSaveError(errors.join("; "));
-      setSaving(false);
-      return;
-    }
-
-    await Promise.all([
-      fetchEntry(resolvedId),
-      contentChanged ? fetchContent(resolvedId) : Promise.resolve(),
-    ]);
-
-    setEditing(false);
-    setEditContentMessage("");
-    setSaving(false);
-  };
-
-  const addTag = () => {
-    const tag = newTagInput.trim().toLowerCase();
-    if (tag && !editTags.includes(tag)) {
-      setEditTags([...editTags, tag]);
-    }
-    setNewTagInput("");
-  };
-
-  const removeTag = (tag: string) => {
-    setEditTags(editTags.filter((t) => t !== tag));
-  };
 
   const handleRefSearch = async () => {
     if (!refSearchQuery.trim()) return;
     setRefSearching(true);
     try {
       const data = await searchEntries(refSearchQuery.trim());
-      // Filter out the current entry from results
       setRefSearchResults(data.items.filter((item) => item.entry_id !== resolvedId));
     } catch {
       setRefSearchResults([]);
@@ -690,7 +587,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setRefError(null);
     try {
       await createReference(resolvedId, refSelectedEntry.entry_id, refRel, refNote || undefined);
-      await fetchEntry(resolvedId);
+      await refetchEntry();
       setAddingReference(false);
       setRefSearchQuery("");
       setRefSearchResults([]);
@@ -709,7 +606,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setRefDeleting(referenceId);
     try {
       await deleteReference(referenceId);
-      await fetchEntry(resolvedId);
+      await refetchEntry();
     } catch (err) {
       console.warn("Failed to delete reference:", err);
     } finally {
@@ -774,13 +671,14 @@ export default function EntryPage({ params }: EntryPageProps) {
     fetchFiles(resolvedId);
     if (failures.length > 0) {
       setFileError(`Failed to upload ${failures.length} file(s): ${failures.join("; ")}`);
-      // Remove successfully uploaded files from the list
       const failedNames = new Set(failures.map((f) => f.split(":")[0].trim()));
       setUploadFiles((prev) => prev.filter((f) => failedNames.has(f.path.trim() || f.file.name)));
     } else {
       setUploadingFile(false);
       setUploadFiles([]);
       setUploadMessage("");
+      // Start polling for any jobs triggered by the upload (e.g. LaTeX compilation)
+      pollJobs(resolvedId);
     }
     setFileSaving(false);
   };
@@ -804,7 +702,7 @@ export default function EntryPage({ params }: EntryPageProps) {
     setIssueError(null);
     try {
       await createIssue(resolvedId, issueTitle.trim(), issueBody.trim() || undefined);
-      fetchIssues(resolvedId);
+      refetchIssues();
       setCreatingIssue(false);
       setIssueTitle("");
       setIssueBody("");
@@ -815,240 +713,45 @@ export default function EntryPage({ params }: EntryPageProps) {
     }
   };
 
-  const handleEditProposalSubmit = async () => {
-    if (!resolvedId || !editTitle.trim()) return;
-    setEditSaving(true);
-    setEditError(null);
-    try {
-      const files = editProposalContent !== (contentText || "")
-        ? [{ path: `.phiacta/content.${contentFormat}`, content: editProposalContent }]
-        : [];
-      await createEditProposal(resolvedId, editTitle.trim(), editBody.trim() || undefined, files);
-      fetchEdits(resolvedId);
-      setCreatingEdit(false);
-      setEditTitle("");
-      setEditBody("");
-      setEditProposalContent("");
-    } catch (err) {
-      setEditError(err instanceof Error ? err.message : "Failed to create edit proposal");
-    } finally {
-      setEditSaving(false);
-    }
-  };
 
-  if (loading) {
-    return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        {/* Breadcrumb skeleton */}
-        <div className="mb-5 flex items-center gap-1.5">
-          <Skeleton className="h-3 w-12" />
-          <Skeleton className="h-3 w-3" />
-          <Skeleton className="h-3 w-40" />
-        </div>
-        {/* Header skeleton */}
-        <div className="mb-6 space-y-3">
-          <div className="flex gap-2">
-            <Skeleton className="h-5 w-24" />
-            <Skeleton className="h-5 w-16" />
-          </div>
-          <Skeleton className="h-8 w-2/3" />
-          <Skeleton className="h-4 w-full" />
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-6 w-6 rounded-full" />
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-        {/* Content skeleton */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-          <div className="space-y-3">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-64 w-full rounded-xl" />
-          </div>
-          <div className="space-y-4">
-            <Skeleton className="h-40 w-full rounded-xl" />
-            <Skeleton className="h-48 w-full rounded-xl" />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !entry) {
-    const is404 = notFound || !entry;
-    return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <h1 className="mb-2 text-2xl font-bold text-foreground">
-          {is404 ? "Entry not found" : "Something went wrong"}
-        </h1>
-        <p className="mb-4 text-sm text-muted-foreground">
-          {is404
-            ? "This entry does not exist or has been removed."
-            : error || "An unexpected error occurred."}
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/explore">Browse entries</Link>
-        </Button>
-      </div>
-    );
-  }
+  // Layout handles loading/error — if entry is null, we're still loading
+  if (!entry) return null;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      {/* Breadcrumb */}
-      <nav className="mb-5 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Link href="/explore" className="hover:text-foreground transition-colors">
-          Explore
-        </Link>
-        <ChevronRight className="h-3 w-3" />
-        <span className="text-foreground truncate max-w-[300px]">{entry.title || "Untitled"}</span>
-      </nav>
-
-      {/* Header */}
-      <div className="mb-6">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <EntryTypeBadge entryType={entry.entry_type} />
-          <VisibilityBadge visibility={entry.visibility} />
-
-          {isOwner && (
-            <div className="flex items-center gap-1 ml-auto">
-              {editing ? (
-                <>
-                  <Button size="sm" className="h-7 text-xs gap-1" onClick={handleSaveAll} disabled={saving}>
-                    {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                    Save
-                  </Button>
-                  <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={exitEditMode} disabled={saving}>
-                    Cancel
-                  </Button>
-                </>
-              ) : (
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={enterEditMode}>
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Button>
+    <>
+      <div>
+          {/* Content */}
+          {activeTab === "content" && (
+            <div className="space-y-4">
+              {activeJobs.length > 0 && (
+                <div className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                  <span>
+                    {activeJobs.some((j) => j.job_type === "compiled_content")
+                      ? "PDF compiling\u2026"
+                      : `Processing\u2026 (${activeJobs.length} job${activeJobs.length > 1 ? "s" : ""})`}
+                  </span>
+                </div>
               )}
-            </div>
-          )}
-        </div>
-        {saveError && (
-          <p className="mb-2 text-xs text-destructive">{saveError}</p>
-        )}
-
-        {editing ? (
-          <div className="space-y-3 mb-4">
-            <Input
-              value={metaTitle}
-              onChange={(e) => setMetaTitle(e.target.value)}
-              placeholder="Title"
-              className="text-2xl font-bold h-auto py-1.5"
-            />
-            <textarea
-              value={metaSummary}
-              onChange={(e) => setMetaSummary(e.target.value)}
-              placeholder="Summary (optional)"
-              rows={3}
-              className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-            />
-          </div>
-        ) : (
-          <>
-            <div className="flex items-center gap-2 mb-4">
-              <h1 className="text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-                {entry.title || "Untitled"}
-              </h1>
-            </div>
-
-            {entry.summary && (
-              <p className="mb-4 text-sm text-muted-foreground">{entry.summary}</p>
-            )}
-          </>
-        )}
-
-        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-          {author && (
-            <>
-            <Link
-              href={`/users/${author.id}`}
-              className="flex items-center gap-2 hover:text-foreground transition-colors"
-            >
-              <Avatar className="h-6 w-6">
-                <AvatarFallback className="text-[10px]">{getInitials(author.username)}</AvatarFallback>
-              </Avatar>
-              <span className="font-medium text-foreground">{author.username}</span>
-            </Link>
-            <Separator orientation="vertical" className="h-4" />
-            </>
-          )}
-          <span>
-            {new Date(entry.created_at).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-        {/* Main panel */}
-        <div className="min-w-0">
-          <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList className="mb-4 w-full justify-start flex-wrap h-auto gap-1">
-              <TabsTrigger value="content">Content</TabsTrigger>
-              <TabsTrigger value="issues" className="gap-1.5">
-                <CircleDot className="h-3.5 w-3.5" />
-                Issues
-                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {issues.filter((i) => i.state === "open").length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="edits" className="gap-1.5">
-                <GitBranch className="h-3.5 w-3.5" />
-                Edits
-                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {edits.filter((e) => e.state === "open").length}
-                </Badge>
-              </TabsTrigger>
-              <TabsTrigger value="history" className="gap-1.5">
-                <History className="h-3.5 w-3.5" />
-                History
-              </TabsTrigger>
-              <TabsTrigger value="files" className="gap-1.5">
-                <FileCode2 className="h-3.5 w-3.5" />
-                Files
-              </TabsTrigger>
-              <TabsTrigger value="references" className="gap-1.5">
-                <Link2 className="h-3.5 w-3.5" />
-                References
-                {entry?.references && entry.references.length > 0 && (
-                <Badge variant="secondary" className="ml-0.5 text-xs py-0 px-1.5">
-                  {entry.references.length}
-                </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="activity" className="gap-1.5">
-                <Activity className="h-3.5 w-3.5" />
-                Activity
-              </TabsTrigger>
-            </TabsList>
-
-            {/* Content */}
-            <TabsContent value="content">
-              {editing ? (
-                <div className="rounded-xl border border-border bg-card p-6 space-y-3">
-                  <textarea
-                    value={editContentText}
-                    onChange={(e) => setEditContentText(e.target.value)}
-                    rows={20}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                    placeholder="Write your content here..."
-                  />
-                  <Input
-                    value={editContentMessage}
-                    onChange={(e) => setEditContentMessage(e.target.value)}
-                    placeholder="Commit message (optional)"
-                    className="text-sm"
+              {failedCompilationJob && !compiledInfo && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/50 dark:text-red-300">
+                  <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  <span>
+                    PDF compilation failed.
+                    {failedCompilationJob.last_error && (
+                      <> Error: <code className="ml-1 font-mono text-xs">{failedCompilationJob.last_error.slice(0, 200)}</code></>
+                    )}
+                  </span>
+                </div>
+              )}
+              {compiledInfo && resolvedId ? (
+                <div>
+                  <iframe
+                    key={compiledInfo.compiled_at}
+                    src={getCompiledPdfUrl(resolvedId)}
+                    className="w-full rounded-xl border border-border bg-muted/30"
+                    style={{ height: "750px" }}
+                    title="Compiled PDF"
                   />
                 </div>
               ) : (
@@ -1066,14 +769,22 @@ export default function EntryPage({ params }: EntryPageProps) {
                       entryId={entry.id}
                     />
                   ) : (
-                    <p className="text-sm text-muted-foreground">Content stored in the versioned repository.</p>
+                    <p className="text-sm text-muted-foreground">
+                      No rendered content available. Browse the source under{" "}
+                      <button
+                        className="underline hover:text-foreground transition-colors"
+                        onClick={() => router.push(`/entries/${resolvedId}?tab=files`)}
+                      >.phiacta/content/</button>.
+                    </p>
                   )}
                 </div>
               )}
-            </TabsContent>
+            </div>
+          )}
 
-            {/* Issues */}
-            <TabsContent value="issues">
+          {/* Issues */}
+          {activeTab === "issues" && (
+            <>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Issues are discussions and bug reports on this entry.
@@ -1120,217 +831,206 @@ export default function EntryPage({ params }: EntryPageProps) {
                   <p className="py-8 text-center text-sm text-muted-foreground">No issues yet.</p>
                 )}
               </div>
-            </TabsContent>
+            </>
+          )}
 
-            {/* Edits */}
-            <TabsContent value="edits">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">
-                  Edit proposals are content changes — like pull requests on the entry&apos;s repository.
+          {/* Edits */}
+          {activeTab === "edits" && (
+            <>
+              {!creatingProposal ? (
+                <>
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Edits are content changes — like pull requests on the entry&apos;s repository.
+                    </p>
+                    {isAuthenticated && (
+                      <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setCreatingProposal(true)}>
+                        <Plus className="h-3.5 w-3.5" />
+                        New Edit
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    {edits.map((edit) => (
+                      <EditRow key={edit.number} edit={edit} entryId={entry.id} />
+                    ))}
+                    {edits.length === 0 && (
+                      <p className="py-8 text-center text-sm text-muted-foreground">No edits yet.</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <ProposalWorkspace
+                  entryId={resolvedId}
+                  isOwner={isOwner}
+                  entryFiles={entryFiles}
+                  onComplete={() => {
+                    setCreatingProposal(false);
+                    refetchEdits();
+                    refetchEntry();
+                  }}
+                  onCancel={() => setCreatingProposal(false)}
+                />
+              )}
+            </>
+          )}
+
+          {/* History */}
+          {activeTab === "history" && (
+            <div className="space-y-2">
+              {history.map((commit, i) => (
+                <CommitRow key={commit.sha} commit={commit} index={i} total={history.length} entryId={entry.id} />
+              ))}
+              {history.length === 0 && (
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading history...
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Files */}
+          {activeTab === "files" && (
+            <div className="rounded-xl border border-border overflow-hidden bg-card">
+              <div className="border-b border-border px-4 py-3 flex items-center justify-between">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Files
                 </p>
-                {isAuthenticated && !creatingEdit && (
-                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => { setCreatingEdit(true); setEditProposalContent(contentText || ""); }}>
-                    <Plus className="h-3.5 w-3.5" />
-                    Propose Edit
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {editing && !uploadingFile && (
+                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setUploadingFile(true)}>
+                      <Upload className="h-3.5 w-3.5" />
+                      Upload File
+                    </Button>
+                  )}
+                  <code className="font-mono text-xs text-muted-foreground">
+                    {entry.id.slice(0, 8)}
+                  </code>
+                </div>
               </div>
-              {creatingEdit && (
-                <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
+              {uploadingFile && (
+                <div className="border-b border-border p-4 space-y-3 bg-accent/20">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    onChange={handleUploadFilesSelected}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={handleUploadFilesDrop}
+                    className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-sm transition-colors ${
+                      dragOver
+                        ? "border-primary bg-primary/5 text-foreground"
+                        : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
+                    }`}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Choose files or drag and drop
+                  </button>
+
+                  {uploadFiles.length > 0 && (
+                    <div className="space-y-1.5">
+                      {uploadFiles.map(({ file, path }) => (
+                        <div
+                          key={file.name}
+                          className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
+                        >
+                          <File className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="shrink-0 text-xs font-medium text-muted-foreground">Path:</span>
+                              <input
+                                type="text"
+                                value={path}
+                                onChange={(e) => updateUploadFilePath(file.name, e.target.value)}
+                                placeholder="e.g., figures/image.png"
+                                className="w-full rounded px-1.5 py-0.5 text-sm text-foreground font-mono outline-none border border-transparent bg-transparent focus:border-border focus:bg-muted/50 transition-colors"
+                                title="File path in the entry repository"
+                              />
+                            </div>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => removeUploadFile(file.name)}
+                            className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
+                            disabled={fileSaving}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <Input
-                    value={editTitle}
-                    onChange={(e) => setEditTitle(e.target.value)}
-                    placeholder="Edit proposal title (required)"
+                    value={uploadMessage}
+                    onChange={(e) => setUploadMessage(e.target.value)}
+                    placeholder="Commit message (optional)"
                     className="text-sm"
                   />
-                  <textarea
-                    value={editBody}
-                    onChange={(e) => setEditBody(e.target.value)}
-                    placeholder="Description (optional)"
-                    rows={2}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                  />
-                  <div>
-                    <p className="text-xs font-semibold text-muted-foreground mb-1.5 uppercase tracking-wider">Content Changes</p>
-                    <textarea
-                      value={editProposalContent}
-                      onChange={(e) => setEditProposalContent(e.target.value)}
-                      rows={15}
-                      className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono text-foreground shadow-xs placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                      placeholder="Edit the content..."
-                    />
-                  </div>
-                  {editError && <p className="text-xs text-destructive">{editError}</p>}
+                  {fileError && <p className="text-xs text-destructive">{fileError}</p>}
                   <div className="flex items-center gap-2">
-                    <Button size="sm" onClick={handleEditProposalSubmit} disabled={editSaving || !editTitle.trim()}>
-                      {editSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Plus className="h-3.5 w-3.5 mr-1" />}
-                      Submit Proposal
+                    <Button size="sm" onClick={handleFileUpload} disabled={fileSaving || uploadFiles.length === 0}>
+                      {fileSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
+                      Upload
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => { setCreatingEdit(false); setEditTitle(""); setEditBody(""); setEditProposalContent(""); setEditError(null); }} disabled={editSaving}>
+                    <Button size="sm" variant="ghost" onClick={() => { setUploadingFile(false); setUploadFiles([]); setUploadMessage(""); setFileError(null); setDragOver(false); }} disabled={fileSaving}>
                       Cancel
                     </Button>
                   </div>
                 </div>
               )}
-              <div className="space-y-2">
-                {edits.map((edit) => (
-                  <EditRow key={edit.number} edit={edit} entryId={entry.id} />
-                ))}
-                {edits.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No edit proposals yet.</p>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* History */}
-            <TabsContent value="history">
-              <div className="space-y-2">
-                {history.map((commit, i) => (
-                  <CommitRow key={commit.sha} commit={commit} index={i} total={history.length} entryId={entry.id} />
-                ))}
-                {history.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
-                )}
-              </div>
-            </TabsContent>
-
-            {/* Files */}
-            <TabsContent value="files">
-              <div className="rounded-xl border border-border overflow-hidden bg-card">
-                <div className="border-b border-border px-4 py-3 flex items-center justify-between">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Files
-                  </p>
-                  <div className="flex items-center gap-2">
-                    {editing && !uploadingFile && (
-                      <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={() => setUploadingFile(true)}>
-                        <Upload className="h-3.5 w-3.5" />
-                        Upload File
-                      </Button>
-                    )}
-                    <code className="font-mono text-xs text-muted-foreground">
-                      {entry.id.slice(0, 8)}
-                    </code>
-                  </div>
-                </div>
-                {uploadingFile && (
-                  <div className="border-b border-border p-4 space-y-3 bg-accent/20">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      multiple
-                      onChange={handleUploadFilesSelected}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={handleUploadFilesDrop}
-                      className={`flex w-full items-center justify-center gap-2 rounded-xl border border-dashed py-8 text-sm transition-colors ${
-                        dragOver
-                          ? "border-primary bg-primary/5 text-foreground"
-                          : "border-border text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground"
-                      }`}
+              <div>
+                {entryFiles.map((file) => (
+                  <div key={file.path} className="flex items-center border-b border-border last:border-0">
+                    <Link
+                      href={`/entries/${entry.id}/files/${file.path}`}
+                      className="flex flex-1 items-center gap-2.5 px-4 py-2.5 hover:bg-accent/40 transition-colors min-w-0"
                     >
-                      <Upload className="h-4 w-4" />
-                      Choose files or drag and drop
-                    </button>
-
-                    {uploadFiles.length > 0 && (
-                      <div className="space-y-1.5">
-                        {uploadFiles.map(({ file, path }) => (
-                          <div
-                            key={file.name}
-                            className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2"
-                          >
-                            <File className="h-4 w-4 shrink-0 text-muted-foreground" />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="shrink-0 text-xs font-medium text-muted-foreground">Path:</span>
-                                <input
-                                  type="text"
-                                  value={path}
-                                  onChange={(e) => updateUploadFilePath(file.name, e.target.value)}
-                                  placeholder="e.g., figures/image.png"
-                                  className="w-full rounded px-1.5 py-0.5 text-sm text-foreground font-mono outline-none border border-transparent bg-transparent focus:border-border focus:bg-muted/50 transition-colors"
-                                  title="File path in the entry repository"
-                                />
-                              </div>
-                              <p className="mt-0.5 text-xs text-muted-foreground">{formatBytes(file.size)}</p>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeUploadFile(file.name)}
-                              className="shrink-0 text-muted-foreground hover:text-destructive transition-colors"
-                              disabled={fileSaving}
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                      <FileIcon name={file.name} type={file.type} />
+                      <code className="flex-1 font-mono text-sm text-foreground truncate">{file.name}</code>
+                      {file.type !== "dir" && (
+                        <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                          {formatBytes(file.size)}
+                        </span>
+                      )}
+                    </Link>
+                    {editing && file.path !== ".phiacta/entry.yaml" && file.name !== "entry.yaml" && (
+                      <button
+                        onClick={() => handleFileDelete(file.path)}
+                        disabled={fileDeleting === file.path}
+                        className="shrink-0 p-2.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
+                        title="Delete file"
+                      >
+                        {fileDeleting === file.path ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </button>
                     )}
-
-                    <Input
-                      value={uploadMessage}
-                      onChange={(e) => setUploadMessage(e.target.value)}
-                      placeholder="Commit message (optional)"
-                      className="text-sm"
-                    />
-                    {fileError && <p className="text-xs text-destructive">{fileError}</p>}
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" onClick={handleFileUpload} disabled={fileSaving || uploadFiles.length === 0}>
-                        {fileSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Upload className="h-3.5 w-3.5 mr-1" />}
-                        Upload
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setUploadingFile(false); setUploadFiles([]); setUploadMessage(""); setFileError(null); setDragOver(false); }} disabled={fileSaving}>
-                        Cancel
-                      </Button>
-                    </div>
+                  </div>
+                ))}
+                {entryFiles.length === 0 && (
+                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading files...
                   </div>
                 )}
-                <div>
-                  {entryFiles.map((file) => (
-                    <div key={file.path} className="flex items-center border-b border-border last:border-0">
-                      <Link
-                        href={`/entries/${entry.id}/files/${file.path}`}
-                        className="flex flex-1 items-center gap-2.5 px-4 py-2.5 hover:bg-accent/40 transition-colors min-w-0"
-                      >
-                        <FileIcon name={file.name} type={file.type} />
-                        <code className="flex-1 font-mono text-sm text-foreground truncate">{file.name}</code>
-                        {file.type !== "dir" && (
-                          <span className="shrink-0 font-mono text-xs text-muted-foreground">
-                            {formatBytes(file.size)}
-                          </span>
-                        )}
-                      </Link>
-                      {editing && file.path !== ".phiacta/entry.yaml" && file.name !== "entry.yaml" && (
-                        <button
-                          onClick={() => handleFileDelete(file.path)}
-                          disabled={fileDeleting === file.path}
-                          className="shrink-0 p-2.5 text-muted-foreground hover:text-destructive transition-colors disabled:opacity-50"
-                          title="Delete file"
-                        >
-                          {fileDeleting === file.path ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3.5 w-3.5" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                  {entryFiles.length === 0 && (
-                    <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>
-                  )}
-                </div>
               </div>
-            </TabsContent>
+            </div>
+          )}
 
-            {/* References */}
-            <TabsContent value="references">
+          {/* References */}
+          {activeTab === "references" && (
+            <>
               <div className="mb-3 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
                   Typed links between this entry and other entries in the knowledge graph.
@@ -1342,6 +1042,12 @@ export default function EntryPage({ params }: EntryPageProps) {
                   </Button>
                 )}
               </div>
+              {/* Reference graph */}
+              {resolvedId && (
+                <div className="mb-4">
+                  <GraphPanel seedIds={[resolvedId]} height={320} />
+                </div>
+              )}
               {addingReference && (
                 <div className="mb-4 rounded-xl border border-border bg-card p-4 space-y-3">
                   <div className="flex items-center gap-2">
@@ -1461,179 +1167,10 @@ export default function EntryPage({ params }: EntryPageProps) {
                   <p className="py-8 text-center text-sm text-muted-foreground">No references yet.</p>
                 )}
               </div>
-            </TabsContent>
-
-            {/* Activity */}
-            <TabsContent value="activity">
-              <div className="mb-3">
-                <p className="text-sm text-muted-foreground">
-                  Chronological log of actions on this entry.
-                </p>
-              </div>
-              {activityLoading ? (
-                <div className="flex items-center justify-center py-8 gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Loading activity...
-                </div>
-              ) : activityItems.length > 0 ? (
-                <div className="space-y-2">
-                  {activityItems.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-start gap-3 rounded-xl border border-border bg-card p-4"
-                    >
-                      <Activity className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {item.action}
-                          </Badge>
-                          <span className="text-[10px] text-muted-foreground">
-                            {item.entity_type}
-                          </span>
-                        </div>
-                        <div className="mt-1">
-                          <EntityLink id={item.entity_id} className="text-sm text-primary hover:underline" />
-                        </div>
-                        {item.parent_id && (
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            Parent: <EntityLink id={item.parent_id} className="text-primary hover:underline" />
-                          </div>
-                        )}
-                        {item.metadata && Object.keys(item.metadata).length > 0 && (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {Object.entries(item.metadata).map(([key, val]) => (
-                              <span key={key} className="text-[10px] text-muted-foreground bg-secondary rounded px-1.5 py-0.5">
-                                {key}: {val}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <span className="shrink-0 text-[10px] text-muted-foreground whitespace-nowrap">
-                        {new Date(item.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}{" "}
-                        {new Date(item.created_at).toLocaleTimeString("en-US", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="py-8 text-center text-sm text-muted-foreground">No activity yet.</p>
-              )}
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {author && (
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Author</h3>
-            <Link href={`/users/${author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-              <Avatar className="h-9 w-9">
-                <AvatarFallback>{getInitials(author.username)}</AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{author.username}</p>
-              </div>
-            </Link>
-            <Separator className="my-3" />
-            <p className="text-xs text-muted-foreground">
-              Joined{" "}
-              {new Date(author.created_at).toLocaleDateString("en-US", {
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-          </div>
+            </>
           )}
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Metadata</h3>
-            <dl className="space-y-2.5 text-sm">
-              <div className="flex items-center justify-between">
-                <dt className="text-muted-foreground">Type</dt>
-                {editing ? (
-                  <dd>
-                    <Input
-                      value={metaType}
-                      onChange={(e) => setMetaType(e.target.value)}
-                      placeholder="e.g. paper, note"
-                      className="h-7 w-32 text-xs text-right"
-                    />
-                  </dd>
-                ) : (
-                  <dd className="font-medium text-foreground capitalize">{entry.entry_type || "not specified"}</dd>
-                )}
-              </div>
-              {[
-                { label: "Published", value: new Date(entry.created_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
-                { label: "Last updated", value: new Date(entry.updated_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }) },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex items-center justify-between">
-                  <dt className="text-muted-foreground">{label}</dt>
-                  <dd className="font-medium text-foreground capitalize">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-
-          {/* Tags — show when there are tags OR when owner can edit */}
-          {((entry?.tags && entry.tags.length > 0) || isOwner) && (
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              <Tag className="mr-1.5 inline h-3 w-3" />
-              Tags
-            </h3>
-            {editing ? (
-              <div className="space-y-2">
-                <div className="flex flex-wrap gap-1.5">
-                  {editTags.map((t) => (
-                    <Badge key={t} variant="secondary" className="text-xs gap-1 pr-1">
-                      {t}
-                      <button onClick={() => removeTag(t)} className="hover:text-destructive transition-colors">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    value={newTagInput}
-                    onChange={(e) => setNewTagInput(e.target.value)}
-                    placeholder="Add tag..."
-                    className="text-xs h-7 flex-1"
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
-                  />
-                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={addTag}>
-                    <Plus className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {entry?.tags && entry.tags.length > 0 ? (
-                  entry.tags.map((t) => (
-                    <Badge key={t} variant="secondary" className="text-xs">
-                      {t}
-                    </Badge>
-                  ))
-                ) : (
-                  <p className="text-xs text-muted-foreground">No tags yet.</p>
-                )}
-              </div>
-            )}
-          </div>
-          )}
-
-        </div>
       </div>
-    </div>
+    </>
   );
 }
