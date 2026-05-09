@@ -115,7 +115,7 @@ export default function PostPage() {
   const refDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const MAX_TAGS = 20;
-  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+  const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB — matches backend max_file_size_bytes
 
   const effectiveType = isCustomType ? customType.trim() : entryType;
 
