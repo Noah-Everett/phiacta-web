@@ -445,6 +445,7 @@ export default function PostPage() {
     setArxivImporting(true);
     setLatexError("");
     setError("");
+    setFileWarning("");
 
     try {
       const fileArray = Array.from(inputFiles);
@@ -559,6 +560,7 @@ export default function PostPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setFileWarning("");
     setSuccess(false);
     setSubmitting(true);
 
