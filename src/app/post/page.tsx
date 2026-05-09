@@ -686,7 +686,10 @@ export default function PostPage() {
       if (hasLatexProject && entry.id) {
         updateStep(stepIdx, { status: "active" });
         const compileResult = await new Promise<"done" | "failed">((resolve) => {
+          let attempts = 0;
+          const MAX_POLL_ATTEMPTS = 60; // 2s × 60 = 2 min max wait
           const poll = async () => {
+            attempts++;
             try {
               const result = await listJobs({
                 entity_id: entry.id,
@@ -695,6 +698,11 @@ export default function PostPage() {
               });
               const latest = result.items[0] as { status: string; last_error?: string } | undefined;
               if (!latest) {
+                if (attempts >= MAX_POLL_ATTEMPTS) {
+                  setCompilationError("Compilation job was not created. The file may not contain LaTeX source.");
+                  resolve("failed");
+                  return;
+                }
                 // No job yet, keep polling (webhook may not have fired yet)
                 setTimeout(poll, 2000);
               } else if (latest.status === "pending" || latest.status === "running") {
