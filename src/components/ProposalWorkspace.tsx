@@ -216,7 +216,7 @@ export default function ProposalWorkspace({
   }, [entryId, state.proposalTitle, state.proposalBody, state.stagedFiles, onComplete]);
 
   const handleDirectCommit = useCallback(async () => {
-    if (state.stagedFiles.size === 0) return;
+    if (state.stagedFiles.size === 0 || !state.proposalTitle.trim()) return;
     dispatch({ type: "SET_SUBMITTING", submitting: true });
     dispatch({ type: "SET_ERROR", error: null });
     try {

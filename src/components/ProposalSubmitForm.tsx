@@ -87,7 +87,7 @@ export default function ProposalSubmitForm({
           Submit Proposal
         </Button>
         {isOwner && onDirectCommit && (
-          <Button size="sm" variant="outline" onClick={onDirectCommit} disabled={submitting} className="gap-1.5">
+          <Button size="sm" variant="outline" onClick={onDirectCommit} disabled={submitting || !title.trim()} className="gap-1.5">
             {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
             Direct Commit
           </Button>
