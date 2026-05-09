@@ -167,7 +167,10 @@ export default function ProposalFileBrowser({ entryId, files, stagedFiles, onSel
           />
         ))}
         {files.length === 0 && (
-          <p className="py-8 text-center text-sm text-muted-foreground">No files in this entry.</p>
+          <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading files...
+          </div>
         )}
       </div>
     </div>
