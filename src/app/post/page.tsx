@@ -694,6 +694,7 @@ export default function PostPage() {
               const result = await listJobs({
                 entity_id: entry.id,
                 job_type: "compiled_content",
+                status: "pending,running,completed,failed",
                 limit: 1,
               });
               const latest = result.items[0] as { status: string; last_error?: string } | undefined;
