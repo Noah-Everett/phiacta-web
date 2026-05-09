@@ -43,7 +43,7 @@ export default function ProposalSubmitForm({
 
   return (
     <div className="space-y-4">
-      <h3 className="text-sm font-medium text-foreground">Submit Proposal</h3>
+      <h3 className="text-sm font-medium text-foreground">{isOwner ? "Submit Edit" : "Propose Edit"}</h3>
 
       <Input
         value={title}
@@ -84,7 +84,7 @@ export default function ProposalSubmitForm({
       <div className="flex items-center gap-2">
         <Button size="sm" onClick={onSubmit} disabled={submitting || !title.trim()} className="gap-1.5">
           {submitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <GitBranch className="h-3.5 w-3.5" />}
-          Submit Proposal
+          {isOwner ? "Submit Edit" : "Propose Edit"}
         </Button>
         {isOwner && onDirectCommit && (
           <Button size="sm" variant="outline" onClick={onDirectCommit} disabled={submitting || !title.trim()} className="gap-1.5">

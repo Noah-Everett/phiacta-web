@@ -115,8 +115,8 @@ export default function EditPage({ params }: EditPageProps) {
   if (error || !edit) {
     return (
       <div className="max-w-4xl">
-        <h1 className="mb-2 text-2xl font-bold text-foreground">Edit proposal not found</h1>
-        <p className="mb-4 text-sm text-muted-foreground">{error || "This edit proposal does not exist."}</p>
+        <h1 className="mb-2 text-2xl font-bold text-foreground">Edit not found</h1>
+        <p className="mb-4 text-sm text-muted-foreground">{error || "This edit does not exist."}</p>
         <Button variant="outline" onClick={() => router.back()}>Go back</Button>
       </div>
     );
@@ -191,7 +191,7 @@ export default function EditPage({ params }: EditPageProps) {
         </div>
       )}
       {edit.diff.length === 0 && (
-        <p className="mb-6 text-sm text-muted-foreground">No file changes in this proposal.</p>
+        <p className="mb-6 text-sm text-muted-foreground">No file changes in this edit.</p>
       )}
 
       {/* Actions */}

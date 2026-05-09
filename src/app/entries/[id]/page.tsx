@@ -359,7 +359,7 @@ function IssueRow({ issue, entryId }: { issue: { number: number; title: string; 
   );
 }
 
-const VALID_TABS = ["content", "issues", "proposals", "history", "files", "references"] as const;
+const VALID_TABS = ["content", "issues", "edits", "history", "files", "references"] as const;
 
 export default function EntryPage() {
   const {
@@ -834,19 +834,19 @@ export default function EntryPage() {
             </>
           )}
 
-          {/* Proposals */}
-          {activeTab === "proposals" && (
+          {/* Edits */}
+          {activeTab === "edits" && (
             <>
               {!creatingProposal ? (
                 <>
                   <div className="mb-3 flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                      Edit proposals are content changes — like pull requests on the entry&apos;s repository.
+                      Edits are content changes — like pull requests on the entry&apos;s repository.
                     </p>
                     {isAuthenticated && (
                       <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setCreatingProposal(true)}>
                         <Plus className="h-3.5 w-3.5" />
-                        New Proposal
+                        New Edit
                       </Button>
                     )}
                   </div>
@@ -855,7 +855,7 @@ export default function EntryPage() {
                       <EditRow key={edit.number} edit={edit} entryId={entry.id} />
                     ))}
                     {edits.length === 0 && (
-                      <p className="py-8 text-center text-sm text-muted-foreground">No proposals yet.</p>
+                      <p className="py-8 text-center text-sm text-muted-foreground">No edits yet.</p>
                     )}
                   </div>
                 </>

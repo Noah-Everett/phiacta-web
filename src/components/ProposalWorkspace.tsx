@@ -209,7 +209,7 @@ export default function ProposalWorkspace({
       );
       onComplete();
     } catch (err) {
-      dispatch({ type: "SET_ERROR", error: err instanceof Error ? err.message : "Failed to create proposal" });
+      dispatch({ type: "SET_ERROR", error: err instanceof Error ? err.message : "Failed to submit edit" });
     } finally {
       dispatch({ type: "SET_SUBMITTING", submitting: false });
     }
@@ -249,7 +249,7 @@ export default function ProposalWorkspace({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-medium text-foreground">New Proposal</h3>
+          <h3 className="text-sm font-medium text-foreground">New Edit</h3>
           {stagedCount > 0 && (
             <Badge variant="secondary" className="text-xs">
               {stagedCount} file{stagedCount !== 1 ? "s" : ""} staged

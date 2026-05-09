@@ -857,7 +857,7 @@ export default function PostPage() {
             Your entry is now live, versioned, and permanently citable.
           </p>
           <p className="mb-8 text-xs text-muted-foreground">
-            You can add files, manage references, and accept edit proposals from the entry page.
+            You can add files, manage references, and accept edits from the entry page.
           </p>
 
           {(tagWarning || fileWarning || refWarning) && (

@@ -14,7 +14,7 @@ export default function ArchitecturePage() {
         <p className="leading-relaxed text-muted-foreground">
           Every entry on Phiacta is a{" "}
           <strong className="text-foreground">git repository</strong>. Version
-          history, supporting files, edit proposals, and issues all live in that
+          history, supporting files, edits, and issues all live in that
           repository. What lives in the database are the facts that need to be
           queryable: references between entries, tags, and identity.
         </p>
@@ -139,7 +139,7 @@ export default function ArchitecturePage() {
               </p>
             </div>
             <div className="rounded-md border border-border bg-card px-3 py-2.5">
-              <p className="text-xs font-medium text-foreground">Edit Proposals</p>
+              <p className="text-xs font-medium text-foreground">Edits</p>
               <p className="mt-1 text-[11px] leading-snug text-muted-foreground">
                 Content change requests on an entry&apos;s repository
               </p>
@@ -175,7 +175,7 @@ export default function ArchitecturePage() {
           <li>
             <strong className="text-foreground">Entries</strong> &mdash; Atomic
             assertions, each backed by a git repository. Content is versioned via
-            git commits. Edit proposals (branches + PRs) and issues live in the same
+            git commits. Edits (branches + PRs) and issues live in the same
             repository. Supporting materials&mdash;data, code, proofs&mdash;are
             committed alongside the entry content.
           </li>
@@ -222,7 +222,7 @@ export default function ArchitecturePage() {
               {[
                 ["Repository", "Entry"],
                 ["Commit", "Update / version"],
-                ["Branch + pull request", "Edit proposal"],
+                ["Branch + pull request", "Edit"],
                 ["Issue", "Issue"],
                 ["Merge", "Accept edit"],
                 ["Close PR", "Reject edit"],
