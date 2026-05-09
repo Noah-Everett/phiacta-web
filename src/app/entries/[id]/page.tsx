@@ -882,7 +882,10 @@ export default function EntryPage() {
                 <CommitRow key={commit.sha} commit={commit} index={i} total={history.length} entryId={entry.id} />
               ))}
               {history.length === 0 && (
-                <p className="py-8 text-center text-sm text-muted-foreground">No commit history yet.</p>
+                <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading history...
+                </div>
               )}
             </div>
           )}
@@ -1016,7 +1019,10 @@ export default function EntryPage() {
                   </div>
                 ))}
                 {entryFiles.length === 0 && (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No files yet.</p>
+                  <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading files...
+                  </div>
                 )}
               </div>
             </div>
