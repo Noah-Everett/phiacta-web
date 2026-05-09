@@ -470,8 +470,8 @@ export default function EntryPage() {
         const active = result.items;
         setActiveJobs(active);
         if (active.length > 0) {
-          // Still running — poll again in 2s
-          jobPollRef.current = setTimeout(poll, 2000);
+          // Still running — poll again
+          jobPollRef.current = setTimeout(poll, 1000);
         } else {
           // All done — check for failures (only if no completed job exists), then refresh entry
           setActiveJobs([]);
@@ -509,10 +509,11 @@ export default function EntryPage() {
     fetchContent(resolvedId);
   }, [resolvedId, entry, fetchFiles, fetchContent]);
 
-  // On initial load, check for in-progress or failed compilation jobs
+  // On initial load, check for in-progress or failed compilation jobs.
+  // Depends only on resolvedId (not entry) so it fires in parallel with
+  // the entry fetch instead of waiting for it to complete.
   useEffect(() => {
-    if (!resolvedId || !entry || initialJobCheckRef.current) return;
-    if (compiledInfo !== null) return; // already compiled — no need to check
+    if (!resolvedId || initialJobCheckRef.current) return;
     initialJobCheckRef.current = true;
 
     (async () => {
@@ -538,7 +539,7 @@ export default function EntryPage() {
         // Not authenticated or no jobs — ignore
       }
     })();
-  }, [resolvedId, entry, compiledInfo, pollJobs]);
+  }, [resolvedId, pollJobs]);
 
   // Clear page-local sub-states when edit mode exits
   useEffect(() => {
