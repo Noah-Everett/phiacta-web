@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 import type { Components } from "react-markdown";
 import { API_URL, getStoredToken } from "@/lib/api";
+import { preprocessDisplayMath, preprocessLinkPaths } from "@/lib/markdown-preprocess";
 
 const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
@@ -48,17 +49,6 @@ function resolveEntryImageUrl(src: string, entryId: string): string {
     .map((seg) => encodeURIComponent(seg))
     .join("/");
   return `${API_URL}/v1/entries/${entryId}/files/${encoded}`;
-}
-
-/**
- * Markdown parsers (micromark) don't handle spaces in link/image URLs.
- * Wrap paths containing spaces in angle brackets so the parser
- * recognises them: `[text](<path with spaces>)`
- */
-function preprocessLinkPaths(md: string): string {
-  return md
-    .replace(/!\[([^\]]*)\]\(([^)<>]+\s[^)<>]+)\)/g, (_, alt, url) => `![${alt}](<${url}>)`)
-    .replace(/(?<!!)\[([^\]]*)\]\(([^)<>]+\s[^)<>]+)\)/g, (_, text, url) => `[${text}](<${url}>)`);
 }
 
 export default function MarkdownContent({
@@ -176,7 +166,7 @@ export default function MarkdownContent({
         rehypePlugins={[rehypeKatex]}
         components={components}
       >
-        {preprocessLinkPaths(content)}
+        {preprocessDisplayMath(preprocessLinkPaths(content))}
       </ReactMarkdown>
     </div>
   );
