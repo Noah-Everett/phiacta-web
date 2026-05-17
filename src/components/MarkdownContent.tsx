@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeSlug from "rehype-slug";
+import rehypeKatexNotProse from "@/lib/rehype-katex-not-prose";
 import "katex/dist/katex.min.css";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
@@ -164,7 +165,7 @@ export default function MarkdownContent({
       )}
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeSlug, rehypeKatex]}
+        rehypePlugins={[rehypeSlug, rehypeKatex, rehypeKatexNotProse]}
         components={components}
       >
         {preprocessDisplayMath(preprocessLinkPaths(content))}

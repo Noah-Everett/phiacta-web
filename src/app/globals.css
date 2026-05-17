@@ -126,20 +126,10 @@ body {
   color: var(--foreground);
 }
 
-/* KaTeX display-mode math ($$...$$) — restore block/centered behavior
-   that the Tailwind Typography (`prose`) wrapper clobbers. */
-.prose .katex-display {
-  display: block;
-  margin: 1em 0;
-  text-align: center;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-.prose .katex-display > .katex {
-  display: inline-block;
-  text-align: initial;
-  white-space: nowrap;
-}
+/* KaTeX display-math wrappers get `class="not-prose"` injected by the
+   rehypeKatexNotProse plugin so Tailwind Typography leaves them alone
+   and KaTeX's stock layout (block, table-based for \tag, etc.) takes
+   over. No KaTeX-specific overrides needed here. */
 
 @layer base {
   * {
