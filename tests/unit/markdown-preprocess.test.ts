@@ -62,6 +62,25 @@ describe("preprocessDisplayMath", () => {
     expect(preprocessDisplayMath(input)).toBe(input);
   });
 
+  it("does not touch $$ inside an inline code span", () => {
+    const input = "the syntax `$$x^2$$` produces display math";
+    expect(preprocessDisplayMath(input)).toBe(input);
+  });
+
+  it("does not touch $$ inside a multi-backtick inline span", () => {
+    const input = "use ``$$x``$$ for special cases";
+    expect(preprocessDisplayMath(input)).toBe(input);
+  });
+
+  it("processes $$ outside the code span but not inside", () => {
+    const input = "outside $$a$$ then `$$b$$` then $$c$$";
+    const out = preprocessDisplayMath(input);
+    expect(out).toContain("$$\na\n$$");
+    expect(out).toContain("$$\nc\n$$");
+    expect(out).toContain("`$$b$$`");
+    expect(out).not.toContain("$$\nb\n$$");
+  });
+
   it("still processes $$ before and after a code block", () => {
     const input = "intro $$a$$\n\n```js\n$$x$$\n```\n\noutro $$b$$";
     const out = preprocessDisplayMath(input);

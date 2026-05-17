@@ -36,33 +36,33 @@ export function preprocessLinkPaths(md: string): string {
  * `$$x$$` as display regardless of position, so authors regularly hit
  * this. We rewrite inline `$$X$$` to the block form before parsing.
  *
- * Code blocks (fenced with ```) are skipped so embedded `$$` examples
- * in documentation entries aren't disturbed.
+ * Code (fenced ```...``` and inline `...`) is stashed first so embedded
+ * `$$` examples in documentation aren't rewritten.
  */
 export function preprocessDisplayMath(md: string): string {
-  // Split on fenced code blocks. Even-indexed segments are prose,
-  // odd-indexed are code blocks (preserved as-is).
-  const FENCE_RE = /(^|\n)(```[^\n]*\n[\s\S]*?\n```)(?=\n|$)/g;
-  const parts: string[] = [];
-  let last = 0;
-  let match: RegExpExecArray | null;
-  while ((match = FENCE_RE.exec(md)) !== null) {
-    parts.push(md.slice(last, match.index + match[1].length));
-    parts.push(match[2]);
-    last = match.index + match[0].length;
-  }
-  parts.push(md.slice(last));
+  // Stash all code regions behind placeholders, transform the rest,
+  // then restore. Using the NUL character as the placeholder boundary
+  // since it never appears in markdown content.
+  const stashed: string[] = [];
+  const PLACEHOLDER = (i: number) => `\x00CODE${i}\x00`;
+
+  const protect = (m: string): string => {
+    stashed.push(m);
+    return PLACEHOLDER(stashed.length - 1);
+  };
+
+  let working = md
+    // Fenced code blocks first so we don't accidentally pick up backticks
+    // inside them as inline spans.
+    .replace(/```[\s\S]*?```/g, protect)
+    // Inline code spans: matching backtick runs of any length. The
+    // `(?!\1)` look-ahead lets the body contain shorter backtick runs.
+    .replace(/(`+)((?:(?!\1)[\s\S])+?)\1/g, protect);
 
   // Matches `$$X$$` where X contains no `$` and no newline. The
   // non-greedy `+?` plus the negated character class keeps each pair
   // independent so multiple inline displays on one line each match.
-  const INLINE_DISPLAY_RE = /\$\$([^$\n]+?)\$\$/g;
+  working = working.replace(/\$\$([^$\n]+?)\$\$/g, (_, body) => `\n\n$$\n${body.trim()}\n$$\n\n`);
 
-  return parts
-    .map((segment, i) => {
-      // Odd indices are code blocks — leave them alone.
-      if (i % 2 === 1) return segment;
-      return segment.replace(INLINE_DISPLAY_RE, (_, body) => `\n\n$$\n${body.trim()}\n$$\n\n`);
-    })
-    .join("");
+  return working.replace(/\x00CODE(\d+)\x00/g, (_, i) => stashed[Number(i)]);
 }
