@@ -98,6 +98,13 @@ export default function MarkdownContent({
     a: ({ href, children, ...props }) => {
       if (!href) return <a {...props}>{children}</a>;
 
+      // Same-page anchors (e.g. [Section](#section-heading)) must stay as
+      // plain hash links — routing them through Next or the file viewer
+      // URL-encodes the # and breaks scroll-to-anchor.
+      if (href.startsWith("#")) {
+        return <a href={href} {...props}>{children}</a>;
+      }
+
       const entityMatch = href.match(ENTITY_PATH_RE);
       if (entityMatch) {
         const id = entityMatch[2];
