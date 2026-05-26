@@ -528,13 +528,19 @@ export default function EntryPage() {
           pollJobs(resolvedId);
           return;
         }
-        const failedResult = await listJobs({
+        // Only show failure if there's no later completed job — a
+        // completed compile after a failure means the user fixed the
+        // problem and we shouldn't keep showing the stale error.
+        // Jobs are returned newest-first.
+        const terminalResult = await listJobs({
           entity_id: resolvedId,
           job_type: "compiled_content",
-          status: "failed",
-          limit: 5,
+          status: "completed,failed",
+          limit: 10,
         });
-        setFailedCompilationJob(failedResult.items[0] ?? null);
+        const hasCompleted = terminalResult.items.some((j) => j.status === "completed");
+        const firstFailed = terminalResult.items.find((j) => j.status === "failed");
+        setFailedCompilationJob(!hasCompleted && firstFailed ? firstFailed : null);
       } catch {
         // Not authenticated or no jobs — ignore
       }

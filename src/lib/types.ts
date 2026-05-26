@@ -320,7 +320,7 @@ export interface JobListItem {
   job_type: string;
   submitted_by: string;
   entity_id: string | null;
-  status: "pending" | "running" | "completed" | "failed";
+  status: "pending" | "running" | "completed" | "failed" | "cancelled";
   attempts: number;
   last_error: string | null;
   created_at: string;
