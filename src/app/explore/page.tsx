@@ -614,7 +614,7 @@ function ExploreContent() {
                         <span>
                           {daysAgo < 7
                             ? created.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
-                            : created.toLocaleDateString("en-US", { month: "short", year: "numeric" })}
+                            : created.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </span>
                       );
                     })()}
