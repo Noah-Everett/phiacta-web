@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, type ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { EntryProvider, useEntryContext } from "./entry-context";
 import MarkdownContent from "@/components/MarkdownContent";
+import type { EntryDetailResponse } from "@/lib/types";
 
 const VALID_TABS = [
   "content",
@@ -505,33 +506,50 @@ function EntryLayoutContent({ children }: { children: ReactNode }) {
 
 interface LayoutProps {
   children: ReactNode;
-  params: Promise<{ id: string }>;
+  // Resolved server-side in layout.tsx so the whole tree renders on the
+  // server (no param-resolving useEffect = no skeleton-only SSR).
+  id: string;
+  initialEntry: EntryDetailResponse | null;
+  initialContent: string | null;
+  initialContentFormat: string;
 }
 
-export default function EntryLayoutClient({ children, params }: LayoutProps) {
-  const [entryId, setEntryId] = useState<string | null>(null);
-
-  useEffect(() => {
-    params.then((p) => setEntryId(p.id));
-  }, [params]);
-
-  if (!entryId) {
-    return (
-      <div className="mx-auto max-w-6xl px-6 py-8">
-        <div className="mb-5 flex items-center gap-1.5">
-          <Skeleton className="h-3 w-12" />
-          <Skeleton className="h-3 w-3" />
-          <Skeleton className="h-3 w-40" />
-        </div>
-        <Skeleton className="h-10 w-full rounded-lg mb-4" />
-        <Skeleton className="h-64 w-full rounded-xl" />
-      </div>
-    );
-  }
-
+function EntryLayoutFallback() {
   return (
-    <EntryProvider entryId={entryId}>
-      <EntryLayoutContent>{children}</EntryLayoutContent>
+    <div className="mx-auto max-w-6xl px-6 py-8">
+      <div className="mb-5 flex items-center gap-1.5">
+        <Skeleton className="h-3 w-12" />
+        <Skeleton className="h-3 w-3" />
+        <Skeleton className="h-3 w-40" />
+      </div>
+      <Skeleton className="h-10 w-full rounded-lg mb-4" />
+      <Skeleton className="h-64 w-full rounded-xl" />
+    </div>
+  );
+}
+
+export default function EntryLayoutClient({
+  children,
+  id,
+  initialEntry,
+  initialContent,
+  initialContentFormat,
+}: LayoutProps) {
+  return (
+    // Key by id so navigating between entries remounts the provider with
+    // fresh seed state instead of carrying the previous entry's data over.
+    <EntryProvider
+      key={id}
+      entryId={id}
+      initialEntry={initialEntry}
+      initialContent={initialContent}
+      initialContentFormat={initialContentFormat}
+    >
+      {/* EntryTabBar and the page read useSearchParams; the boundary keeps
+          the build happy and lets the dynamic route stream the rest. */}
+      <Suspense fallback={<EntryLayoutFallback />}>
+        <EntryLayoutContent>{children}</EntryLayoutContent>
+      </Suspense>
     </EntryProvider>
   );
 }

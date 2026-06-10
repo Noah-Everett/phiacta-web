@@ -370,6 +370,8 @@ export default function EntryPage() {
     issues,
     edits,
     compiledInfo,
+    contentText,
+    contentFormat,
     refetchEntry,
     refetchIssues,
     refetchEdits,
@@ -386,9 +388,8 @@ export default function EntryPage() {
   // Page-specific data
   const [entryFiles, setEntryFiles] = useState<FileListItem[]>([]);
   const [history, setHistory] = useState<CommitListItem[]>([]);
-  const [contentText, setContentText] = useState<string | null>(null);
-  const [contentFormat, setContentFormat] = useState<string>("md");
-
+  // contentText / contentFormat now live in EntryContext — seeded by the
+  // server for public entries so the body is in the initial SSR HTML.
 
   // Reference adding
   const [addingReference, setAddingReference] = useState(false);
@@ -433,25 +434,6 @@ export default function EntryPage() {
   const fetchFiles = useCallback((id: string) => {
     getEntryFiles(id).then(setEntryFiles).catch((err) => console.warn("Failed to load files:", err));
   }, []);
-
-  const fetchContent = useCallback(async (id: string) => {
-    const contentToken = getStoredToken();
-    const authHeaders: Record<string, string> = contentToken ? { Authorization: `Bearer ${contentToken}` } : {};
-    for (const ext of [".md", ".tex", ".txt"]) {
-      try {
-        const res = await fetch(`${API_URL}/v1/entries/${id}/files/.phiacta/content${ext}`, { cache: "no-store", headers: authHeaders });
-        if (res.ok) {
-          const text = await res.text();
-          if (text) {
-            setContentText(text);
-            setContentFormat(ext.slice(1));
-          }
-          return;
-        }
-      } catch {}
-    }
-  }, []);
-
 
   // Poll jobs for this entry until none are pending/running, then refresh compiledInfo
   const pollJobs = useCallback((entryId: string) => {
@@ -500,14 +482,14 @@ export default function EntryPage() {
     poll();
   }, [refetchEntry]);
 
-  // Fetch page-specific data when entry is available
+  // Fetch page-specific data when entry is available. (Primary content is
+  // fetched by EntryContext so it can be server-seeded.)
   useEffect(() => {
     if (!resolvedId || !entry) return;
 
     fetchFiles(resolvedId);
     getEntryHistory(resolvedId).then(setHistory).catch((err) => console.warn("Failed to load history:", err));
-    fetchContent(resolvedId);
-  }, [resolvedId, entry, fetchFiles, fetchContent]);
+  }, [resolvedId, entry, fetchFiles]);
 
   // On initial load, check for in-progress or failed compilation jobs.
   // Depends only on resolvedId (not entry) so it fires in parallel with

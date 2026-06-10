@@ -18,6 +18,8 @@ import {
   updateEntry,
   setEntryTags,
   ApiError,
+  API_URL,
+  getStoredToken,
 } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import type {
@@ -42,6 +44,12 @@ interface EntryContextValue {
   edits: EditProposalListItem[];
   compiledInfo: CompiledContentInfo | null;
   setCompiledInfo: (info: CompiledContentInfo | null) => void;
+  // Primary rendered content (`.phiacta/content.<ext>`). Seeded from the
+  // server for public entries so it is present in the initial SSR HTML;
+  // re-fetched on the client (with the viewer's token) whenever the entry
+  // changes, which also covers authorized-private content.
+  contentText: string | null;
+  contentFormat: string;
   refetchEntry: () => Promise<EntryDetailResponse | undefined>;
   refetchIssues: () => void;
   refetchEdits: () => void;
@@ -81,21 +89,34 @@ export function useEntryContext() {
 
 export function EntryProvider({
   entryId,
+  initialEntry = null,
+  initialContent = null,
+  initialContentFormat = "md",
   children,
 }: {
   entryId: string;
+  // Server-fetched seed for public entries (null for private/unknown, where
+  // the client fetches with the viewer's token after hydration).
+  initialEntry?: EntryDetailResponse | null;
+  initialContent?: string | null;
+  initialContentFormat?: string;
   children: ReactNode;
 }) {
   const { user } = useAuth();
-  const [entry, setEntry] = useState<EntryDetailResponse | null>(null);
+  const [entry, setEntry] = useState<EntryDetailResponse | null>(initialEntry);
   const [author, setAuthor] = useState<PublicUserResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Seeded entries are already loaded — start non-loading so the server
+  // renders the real UI instead of a skeleton.
+  const [loading, setLoading] = useState(initialEntry == null);
   const [error, setError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
   const [issues, setIssues] = useState<IssueListItem[]>([]);
   const [edits, setEdits] = useState<EditProposalListItem[]>([]);
-  const [compiledInfo, setCompiledInfo] =
-    useState<CompiledContentInfo | null>(null);
+  const [compiledInfo, setCompiledInfo] = useState<CompiledContentInfo | null>(
+    initialEntry?.compiled_content ?? null,
+  );
+  const [contentText, setContentText] = useState<string | null>(initialContent);
+  const [contentFormat, setContentFormat] = useState<string>(initialContentFormat);
 
   // Edit mode
   const [editing, setEditing] = useState(false);
@@ -144,11 +165,43 @@ export function EntryProvider({
       );
   }, [entryId]);
 
+  // Probe the entry's primary content file. Server-seeded for public
+  // entries (so it's in the SSR HTML); this re-runs on the client whenever
+  // the entry changes, sending the viewer's token so an owner sees their
+  // private content too. Only overwrites on success, so a failed refresh
+  // never blanks a good seed.
+  const fetchContent = useCallback(async (id: string) => {
+    const token = getStoredToken();
+    const headers: Record<string, string> = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+    for (const ext of [".md", ".tex", ".txt"]) {
+      try {
+        const res = await fetch(
+          `${API_URL}/v1/entries/${id}/files/.phiacta/content${ext}`,
+          { cache: "no-store", headers },
+        );
+        if (res.ok) {
+          const text = await res.text();
+          if (text) {
+            setContentText(text);
+            setContentFormat(ext.slice(1));
+          }
+          return;
+        }
+      } catch {
+        // try next extension
+      }
+    }
+  }, []);
+
   useEffect(() => {
-    setLoading(true);
     setError(null);
     setNotFound(false);
 
+    // Refresh in the background. `loading` is already seeded from
+    // initialEntry, so we don't flip it back to true here — that would
+    // flash a skeleton over an entry we can already render.
     getEntry(entryId)
       .then((data) => {
         setEntry(data);
@@ -160,6 +213,13 @@ export function EntryProvider({
           );
       })
       .catch((err) => {
+        // Don't tear down a successfully-seeded page over a transient
+        // background-refresh failure — only surface errors when we have
+        // nothing to show.
+        if (initialEntry) {
+          console.warn("Failed to refresh entry:", err);
+          return;
+        }
         if (err instanceof ApiError && err.status === 404) {
           setNotFound(true);
         }
@@ -171,7 +231,16 @@ export function EntryProvider({
 
     refetchIssues();
     refetchEdits();
+    // initialEntry is stable per mount (the provider is keyed by entryId).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entryId, refetchIssues, refetchEdits]);
+
+  // Fetch content whenever the entry becomes available or changes identity
+  // (e.g. after an edit merge or metadata save refetches it).
+  useEffect(() => {
+    if (!entry) return;
+    fetchContent(entryId);
+  }, [entry, entryId, fetchContent]);
 
   const enterEditMode = useCallback(() => {
     if (!entry) return;
@@ -276,6 +345,8 @@ export function EntryProvider({
         edits,
         compiledInfo,
         setCompiledInfo,
+        contentText,
+        contentFormat,
         refetchEntry,
         refetchIssues,
         refetchEdits,
